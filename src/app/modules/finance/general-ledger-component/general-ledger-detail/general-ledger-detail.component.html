@@ -1,0 +1,166 @@
+<br>
+<div class="container-fluid">
+    <div class="row no-gutters">
+        <div class="visualization-heading col-12">
+            <div class="heading-info">
+                <div class="row">
+                    <div class="col-4">                
+                        <h3 class="heading-title">Sub Ledger Details</h3>
+                    </div>
+                    <div class="col-8">
+                        <div class="row">
+                            <div class="col">
+                                <button class="btn-danger text-white btn btn-block btn-sm"  title="Search Sub Ledger" style="float: right" (click)="searchSubLedger()">
+                                    <mat-icon>search</mat-icon> Search Sub Ledger
+                                </button>
+                            </div>
+                            <div class="col">
+                                <button class="btn-primary text-white btn btn-block btn-sm"  title="New Sub Ledger" style="float: right" (click)="goToDetailForm('new')">
+                                    <mat-icon>add</mat-icon> New Sub Ledger
+                                </button>
+                            </div>
+                            <div class="col">
+                                <button class="btn-success text-white btn btn-block btn-sm"  title="Submit Sub Ledger" style="float: right"  (click)="submitForm()">
+                                    <mat-icon>note_add</mat-icon>  Submit Sub Ledger
+                                </button>
+                            </div>
+                            <div class="col">
+                                <button class="btn-warning text-white btn btn-block btn-sm" [routerLink]="['/finance/general-ledger']" title="Return to General Ledger List" style="float: right">
+                                    <mat-icon>arrow_back</mat-icon> Return to List
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <form [formGroup]="subLedgerForm" class="form-container">
+                            <div class="row">
+                                <div class="col-3">
+                                    <mat-label >Main Group</mat-label>
+                                    <mat-select class="form-control form-control-sm" #maingroup formControlName="maingroup" (valueChange)="getSubGroup(maingroup.value)">
+                                        <mat-option *ngFor="let tab of tabs; let i = index" [value]="maingroups[i]">{{ tab }}</mat-option>
+                                    </mat-select>                                
+                                </div>
+                                <div class="col-3">
+                                    <mat-label >Sub Group</mat-label>
+                                    <mat-select class="form-control form-control-sm" #subgroup formControlName="subgroup" (valueChange)="getGlCode(subgroup.value)">
+                                        <mat-option *ngFor="let subGrp of subGroup" [value]="subGrp.SUBGRPCODE">{{ subGrp.SUBGRPCODE }} - {{subGrp.SUBGRPNAME}}</mat-option>
+                                    </mat-select>                                
+                                </div>
+                                <div class="col-3">
+                                    <mat-label>Account Group</mat-label>
+                                    <mat-select class="form-control form-control-sm" #glcode formControlName="subLedAccountGroup" (valueChange)="patchGlcode(glcode.value)">
+                                        <mat-option *ngFor="let grp of accGroupList" [value]="grp.GLCODE">{{grp.GLCODE}} - {{grp.GLNAME}}</mat-option>
+                                    </mat-select>
+                                </div>
+                                <div class="col-3">
+                                    <mat-label >Sub Ledger Code </mat-label>
+                                    <input  matInput class="form-control form-control-sm" #pcode formControlName="pcode" required >
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-4">
+                                    <mat-label >Name</mat-label>
+                                    <input formControlName="subLedName"  matInput class="form-control form-control-sm" required>
+                                    <mat-error>Name is <strong>required</strong></mat-error>
+                                </div>
+                                <div class="col">
+                                    <mat-label >Active</mat-label>
+                                    <mat-select class="form-control form-control-sm" formControlName="subLedStatus">
+                                        <mat-option value="A">True</mat-option>
+                                        <mat-option value="I">False</mat-option>
+                                    </mat-select>
+                                </div>
+                                <div class="col">
+                                    <mat-label >Type</mat-label>
+                                    <mat-select class="form-control form-control-sm" formControlName="type">
+                                        <mat-option value="C">Customer</mat-option>
+                                        <mat-option value="G">General</mat-option>
+                                        <mat-option value="S">Supplier</mat-option>
+                                    </mat-select>
+                                </div>
+                                <div class="col">
+                                    <mat-label>Branch</mat-label>
+                                    <mat-select class="form-control form-control-sm" formControlName="subLedBranch">
+                                        <mat-option *ngFor="let branch of branchList" [value]="branch.BRANCH_CD">{{branch.BRANCH_NAME}}</mat-option>
+                                    </mat-select>
+                                </div>
+                                <div class="col">
+                                    <mat-label>Account Category</mat-label>
+                                    <mat-select class="form-control form-control-sm" formControlName="subLedAccountType">
+                                        <mat-option *ngFor="let accCat of accCategoryList" [value]="accCat.CATEGORY_CD">{{accCat.CATEGORY_DESC}}</mat-option>
+                                    </mat-select>
+                                </div>
+                                <div class="col">
+                                    <mat-label>Account Type</mat-label>
+                                    <mat-select class="form-control form-control-sm" formControlName="subLedAccountCategory">
+                                        <mat-option *ngFor="let accType of accTypeList" [value]="accType.TYPE_CD">{{accType.TYPE_DESC}}</mat-option>
+                                    </mat-select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-4">
+                                    <mat-label>Opening Balance (BHD)</mat-label>
+                                    <input formControlName="opbal" matInput class="form-control form-control-sm">                                
+                                </div>
+                                <div class="col-8">
+                                    <mat-label>Remarks</mat-label>
+                                    <input formControlName="remarks"  matInput class="form-control form-control-sm">
+                                </div>
+                            </div>
+                            <hr>
+                        </form>
+                    </div>
+                </div> 
+            </div>
+        </div>
+    </div>   
+</div>
+<br>
+
+<ng-template #SubLedgerLookupDialog >
+    <h3 matDialogTitle>
+        <b>Search Sub Ledger</b>
+    </h3>
+    <hr>
+    <!-- Search Bar -->
+    <div class="row d-flex align-items-center">
+        <div class="col-auto">
+            <mat-icon>search</mat-icon>
+        </div>
+        <div class="col">
+            <input type="text" style="color: black;" 
+                   placeholder="Enter search keyword..." 
+                   class="form-control form-control-sm" 
+                   #search 
+                   (keyup)="quickSubLedgerSearch(search.value)">
+        </div>
+    </div>
+    <div mat-dialog-content>
+        <!-- Table -->
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>PCODE</th>
+                    <th>SUBLEDGER NAME</th>
+                    <th>ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let subLed of subLedgerList; let i = index;">
+                    <td>{{subLed.PCODE}}</td>
+                    <td>{{subLed.CUST_NAME}}</td>
+                    <td>
+                        <button mat-raised-button class="bg-warning text-white btn btn-block" (click)="goToDetailForm(subLed.PCODE)">
+                            <mat-icon>arrow_forward</mat-icon>                                            
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <hr>
+    <br>
+</ng-template>

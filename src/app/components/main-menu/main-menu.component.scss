@@ -1,0 +1,85 @@
+#offcanvasMainmenu {
+  width: 30% !important; /* Adjust as needed */
+  background-color: #6c757d; /* Matches Bootstrap's bg-secondary */
+  color: black;
+  
+  .offcanvas-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .btn-close {
+    filter: invert(1); /* Makes the close button visible on dark backgrounds */
+  }
+
+  .side-menu-navigation {
+    padding: 0;
+    
+    .menu-item {
+      list-style: none;
+      margin-bottom: 5px;
+      
+      .menu-link {
+        color: black;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        border-radius: 5px;
+        transition: background 0.3s ease-in-out;
+
+        &:hover, &.active {
+          background: rgba(255, 255, 255, 0.1) !important; 
+        }
+      }
+    }
+  }
+
+  .expandable-item {
+    .mat-expansion-panel {
+      background: white;
+      box-shadow: none;
+      border: none;
+      color: black;
+      
+      .mat-expansion-panel-header {
+        background: transparent;
+        color: black;
+        padding: 10px 15px;
+
+        cursor: pointer;
+        border-radius: 5px;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1) !important; 
+        }
+      }
+
+      .mat-expansion-panel-content {
+        background: transparent;
+      }
+
+      i {
+        color: black !important; /* Ensures all icons remain white */
+      }
+
+      hr {
+        display: block;
+        height: 1px;
+        border: 0;
+        border-top: 1px solid #ccc;
+        margin: 1em 0;
+        padding: 0;
+      }
+    
+      // Ensures the expansion panel arrow is white
+      .mat-expansion-indicator {
+        color: white !important;
+      }
+    }
+  }
+
+  .menu-item-icon {
+    color: white;
+    margin-right: 10px;
+  }
+}

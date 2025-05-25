@@ -1,0 +1,75 @@
+.visualization-heading {
+    background: rgba(124, 124, 124, 0.254); // Slight transparency for blending
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    
+    .heading-info {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        
+        .row:first-child {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            
+            .heading-title {
+              font-size: 1.25rem;
+              font-weight: bold;
+              margin: 0;
+              display: flex;
+              align-items: center;
+          }
+  
+            button {
+                border-radius: 8px;
+                min-width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: none;
+            }
+        }
+    }
+    
+    mat-form-field {
+        width: 100%;
+        background: transparent;
+        border-radius: 8px;
+        padding: 5px 10px;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        
+        input {
+            color: #333;
+        }
+        
+        mat-icon {
+            color: #666;
+        }
+    }
+  
+    .mat-table {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        
+        mat-header-row {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+  
+        mat-row {
+            &:nth-child(odd) {
+                background: rgba(240, 240, 240, 0.5);
+            }
+        }
+    }
+  
+    mat-paginator {
+        background: transparent;
+    }
+  }
+  

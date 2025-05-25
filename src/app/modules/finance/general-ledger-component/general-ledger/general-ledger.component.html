@@ -1,0 +1,360 @@
+<div class="container-fluid">
+    <div class="row no-gutters">
+        <div class="visualization-heading col-12">
+            <div class="heading-info">
+                <div class="row">
+                    <div class="col">
+                        <h2 class="heading-title">General Ledger</h2>
+                    </div>
+                    <div class="col-1">
+                        <div class="row">
+                           <!--- <div class="col">
+                                <button class="btn-primary text-white btn btn-block btn-sm"  title="Print Trial Balance Summary" style="float: right" (click)="openTrialBalanceSummary()">
+                                    <mat-icon>print</mat-icon><!--&nbsp;&nbsp;&nbsp;Print Trial Balance Summary
+                                </button>
+                            </div> -->
+                            <div class="col">
+                                <button class="btn-secondary text-white btn btn-block btn-sm"  title="Print Chart of Accounts" style="float: right" (click)="getCOA()">
+                                    <mat-icon>print</mat-icon><!--&nbsp;&nbsp;&nbsp;Print Chart of Accounts-->
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <mat-card class="bg-secondary">
+                <mat-card-content>
+                    <ul class="nav nav-tabs" id="myTab" role="tablist">
+                        <li class="nav-item" *ngFor="let tab of tabs; let i = index" role="presentation">
+                            <button class="nav-link" [class.active]="i === selectedIndex" id="tab-{{i}}" data-bs-toggle="tab" [attr.data-bs-target]="'#tab-pane-' + i" type="button" role="tab" [attr.aria-controls]="'tab-pane-' + i" [attr.aria-selected]="i === 0 ? 'true' : 'false'" (click)="onTabChange(i)">
+                                {{ tab }}
+                            </button>
+                        </li>
+                    </ul>
+                    <br>
+                    <div class="tab-content" id="myTabContent">
+                        <div class="tab-pane fade" *ngFor="let tab of tabs; let i = index" [class.show]="i === 0" [class.active]="i === 0" [attr.id]="'tab-pane-' + i" role="tabpanel" [attr.aria-labelledby]="'tab-' + i" tabindex="0">
+                            <div class="row">
+                                <div class="col-4">
+                                    <ul style="list-style-type: none; padding-left: 0;">
+                                        <li *ngFor="let subgrp of subGroup">
+                                            <span (click)="toggleSubgroup(subgrp)" style="cursor: pointer;">
+                                                <span style="font-weight: bold;">{{ subgrp.expanded ? '−' : '+' }}</span>
+                                                {{ subgrp.SUBGRPCODE }} - {{ subgrp.SUBGRPNAME }}
+                                            </span>
+                                            <ul *ngIf="subgrp.expanded">
+                                                <li *ngFor="let glcode of subgrp.glcodes">
+                                                    <span (click)="getGLAcc(mCYear.toString(), glcode.GLCODE)" style="cursor: pointer;">
+                                                        {{ glcode.GLCODE }} - {{ glcode.GLNAME }}
+                                                    </span>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-8">
+                                    <div class="mb-3">
+                                        <input type="text" [(ngModel)]="searchText" class="form-control" placeholder="Search customers..." />
+                                    </div>
+
+                                    <table class="table table-hover table-responsive-xxl">
+                                        <thead class="table-dark">
+                                            <tr class="table-reflow">
+                                                <th>PCODE</th>
+                                                <th>CUSTOMER NAME</th>
+                                                <th>DIVISION</th>
+                                                <th>SALES CATEGORY</th>
+                                                <th>INDUSTRY</th>
+                                                <th>ORGANISATION</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let GLA of glAcc | filterTable:searchText; let i = index;">
+                                                <td>{{ GLA.PCODE }}</td>
+                                                <td>{{ GLA.CUST_NAME }}</td>
+                                                <td>{{ GLA.SUBCATEGORY }}</td>
+                                                <td>{{ GLA.Salessubcategory }}</td>
+                                                <td>{{ GLA.Industry }}</td>
+                                                <td>{{ GLA.Orgnisation }}</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-secondary" (click)="goToDetailForm(tempGlType, GLA.PCODE)" title="View GL Account Details">
+                                                        <mat-icon>edit</mat-icon>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>                
+                </mat-card-content>
+            </mat-card>
+        </div>
+    </div>
+</div>
+
+<ng-template #subGroupLookupDialog >
+    <h3 matDialogTitle>
+        <b>{{ sgMes }} Subgroup Details</b>
+    </h3>
+    <hr>
+    <div mat-dialog-content>
+        <form class="form-container" [formGroup]="subGroupForm">
+            <div class="row">
+                <div class="col-4">
+                    <mat-label>Main Group</mat-label>
+                    <input type="text" formControlName="maingroupname" matInput class="form-control" readonly>
+                </div>
+                <div class="col-4">
+                    <mat-label>Subgroup Code</mat-label>
+                    <input type="text" formControlName="subgroupcode" matInput class="form-control">
+                </div>
+                <div class="col-4">
+                    <mat-label>SubGroup Name</mat-label>
+                    <input type="text" formControlName="subgroupname" matInput class="form-control">
+                </div>
+            </div>
+        </form>
+    </div>
+    <hr>
+    <div class="row container-fluid">
+        <div class="col-3">
+            <button mat-raised-button class="bg-primary text-white btn btn-block" (click)="newSubGroup()" title="New Subgroup">
+                Create New
+            </button>
+        </div>
+        <div class="col"></div>
+        <div class="col-2">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="submitSubgroupDetails()" title="Submit Changes">
+                Submit
+            </button>
+        </div>
+    </div>
+    <br>
+</ng-template>
+
+
+<ng-template #glCodeLookupDialog >
+    <h3 matDialogTitle>
+        <b>{{ glMes }} GLCode Details</b>
+    </h3>
+    <hr>
+    <div mat-dialog-content>
+        <form class="form-container" [formGroup]="glCodeForm">
+            <div class="row">
+                <div class="col-4">
+                    <mat-label>GL ID</mat-label>
+                    <input type="text" formControlName="gl_id" matInput class="form-control" readonly>
+                </div>
+                <div class="col-4">
+                    <mat-label>GL Code</mat-label>
+                    <input type="text" formControlName="glcode" matInput class="form-control">
+                </div>
+                <div class="col-4">
+                    <mat-label>GL Name</mat-label>
+                    <input type="text" formControlName="glname" matInput class="form-control">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4">
+                    <mat-label>Subgroup Code</mat-label>
+                    <input type="text" formControlName="subgrpcode" matInput class="form-control" readonly>
+                </div>
+                <div class="col-4">
+                    <mat-label>PL BS</mat-label>
+                    <input type="text" formControlName="pl_bs" matInput class="form-control">
+                </div>
+                <div class="col-4">
+                    <mat-label>PL BS Code</mat-label>
+                    <input type="text" formControlName="pl_bs_code" matInput class="form-control">
+                </div>
+            </div>
+        </form>
+    </div>
+    <hr>
+    <div class="row container-fluid">
+        <div class="col-3">
+            <button mat-raised-button class="bg-primary text-white btn btn-block" (click)="newGlCode()" title="New GL Code">
+                Create New
+            </button>
+        </div>
+        <div class="col"></div>
+        <div class="col-2">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="submitGlCodeDetails()" title="Submit Changes">
+                Submit
+            </button>
+        </div>
+    </div>
+    <br>
+</ng-template>
+
+<ng-template #coaLookupDialog >
+    <h3 matDialogTitle>
+        <b>Chart of Account Preview</b>
+    </h3>
+    <hr>
+    <div mat-dialog-content>
+        <table class="table table-striped table-sm" id="coaTable">
+            <thead>
+                <tr>
+                    <th>Subgroup</th>
+                    <th>GL Code</th>
+                    <th>Account Code</th>
+                    <th>Account Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <ng-container *ngFor="let maingroupData of chartData">
+                    <tr *ngIf="maingroupData.maingroup">
+                        <td colspan="4" style="font-weight: bold;">
+                            {{ maingroupData.maingroup === 'A' ? 'A - Assets' : 
+                               maingroupData.maingroup === 'L' ? 'L - Liabilities' : 
+                               maingroupData.maingroup === 'I' ? 'I - Income' : 
+                               maingroupData.maingroup === 'X' ? 'X - Expenses' : 
+                               maingroupData.maingroup === 'E' ? 'E - Equity' : 
+                               maingroupData.maingroup }}
+                        </td>
+                    </tr>
+                
+                    <ng-container *ngFor="let subgroup of maingroupData.subgroup">
+                       <ng-container *ngFor="let glcode of subgroup.glcodes">
+                            <ng-container *ngFor="let glaccount of glcode.glaccounts; let first = first">
+                                <tr>
+                                    <td *ngIf="first">{{ subgroup.SUBGRPCODE }} - {{ subgroup.SUBGRPNAME }}</td>
+                                    <td *ngIf="!first"></td>
+                                    <td>{{ glcode.GLCODE }} - {{ glcode.GLNAME }}</td>
+                                    <td>{{ glaccount.pcode }}</td>
+                                    <td>{{ glaccount.cust_name }}</td>
+                                </tr>
+                            </ng-container>
+                        </ng-container>
+                    </ng-container>
+                </ng-container>
+            </tbody>
+        </table>
+    </div>
+    <hr>
+    <div class="row container-fluid">
+        <div class="col-10"></div>
+        <div class="col-2">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCOA()" style="float: right" title="print">
+                Print
+            </button>
+        </div>
+    </div>
+    <br>
+</ng-template>
+
+<ng-template #trialBalanceSummaryLookupDialog >
+    <h3 matDialogTitle>
+        <b>Trial Balance Summary Preview</b>
+    </h3>
+    <hr>
+    <div mat-dialog-content>
+        <div class="row">
+            <div class="col-5">
+                <mat-label>Start Date</mat-label>
+                <input type="date" #startDate matInput class="form-control">
+            </div>
+            <div class="col-5">
+                <mat-label>End Date</mat-label>
+                <input type="date" #endDate matInput class="form-control">
+            </div>
+            <div class="col-2">
+                <button class="btn-primary text-white btn btn-block btn-sm"  title="Get Trial Balance Summary" style="float: right" (click)="fetchTrialBalanceSummaryData(startDate.value,endDate.value)">
+                    <mat-icon>search</mat-icon>
+                </button>
+            </div>
+        </div>
+        <hr>
+        <table class="table table-striped table-sm" id="tbsTable" *ngIf="trialBalanceSummaryData.length != 0">
+            <thead>
+                <tr>
+                    <th rowspan="2">Subgroup</th>
+                    <th rowspan="2">GL Code</th>
+                    <th colspan="2">Opening Balance (BHD)</th>
+                    <th colspan="2">Current Period (BHD)</th>
+                    <th colspan="2">Closing Balance (BHD)</th>
+                </tr>
+                <tr>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                </tr>
+            </thead>
+            <tbody>
+                <ng-container *ngFor="let maingroupData of trialBalanceSummaryData">
+                    <tr *ngIf="maingroupData.maingroup">
+                        <td colspan="8" style="font-weight: bold;">
+                            {{ maingroupData.maingroup === 'A' ? 'A - Assets' : 
+                               maingroupData.maingroup === 'L' ? 'L - Liabilities' : 
+                               maingroupData.maingroup === 'I' ? 'I - Income' : 
+                               maingroupData.maingroup === 'X' ? 'X - Expenses' : 
+                               maingroupData.maingroup === 'E' ? 'E - Equity' : 
+                               maingroupData.maingroup }}
+                        </td>
+                    </tr>
+        
+                    <ng-container *ngFor="let subgroup of maingroupData.subgroup">
+                        <ng-container *ngFor="let glcode of subgroup.glcodes">
+                            <ng-container *ngFor="let glaccount of glcode.glaccounts; let first = first">
+                                <tr>
+                                    <td *ngIf="first">{{ subgroup.SUBGRPCODE }} - {{ subgroup.SUBGRPNAME }}</td>
+                                    <td *ngIf="!first"></td>
+                                    <td>{{ glcode.GLCODE }} - {{ glcode.GLNAME }}</td>
+                                    
+                                    <!-- Opening Balance Debit -->
+                                    <td>{{ glaccount.OPBAL > 0 ? (glaccount.OPBAL | number: '1.3') : '0.000' }}</td>
+        
+                                    <!-- Opening Balance Credit -->
+                                    <td>{{ glaccount.OPBAL < 0 ? (-glaccount.OPBAL | number: '1.3') : '0.000' }}</td>
+        
+                                    <!-- Debit Transactions -->
+                                    <td>{{ glaccount.GLDB_BAL | number: '1.3' }}</td>
+        
+                                    <!-- Credit Transactions -->
+                                    <td>{{ glaccount.GLCR_BAL | number: '1.3' }}</td>
+        
+                                    <!-- Closing Balance Debit -->
+                                    <td>
+                                        {{
+                                            (glaccount.OPBAL + glaccount.GLDB_BAL - glaccount.GLCR_BAL) > 0 
+                                            ? ((glaccount.OPBAL + glaccount.GLDB_BAL - glaccount.GLCR_BAL) | number: '1.3') 
+                                            : '0.000'
+                                        }}
+                                    </td>
+        
+                                    <!-- Closing Balance Credit -->
+                                    <td>
+                                        {{
+                                            (glaccount.OPBAL + glaccount.GLDB_BAL - glaccount.GLCR_BAL) < 0 
+                                            ? (-(glaccount.OPBAL + glaccount.GLDB_BAL - glaccount.GLCR_BAL) | number: '1.3') 
+                                            : '0.000'
+                                        }}
+                                    </td>
+                                </tr>
+                            </ng-container>
+                        </ng-container>
+                    </ng-container>
+                </ng-container>
+            </tbody>
+        </table>
+        
+    </div>
+    <hr>
+    <div class="row container-fluid">
+        <div class="col-10"></div>
+        <div class="col-2">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printTBS(startDate.value,endDate.value)" style="float: right" title="print">
+                Print
+            </button>
+        </div>
+    </div>
+    <br>
+</ng-template>

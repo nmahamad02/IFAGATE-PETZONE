@@ -1,0 +1,101 @@
+<br>
+<div class="container-fluid">
+    <div class="row no-gutters">
+        <div class="visualization-heading col-12">
+            <div class="heading-info">
+                <div class="row">
+                    <div class="col-8">
+                        <h2 class="heading-title">Customer List</h2>
+                    </div>
+                    <div class="col-4">
+                        <div class="row">
+                            <div class="col">
+                                <button mat-raised-button class="bg-primary text-white btn btn-block" (click)="gotocustomerDetails('/Receivables/customer/detail', 'new')" title="Create new Customer" style="float: right">
+                                    <mat-icon>add</mat-icon> New Customer
+                                </button>
+                            </div>
+                            <div class="col">
+                                <button mat-raised-button class="bg-secondary text-white btn btn-block" (click)="openUploadExcelSheet()" title="Upload Customer List" style="float: right">
+                                    <mat-icon>upload_file</mat-icon> Upload Customers
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <mat-form-field>
+                            <mat-icon matPrefix>search</mat-icon>
+                            <input matInput type="text" style="color: black;" placeholder="Please Enter Your Seach Keyword to filter" (keyup)="quickcustomerSearch()" [(ngModel)]="searchValue">
+                        </mat-form-field>
+                    </div>
+                    <div class="col-12">
+                        <mat-table [dataSource]="customerListDataSource" matTableExporter class="mat-table" matSort matSortDisableClear [multiTemplateDataRows]="true">
+                            <ng-container matColumnDef="pcode">
+                                <mat-header-cell *matHeaderCellDef mat-sort-header> Account Code </mat-header-cell>
+                                <mat-cell *matCellDef="let row"> {{ row.PCODE }} </mat-cell>
+                            </ng-container>
+
+                            <ng-container matColumnDef="name">
+                                <mat-header-cell *matHeaderCellDef mat-sort-header> Customer Name </mat-header-cell>
+                                <mat-cell *matCellDef="let row" > {{ row.CUST_NAME }} </mat-cell>
+                            </ng-container> 
+                            
+                            <ng-container matColumnDef="mobile">
+                                <mat-header-cell *matHeaderCellDef mat-sort-header> Mobile </mat-header-cell>
+                                <mat-cell *matCellDef="let row" > {{ row.MOBILE }} </mat-cell>
+                            </ng-container> 
+
+                            <ng-container matColumnDef="email">
+                                <mat-header-cell *matHeaderCellDef mat-sort-header> Email </mat-header-cell>
+                                <mat-cell *matCellDef="let row" > {{ row.EMAIL }} </mat-cell>
+                            </ng-container> 
+
+                            <ng-container matColumnDef="opbal">
+                                <mat-header-cell *matHeaderCellDef mat-sort-header> Opening Balance </mat-header-cell>
+                                <mat-cell *matCellDef="let row" [ngStyle]="{'color': row.opbal < 0 ? 'red' : 'black'}">BHD {{ row.OPBAL | number: '1.3' }} </mat-cell>
+                            </ng-container>
+              
+                            <!-- Button Column -->
+                            <ng-container matColumnDef="Actions">
+                                <mat-header-cell *matHeaderCellDef mat-sort-header> Actions </mat-header-cell>
+                                <mat-cell *matCellDef="let row">
+                                    <button md-raised-button color="primary" class="btn-primary ml-2 mat-button"  (click)="gotocustomerDetails('/Receivables/customer/detail', row.PCODE)">
+                                        View
+                                    </button>              
+                                </mat-cell>
+                            </ng-container>
+                  
+                            <mat-header-row *matHeaderRowDef="columns"></mat-header-row>
+                            <mat-row matRipple *matRowDef="let row; columns: columns;"></mat-row>
+                        </mat-table>
+                        <mat-paginator #paginator [pageSize]="50" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons></mat-paginator>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br>
+
+<ng-template #customerLookupDialog >
+    <h3 matDialogTitle>
+        <b>Upload Customer List</b>
+    </h3>
+    <hr>
+    <div mat-dialog-content>
+        <input type="file" (change)="onFileChange($event)" accept=".xls,.xlsx" />
+        <table mat-table [dataSource]="tableData" class="mat-elevation-z8">
+            <ng-container *ngFor="let column of displayedColumns" [matColumnDef]="column">
+                <th mat-header-cell *matHeaderCellDef> {{ column }} </th>
+                <td mat-cell *matCellDef="let element"> {{ element[column] }} </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+    </div>
+    <hr>
+    <br>
+</ng-template>

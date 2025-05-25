@@ -1,0 +1,31 @@
+<div class="offcanvas offcanvas-start bg-secondary" tabindex="-1" id="offcanvasMainmenu" aria-labelledby="offcanvasMainmenuLabel">
+  <div class="offcanvas-header">
+    <!--<h6 class="offcanvas-title text-white" id="offcanvasMainmenuLabel">
+      List
+    </h6>-->
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+    <ul class="side-menu-navigation nav flex-column">
+      <li class="menu-item expandable-item nav-item" *ngFor="let module of moduleList" routerLinkActive="active">
+        <mat-expansion-panel [expanded]="false">
+          <mat-expansion-panel-header class="menu-link">
+            <div class="item-header-content">
+              <mat-panel-title>
+                <i [class]="'bi bi-' + module.MODULEICON"></i>
+                <span class="menu-item-title">&nbsp;&nbsp;&nbsp;&nbsp;{{module.MODULEDISPLAYNAME}}</span>
+              </mat-panel-title>
+              <!-- <mat-panel-description class="menu-item-description">Coming soon</mat-panel-description> -->
+            </div>
+          </mat-expansion-panel-header>
+          <li class="menu-item nav-item" routerLinkActive="active" *ngFor="let submodule of module.SUBMODULES">
+            <a class="menu-link nav-link" routerLinkActive="active" [routerLink]="'/'+ module.MODULEURL + '/'+submodule.MODULEURL" (click)="setModuleCode(submodule.MODULECODE)">
+              <i class="menu-item-icon"></i>
+              <span class="menu-item-title">{{submodule.MODULEDISPLAYNAME}}</span>
+            </a>
+          </li>
+        </mat-expansion-panel>
+      </li>
+    </ul>
+  </div>
+</div>

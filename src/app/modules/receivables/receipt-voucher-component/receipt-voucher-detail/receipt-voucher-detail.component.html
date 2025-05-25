@@ -1,0 +1,289 @@
+<br>
+<div class="container-fluid">
+    <div class="row no-gutters">
+        <div class="visualization-heading col-12">
+            <div class="heading-info">
+                <div class="row">
+                    <div class="col-8">                
+                        <h4 class="heading-title">Receipt Voucher Details</h4>
+                    </div>
+                    <div class="col-4">
+                        <div class="row">
+                            <div class="col">
+                                <button class="btn-danger text-white btn btn-block btn-sm"  title="Search Receipt Voucher" style="float: right" (click)="searchRV()">
+                                    <mat-icon>search</mat-icon> <!--Search RV-->
+                                </button>
+                            </div>
+                            <div class="col">
+                                <button class="btn-primary text-white btn btn-block btn-sm"  title="New RV" style="float: right" (click)="goToDetailForm('new')">
+                                    <mat-icon>add</mat-icon><!-- New RV-->
+                                </button>
+                            </div>
+                            <div class="col">
+                                <button class="btn-info text-white btn btn-block btn-sm"  title="Print RV" style="float: right"  (click)="printForm()">
+                                    <mat-icon>print</mat-icon>  <!--Print RV-->
+                                </button>
+                            </div>
+                            <div class="col">
+                                <button class="btn-success text-white btn btn-block btn-sm"  title="Submit RV" style="float: right"  (click)="submitForm()">
+                                    <mat-icon>note_add</mat-icon> <!-- Submit RV-->
+                                </button>
+                            </div>
+                            <div class="col">
+                                <button class="btn-warning text-white btn btn-block btn-sm" [routerLink]="['/receivables/receipt-voucher']" title="Return to Receipt Voucher List" style="float: right">
+                                    <mat-icon>arrow_back</mat-icon> <!--Back-->
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <form [formGroup]="rvForm" class="form-container">
+                            <div class="row">
+                                <div class="col-4">
+                                    <mat-label >Voucher Number </mat-label>
+                                    <input  matInput class="form-control form-control-sm py-0 px-1" #vcrno formControlName="vcrno" required >
+                                    <mat-error *ngIf="rvForm.get('vcrno')?.invalid && (rvForm.get('vcrno')?.touched || rvForm.get('vcrno')?.dirty)">
+                                        Voucher Number is <strong>required</strong>
+                                    </mat-error>
+                                </div>
+                                <div class="col-3">
+                                    <mat-label >Voucher Date</mat-label>
+                                    <input formControlName="vcrdate" type="date" matInput class="form-control form-control-sm py-0 px-1" required>
+                                    <mat-error *ngIf="rvForm.get('vcrdate')?.invalid && (rvForm.get('vcrdate')?.touched || rvForm.get('vcrdate')?.dirty)">
+                                        Date is <strong>required</strong>
+                                    </mat-error>
+                                </div>
+                                <!--<div class="col-2">
+                                    <mat-label >Expiry Date</mat-label>
+                                    <input formControlName="expdate" type="date" matInput class="form-control form-control-sm py-0 px-1" required>
+                                    <mat-error *ngIf="rvForm.get('expdate')?.invalid && (rvForm.get('expdate')?.touched || rvForm.get('expdate')?.dirty)">
+                                       Expiry Date is <strong>required</strong>
+                                    </mat-error>
+                                </div>-->
+                                <div class="col-3">
+                                    <mat-label >Currency </mat-label>
+                                    <mat-select class="form-control form-control-sm py-0 px-1" #currency formControlName="currency" (valueChange)="getExchangeRate(currency.value)">
+                                        <mat-option *ngFor="let cur of currencyList" [value]="cur">{{ cur.SHORTNAME}}</mat-option>
+                                    </mat-select>                                      
+                                </div>
+                                <div class="col-2">
+                                    <mat-label>Exchange Rate </mat-label>
+                                    <input matInput class="form-control form-control-sm py-0 px-1" formControlName="exchangeRate" required readonly>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-4">
+                                    <mat-label >Debit Account </mat-label>
+                                    <mat-select class="form-control form-control-sm py-0 px-1" #debitAccount formControlName="debitAccount" (valueChange)="getAccDetails(debitAccount.value)">
+                                        <mat-option *ngFor="let deb of debitAccList" [value]="deb">{{ deb.pcode }} - {{ deb.cust_name }}</mat-option>
+                                    </mat-select>                                    
+                                    <mat-error *ngIf="rvForm.get('debitAccount')?.invalid && (rvForm.get('debitAccount')?.touched || rvForm.get('debitAccount')?.dirty)">
+                                        Debit Account is <strong>required</strong>
+                                    </mat-error>
+                                </div>
+                                <div class="col-8">
+                                    <mat-label >Account Name</mat-label>
+                                    <input  matInput class="form-control form-control-sm py-0 px-1" #vcrno formControlName="accountName" required readonly>
+                                </div>
+                                <!--<div class="col-4">
+                                    <mat-label >Card Number</mat-label>
+                                    <input  matInput class="form-control form-control-sm py-0 px-1" #vcrno formControlName="cardNumber" required>
+                                </div>-->
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <mat-label >Narration</mat-label>
+                                    <input  matInput class="form-control form-control-sm py-0 px-1" formControlName="narration" required >
+                                    <mat-error *ngIf="rvForm.get('narration')?.invalid && (rvForm.get('narration')?.touched || rvForm.get('narration')?.dirty)">
+                                        Narration is <strong>required</strong>
+                                    </mat-error>
+                                </div>
+                            </div>
+                            <table class="table table-hover table-responsive-xxl table-secondary" formArrayName="accounts">
+                                <thead class="table-dark">
+                                    <tr class="table-reflow" >
+                                        <th style="width: 5%;"></th>
+                                        <th style="width: 10%;">
+                                            Account Code
+                                        </th>
+                                        <th style="width: 20%;">
+                                            Account Name
+                                        </th>
+                                        <th style="width: 25%;">
+                                            Description
+                                        </th>
+                                        <!--<th style="width: 15%;">
+                                            Debit Amount (BHD)
+                                        </th>-->
+                                        <th style="width: 15%;">
+                                            Credit Amount (BHD)
+                                        </th>
+                                        <th style="width: 15%;">
+                                            Allocate (BHD)
+                                        </th>
+                                        <th style="width: 5%;"> </th>
+                                        <th style="width: 5%;"> </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr #depMem *ngFor="let acc of accounts.controls; let i = index;" [formGroupName]="i">
+                                        <td>
+                                            <button class="btn btn-white btn-sm" type="button" (click)="searchAccount(i)"> 
+                                                <mat-icon>search</mat-icon>
+                                            </button>
+                                        </td>
+                                        <td>
+                                            <input #pcode class="form-control form-control-sm py-0 px-1" type="text" formControlName="pcode" readonly>
+                                        </td>
+                                        <td>
+                                            <input #custname class="form-control form-control-sm py-0 px-1" type="text" formControlName="custname" readonly>
+                                        </td>
+                                        <td>
+                                            <input class="form-control form-control-sm py-0 px-1" type="text" formControlName="desc">
+                                        </td>
+                                        <!--<td>
+                                            <input class="form-control form-control-sm text-end py-0 px-1" type="text" formControlName="debit">
+                                        </td>-->
+                                        <td>
+                                            <input #credit class="form-control form-control-sm text-end py-0 px-1" type="text" formControlName="credit">
+                                        </td>
+                                        <td>
+                                            <input class="form-control form-control-sm text-end py-0 px-1" type="text" formControlName="allocate" readonly>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-danger btn-sm" type="button" (click)="deleteAccount(i)">                                                 
+                                                <mat-icon>close</mat-icon>
+                                            </button>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-warning btn-sm" type="button" (click)="allocateAccount(pcode.value,custname.value,credit.value)"> 
+                                                <mat-icon>arrow_forward</mat-icon> 
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="font-weight: bold; background-color: #f8f9fa;">
+                                        <td colspan="4" class="text-end">Total:</td>
+                                        <td class="text-end">
+                                            <input class="form-control form-control-sm text-end py-0 px-1" type="text" [value]="getTotalCredit()" readonly>
+                                        </td>
+                                        <td class="text-end">
+                                            <input class="form-control form-control-sm text-end py-0 px-1" type="text" [value]="getTotalAllocate()" readonly>
+                                        </td>
+                                        <td></td>
+                                        <td>                                        
+                                            <button class="btn btn-success btn-sm" type="button" (click)="addAccount()"> 
+                                                <mat-icon>add</mat-icon>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </form>
+                    </div>
+                </div> 
+            </div>
+        </div>
+    </div>   
+</div>
+<br>
+
+<ng-template #accountLookupDialog>
+    <h3 matDialogTitle><b>Search Account</b></h3>
+    <hr>
+  
+    <!-- Search Input -->
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-1">
+                <button class="btn btn-white btn-sm" type="button"> 
+                    <mat-icon>search</mat-icon>
+                </button>
+            </div>
+            <div class="col">
+                <input type="text" style="color: black; " placeholder="Enter search keyword..." class="form-control form-control-sm py-0 px-1" #search (keyup)="quickAccountSearch(search.value)" (keydown.arrowdown)="arrowDownEvent()" (keydown.arrowup)="arrowUpEvent()" (keydown.enter)="selectAccount(this.accountList[selectedRowIndex],selectedAccountIndex)">
+            </div>
+        </div>
+    </div>
+  
+    <!-- Account List -->
+    <div mat-dialog-content>
+      <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>PCODE</th>
+            <th>ACCOUNT NAME</th>
+            <!--<th>MOBILE</th>
+            <th>EMAIL</th>-->
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let acc of accountList; let i = index" [ngClass]="{'highlight': selectedRowIndex === i}" (click)="highlight(i)">
+                <td>{{ acc.PCODE }}</td>
+                <td>{{ acc.CUST_NAME }}</td>
+                <!--<td>{{ acc.MOBILE }}</td>
+                <td>{{ acc.EMAIL }}</td>-->
+                <td>
+                    <button mat-raised-button class="bg-secondary text-white btn btn-block" (click)="selectAccount(acc,selectedAccountIndex)">
+                        +
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-template>
+
+
+<ng-template #rvLookupDialog>
+    <h3 matDialogTitle><b>Search Receipt Voucher</b></h3>
+    <hr>
+  
+    <!-- Search Input -->
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-1">
+                <button class="btn btn-white btn-sm" type="button"> 
+                    <mat-icon>search</mat-icon>
+                </button>
+            </div>
+            <div class="col">
+                <input type="text" style="color: black; " placeholder="Enter search keyword..." class="form-control form-control-sm py-0 px-1" #search (keyup)="quickRVSearch(search.value)">
+            </div>
+        </div>
+    </div>
+  
+    <!-- Account List -->
+    <div mat-dialog-content>
+      <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>VOUCHER NUMBER</th>
+            <th>VOUCHER DATE</th>
+            <th>DESCRIPTION</th>
+            <th>NET AMOUNT (BHD)
+                
+            </th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let rv of rvList; let i = index">
+                <td>{{ rv.TRN_NO }}</td>
+                <td>{{ rv.TRN_DATE | date: 'mediumDate' }}</td>
+                <td>{{ rv.NARRATION }}</td>
+                <td>{{ rv.NET_AMOUNT | number: '1.3' }}</td>
+                <td>
+                    <button mat-raised-button class="bg-secondary text-white btn btn-block" (click)="goToDetailForm(rv.TRN_NO)">
+                        <mat-icon>arrow_forward</mat-icon>                                            
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-template>

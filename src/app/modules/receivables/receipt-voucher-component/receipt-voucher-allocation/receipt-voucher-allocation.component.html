@@ -1,0 +1,258 @@
+<br>
+<div class="container-fluid">
+    <div class="row no-gutters">
+        <div class="visualization-heading col-12">
+            <div class="heading-info">
+                <div class="row">
+                    <div class="col-10">                
+                        <h3 class="heading-title">Receipt Allocation - {{ rvcData.VCR_NO }} = BHD {{ rvcData.AMOUNT | number : '1.3' }}</h3>
+                    </div>
+                    <div class="col">
+                        <button class="btn-warning text-white btn btn-block btn-sm" title="Return to Receipt Voucher Details" style="float: right" (click)="gotoReceiptVoucherDetails('/receivables/receipt-voucher/detail', rvcData.VCR_NO)">
+                            <mat-icon>arrow_back</mat-icon>
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="row">
+                            <div class="col-6">
+                                <h3>All Open Invoices</h3>
+                                <table class="table table-hover table-responsive-xxl table-secondary table-sm">
+                                    <thead class="table-dark">
+                                        <tr class="table-reflow" >
+                                            <th style="width: 22.5%;">
+                                                Invoice Number
+                                            </th>
+                                            <th style="width: 22.5%;">
+                                                Date
+                                            </th>
+                                            <!--<th style="width: 30%;">
+                                                Description
+                                            </th>-->
+                                            <th style="width: 22.5%;">
+                                                Amount (BHD)
+                                            </th>
+                                            <th style="width: 22.5%;">
+                                                Balance (BHD)
+                                            </th>
+                                            <th style="width: 5%;"> </th>
+                                            <th style="width: 5%;"> </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let row of openInvList; let i = index;">
+                                            <td>{{ row.INV_NO }}</td>
+                                            <td>{{ row.INV_DATE | date: 'dd-MM-yyyy'}}</td>
+                                            <td>{{ row.AMOUNT | number : '1.3'}}</td>
+                                            <td>{{ row.BALANCE | number : '1.3'}}</td>
+                                            <td>
+                                                <button class="bg-info text-white btn btn-block btn-sm"  title="Partially Allocate this invoice" (click)="setInvoice(row)">
+                                                    <mat-icon>edit</mat-icon> 
+                                                </button>
+                                            </td>
+                                            <td>
+                                                <button class="bg-success text-white btn btn-block btn-sm"  title="Allocate this invoice">
+                                                    <mat-icon>arrow_right_alt</mat-icon> 
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-6">
+                                <h3>Allocated Invoices | Available Balance: BHD {{ mRvcBalance | number : '1.3'}}</h3>
+                                <table class="table table-hover table-responsive-xxl table-secondary table-sm">
+                                    <thead class="table-dark">
+                                        <tr class="table-reflow" >
+                                            <th style="width: 23.75%;">
+                                                Invoice Number
+                                            </th>
+                                            <th style="width: 23.75%;">
+                                                Date
+                                            </th>
+                                            <!--<th style="width: 30%;">
+                                                Description
+                                            </th>-->
+                                            <th style="width: 23.75%;">
+                                                Amount (BHD)
+                                            </th>
+                                            <th style="width: 23.75%;">
+                                                Balance (BHD)
+                                            </th>
+                                            <th style="width: 5%;"> </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let row of allocatedInvList; let i = index;">
+                                            <td>{{ row.INV_NO }}</td>
+                                            <td>{{ row.INV_DATE | date: 'dd-MM-yyyy'}}</td>
+                                            <td>{{ row.AMOUNT | number : '1.3'}}</td>
+                                            <td>{{ row.BALANCE | number : '1.3'}}</td>
+                                            <td>
+                                                <button class="bg-success text-white btn btn-block btn-sm"  title="Allocate this invoice">
+                                                    <mat-icon>arrow_right_alt</mat-icon> 
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div> 
+            </div>
+        </div>
+    </div>   
+</div>
+<br>
+
+<ng-template #rvLookupDialog>
+    <h3 matDialogTitle><b>Partially Allocate Receipt Voucher</b></h3>
+    <hr>
+    <form [formGroup]="rvForm" class="form-container" style="padding-left: 20px; padding-right: 20px;">
+        <div class="row">
+            <div class="col-3">
+                <mat-label >Receipt Number</mat-label>
+                <input  matInput class="form-control form-control-sm py-0 px-1" #rvcNo formControlName="rvcNo" required >
+            </div>
+            <div class="col-3">
+                <mat-label >Receipt Date</mat-label>
+                <input formControlName="rvcDate" type="date" matInput class="form-control form-control-sm py-0 px-1" required>
+            </div>
+            <div class="col-3">
+                <mat-label >Debit Account </mat-label>
+                <input  matInput class="form-control form-control-sm py-0 px-1" formControlName="debitAccount" required readonly>
+            </div>
+            <div class="col-3">
+                <mat-label >Receipt Balance Available</mat-label>
+                <input  matInput class="form-control text-end form-control-sm py-0 px-1" formControlName="rvcBalance" required >
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-9">
+                <mat-label >Narration</mat-label>
+                <input  matInput class="form-control form-control-sm py-0 px-1" formControlName="rvcNarration" required >
+            </div>
+            <div class="col-3">
+                <mat-label >Allocated Amount</mat-label>
+                <input  matInput class="form-control text-end form-control-sm py-0 px-1" formControlName="rvcAmount" required (keyup)="calcBalance()">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-3">
+                <mat-label >Invoice Number</mat-label>
+                <input  matInput class="form-control form-control-sm py-0 px-1" formControlName="invNo" required >
+            </div>
+            <div class="col-3">
+                <mat-label >Invoice Date</mat-label>
+                <input formControlName="invDate" type="date" matInput class="form-control form-control-sm py-0 px-1" required>
+            </div>
+            <div class="col-3">
+                <mat-label >Invoice Amount</mat-label>
+                <input  matInput class="form-control text-end form-control-sm py-0 px-1" formControlName="invAmount" required >
+            </div>
+            <div class="col-3">
+                <mat-label >Balance</mat-label>
+                <input  matInput class="form-control text-end form-control-sm py-0 px-1" formControlName="invBalance" required >
+            </div>
+        </div>
+    </form>
+    <hr>
+    <div style="padding: 20px;">
+        <button class="bg-success text-white btn btn-block btn-sm" title="Allocate this invoice">
+            <mat-icon>save</mat-icon> Allocate Invoice
+        </button>
+    </div>
+    <br>
+</ng-template>
+
+
+<!--
+
+                        <form [formGroup]="rvForm" class="form-container">
+                            <div class="row">
+                                <div class="col-2">
+                                    <mat-label >Receipt Number</mat-label>
+                                    <input  matInput class="form-control form-control-sm py-0 px-1" #rvcNo formControlName="rvcNo" required >
+                                </div>
+                                <div class="col-2">
+                                    <mat-label >Receipt Date</mat-label>
+                                    <input formControlName="rvcDate" type="date" matInput class="form-control form-control-sm py-0 px-1" required>
+                                </div>
+                                
+                            </div>
+                            <div class="row">
+                                <div class="col-2">
+                                    <mat-label >Debit Account </mat-label>
+                                    <input  matInput class="form-control form-control-sm py-0 px-1" formControlName="debitAccount" required readonly>
+                                </div>
+                                <div class="col-2">
+                                    <mat-label >Account Name</mat-label>
+                                    <input  matInput class="form-control form-control-sm py-0 px-1" formControlName="accountName" required readonly>
+                                </div>
+                                <div class="col-2">
+                                    <mat-label >Receipt Amount</mat-label>
+                                    <input  matInput class="form-control text-end form-control-sm py-0 px-1" formControlName="rvcAmount" required >
+                                </div>
+                                <div class="col-2">
+                                    <mat-label >Receipt Balance Name</mat-label>
+                                    <input  matInput class="form-control text-end form-control-sm py-0 px-1" formControlName="rvcBalance" required >
+                                </div>
+                                <div class="col-6">
+                                    <mat-label >Narration</mat-label>
+                                    <input  matInput class="form-control form-control-sm py-0 px-1" formControlName="rvcNarration" required >
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="col-5">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <mat-label >Invoice Number</mat-label>
+                                        <input  matInput class="form-control form-control-sm py-0 px-1" formControlName="invNo" required >
+                                    </div>
+                                    <div class="col-6">
+                                        <mat-label >Invoice Date</mat-label>
+                                        <input formControlName="invDate" type="date" matInput class="form-control form-control-sm py-0 px-1" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <mat-label >Invoice Amount</mat-label>
+                                        <input  matInput class="form-control text-end form-control-sm py-0 px-1" formControlName="invAmount" required >
+                                    </div>
+                                    <div class="col-6">
+                                        <mat-label >Balance</mat-label>
+                                        <input  matInput class="form-control text-end form-control-sm py-0 px-1" formControlName="balance" required >
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <mat-label >Description</mat-label>
+                                        <input  matInput class="form-control text-end form-control-sm py-0 px-1" formControlName="invNarration" required >
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-8"></div>
+                                    <div class="col-4">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <br>
+                                                <button class="btn btn-danger btn-sm" type="button">                                                 
+                                                    <mat-icon>close</mat-icon>
+                                                </button>
+                                            </div>
+                                            <div class="col-6">
+                                                <br>
+                                                <button class="btn btn-success btn-sm" type="button">                                                 
+                                                    <mat-icon>close</mat-icon>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> 
+                        </form>
+
+-->

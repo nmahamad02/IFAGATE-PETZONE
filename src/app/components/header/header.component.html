@@ -1,0 +1,50 @@
+<header>
+  <nav class="navbar navbar-dark bg-secondary">
+    <div class="container-fluid d-flex align-items-center justify-content-between">
+      <!-- Left: Main menu toggle button -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMainmenu" aria-controls="offcanvasMainmenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <!-- Center: Company Name -->
+      <div class="mx-auto text-center flex-grow-1">
+        <img src="../../../assets/pics/Logo-removebg-preview.png" alt="logo" (click)="navigateToDashboard()" style="cursor: pointer; height: 7.5vh;">
+
+        <!--<h1 class="m-0 text-white"><b>PETZONE</b></h1>-->
+      </div>
+
+      <!-- Right: Notifications and User Dropdown -->
+      <div class="d-flex align-items-center">
+        <!-- Notifications button -->
+        <button class="navbar-toggler me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNotifications" aria-controls="offcanvasNotifications">
+          <i class="bi bi-bell text-white"></i>
+        </button>
+
+        <!-- User dropdown -->
+        <div class="dropdown">
+          <img src="{{imgSrc}}" alt="User" class="rounded-circle me-2" width="30" height="30">
+          <span id="username" data-bs-toggle="dropdown" aria-expanded="false" style="color: white;">{{ firstName }} {{ lastName}}</span>
+          <!--<button class="btn btn-secondary dropdown-toggle d-flex align-items-center" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <img src="{{imgSrc}}" alt="User" class="rounded-circle me-2" width="30" height="30">
+            <span id="username">{{ firstName }} {{ lastName}}</span>
+          </button>-->
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark" aria-labelledby="userDropdown">
+            <li><a class="dropdown-item" href="#">Profile</a></li>
+            <!--<li><a class="dropdown-item" href="#">Settings</a></li>-->
+            <li><!-- Language Selector -->
+              <select class="dropdown-item custom-select" (change)="changeLanguage($event)">
+                <option value="en">English</option>
+                <!--<option value="fr">Français</option>-->
+                <option value="ar">العربية</option>
+              </select>
+              
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" (click)="logout()">{{ 'LOGOUT' | translate }}</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+

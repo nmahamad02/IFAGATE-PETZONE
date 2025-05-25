@@ -1,0 +1,35 @@
+.custom-select {
+    background: transparent;  /* Matches dark theme */
+    color: white;  /* Matches dropdown text */
+    border: none; /* Removes default borders */
+    width: 100%; /* Full width for better spacing */
+    padding: 0.5rem 1rem; /* Matches other items */
+    font-size: 1rem; /* Ensures consistency */
+    cursor: pointer; /* Pointer for interaction */
+    appearance: none; /* Removes default arrow */
+  }
+  
+  /* Add a custom dropdown arrow */
+  .custom-select::after {
+    content: '\25BC'; /* Unicode for down arrow */
+    font-size: 0.8rem;
+    position: absolute;
+    right: 1rem;
+    color: white;
+  }
+  
+  /* Optional: Highlight effect on hover */
+  .custom-select:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  /*
+  .navbar {
+    background: yellow !important;
+    color: black !important;
+  }
+
+  .navbar-toggler {
+    background: yellow !important;
+    color: black !important;
+    border: black !important;
+  }*/

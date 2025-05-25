@@ -1,0 +1,167 @@
+<br>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-2">
+            <mat-card appearance="outlined">
+                <mat-card-header>
+                    <mat-card-title align="start">                    
+                        <i class="bi bi-people-fill"></i>
+                        {{ custCount }}
+                    </mat-card-title>
+                    <mat-card-subtitle>Customers</mat-card-subtitle>
+                </mat-card-header>
+                <br>
+            </mat-card>
+        </div>
+        <div class="col-2">
+            <mat-card appearance="outlined">
+                <mat-card-header>
+                    <mat-card-title align="start">                    
+                        <i class="bi bi-people-fill"></i>
+                        718
+                    </mat-card-title>
+                    <mat-card-subtitle>Total Collection</mat-card-subtitle>
+                </mat-card-header>
+                <br>
+            </mat-card>
+        </div>
+        <div class="col-2">
+            <mat-card appearance="outlined">
+                <mat-card-header>
+                    <mat-card-title align="start">                    
+                        <i class="bi bi-people-fill"></i>
+                        718
+                    </mat-card-title>
+                    <mat-card-subtitle>Estimated Collection</mat-card-subtitle>
+                </mat-card-header>
+                <br>
+            </mat-card>
+        </div>
+        <div class="col-2">
+            <mat-card appearance="outlined">
+                <mat-card-header>
+                    <mat-card-title align="start">                    
+                        <i class="bi bi-people-fill"></i>
+                        718
+                    </mat-card-title>
+                    <mat-card-subtitle>Customers</mat-card-subtitle>
+                </mat-card-header>
+                <br>
+            </mat-card>
+        </div>
+        <div class="col-2">
+            <mat-card appearance="outlined">
+                <mat-card-header>
+                    <mat-card-title align="start">                    
+                        <i class="bi bi-people-fill"></i>
+                        718
+                    </mat-card-title>
+                    <mat-card-subtitle>Customers</mat-card-subtitle>
+                </mat-card-header>
+                <br>
+            </mat-card>
+        </div>
+        <div class="col-2">
+            <mat-card appearance="outlined">
+              <mat-card-header>
+                <mat-card-title align="start" style="display: flex; align-items: center; gap: 8px;">
+                    <img 
+                      [src]="'https://flagcdn.com/w40/' + selectedCountryCode + '.png'" 
+                      alt="flag" 
+                      style="width: 24px; height: 18px;"
+                    />
+                    
+                    <div style="flex: 1;">
+                      <mat-select 
+                        [(value)]="selectedCountry" 
+                        (selectionChange)="updateFlag($event.value)" 
+                        disableRipple
+                        style="width: 100%; padding: 0; margin: 0;"
+                      >
+                        <mat-option *ngFor="let country of countries" [value]="country.name">
+                          {{ country.name }}
+                        </mat-option>
+                      </mat-select>
+                    </div>
+                  </mat-card-title>
+                  
+                <mat-card-subtitle>Country</mat-card-subtitle>
+              </mat-card-header>
+              <br>
+            </mat-card>
+          </div>          
+    </div>
+    <br>
+    <div class="row">
+        <div class="col-6">
+            <mat-card appearance="outlined">
+                <mat-card-header>
+                    <mat-card-subtitle>Yearwise Countrywise Breakdown</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                    <ngx-charts-bar-vertical
+                    [results]="countrywiseYearwiseChartData"
+                    [xAxis]="true"
+                    [yAxis]="true"
+                    [legend]="false"
+                    [showDataLabel]="true"
+                    [animations]="true"><!--
+                    [scheme]="colorScheme"
+                    style="height: 400px;">-->
+                </ngx-charts-bar-vertical>
+
+                </mat-card-content>
+            </mat-card>   
+        </div>
+        <div class="col-6">
+            <mat-card appearance="outlined">
+                <mat-card-header>
+                    <mat-card-subtitle>Top 10 Customers</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                    <table class="table table-sm">
+                        <thead>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let customer of topCustList; let i = index">
+                                <td>{{ i + 1 }}</td>
+                                <td>
+                                  <img 
+                                    [src]="'https://flagcdn.com/w20/' + getCountryCode(customer.COUNTRY).toLowerCase() + '.png'" 
+                                    alt="{{ customer.COUNTRY }}" 
+                                    width="20" 
+                                    height="15" 
+                                    style="margin-right: 8px;"
+                                  />
+                                  {{ customer.CUST_NAME }}
+                                </td>
+                                <td class="text-end">{{ customer.TOTAL_AMOUNT | currency:getCurrency(customer.COUNTRY) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </mat-card-content>
+            </mat-card>      
+        </div>
+    </div>
+    <br>
+    <div class="row">
+        <div class="col-4"></div>
+        <div class="col-4"></div>
+        <div class="col-4"></div>
+    </div>
+    <br>
+    <div class="row">
+        <div class="col-6"></div>
+        <div class="col-6"></div>
+    </div>
+    <br>
+    <div class="row">
+        <div class="col-12"></div>
+    </div>
+</div>
+
+
+

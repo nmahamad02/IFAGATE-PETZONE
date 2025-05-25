@@ -1,0 +1,184 @@
+//@import "bootstrap/scss/bootstrap";
+
+// Color Variables
+$primary: #1e1e1e;
+$secondary: #181818;
+$tertiary: #151515; // Darker background for better contrast
+$warning: #C5F7C9;
+$light-text: #f8f9fa;
+$gray-text: #b0b0b0;
+$input-bg: #222;
+$hover-bg: #333;
+$error-color: #e74c3c;
+$button-primary: #007bff;
+$button-hover: #0056b3;
+$success-color: #28a745;
+
+// General Styles
+body {
+  min-height: 100vh;
+  background-color: $hover-bg;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  margin: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+.container-fluid {
+  //padding: 0 1rem;
+  min-height: 100vh;
+}
+
+// Signup Page Styling
+.signup-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 1rem;
+  background: $primary;
+  color: $light-text;
+  border-radius: 0; // Ensures rectilinear shape
+
+  .page-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #f8f9fa;
+    margin-bottom: 1rem;
+  }
+
+  .page-subtitle {
+    font-size: 1rem;
+    font-weight: 400;
+    color: #b0b0b0; // Slightly lighter text
+    margin-bottom: 1.5rem;
+  }
+}
+
+// Material Form Fields
+mat-form-field {
+  width: 100%;
+  color: white;
+
+  mat-label {
+    color: $gray-text;
+    font-size: 16px;
+  }
+
+  mat-error {
+    color: $error-color;
+  }
+
+  mat-select {
+    //background-color: $input-bg;
+    color: white;
+
+    .mat-option {
+      color: black;
+    }
+  }
+}
+
+// Link Styling
+.link-text {
+  color: #6c757d;
+  font-size: 16px;
+  text-decoration: none;
+
+  &:hover {
+    color: $button-primary;
+  }
+}
+
+// Button Styling
+.btn {
+  //display: block;
+  //width: 100%;
+  //padding: 14px;
+  font-size: 16px;
+  border-radius: 5px;
+  //margin-top: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &.btn-primary {
+    background-color: $button-primary;
+    color: white;
+
+    &:hover {
+      background-color: $button-hover;
+    }
+  }
+
+  &.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+
+    &:hover {
+      background-color: #5a6268;
+    }
+  }
+
+  &.btn-success {
+    background-color: $success-color;
+    color: white;
+
+    &:hover {
+      background-color: darken($success-color, 10%);
+    }
+  }
+
+  &.btn-danger {
+    background-color: #dc3545;
+    color: white;
+
+    &:hover {
+      background-color: #c82333;
+    }
+  }
+}
+
+// Profile Image Upload
+/*.profile-image {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 5px;
+}*/
+
+mat-card {
+  background: $tertiary;
+  border-radius: 5px;
+  //box-shadow: none;
+  h6 {
+    font-size: 1.2rem; // Increased size for readability
+    font-weight: 500;
+    color: $gray-text;
+  }
+}
+// Error Message
+.error-message {
+  background-color: #fa9191;
+  color: #fc0303;
+  border: 1px solid #fc0303;
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 15px;
+  border-radius: 5px;
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .signup-page {
+    padding: 2rem;
+  }
+
+  img {
+    display: none; // Hide image on mobile for better layout
+  }
+
+  .form-container {
+    padding: 1.5rem;
+  }
+}

@@ -1,0 +1,66 @@
+<br>
+<div class="container-fluid">
+    <div class="row no-gutters">
+        <div class="visualization-heading col-12">
+            <div class="heading-info">
+                <div class="row">
+                    <div class="col-10">
+                        <h2 class="heading-title">Payment Voucher List</h2>
+                    </div>
+                    <div class="col-2">
+                        <button mat-raised-button class="bg-primary text-white btn btn-block" (click)="gotoPaymentVoucherDetails('/payables/payment-voucher/detail', 'new')" title="Create new Payment Voucher" style="float: right">
+                            <mat-icon>add</mat-icon> New Payment Voucher
+                        </button>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <mat-form-field>
+                            <mat-icon matPrefix>search</mat-icon>
+                            <input matInput type="text" style="color: black;" placeholder="Please Enter Your Seach Keyword to filter" (keyup)="quickPaymentVoucherSearch()" [(ngModel)]="searchValue">
+                        </mat-form-field>
+                    </div>
+                    <div class="col-12">
+                        <mat-table [dataSource]="paymentVoucherListDataSource" matTableExporter class="mat-table" matSort matSortDisableClear [multiTemplateDataRows]="true">
+                            <ng-container matColumnDef="vcrno">
+                                <mat-header-cell *matHeaderCellDef mat-sort-header> Voucher Number </mat-header-cell>
+                                <mat-cell *matCellDef="let row"> {{ row.TRN_NO }} </mat-cell>
+                            </ng-container>
+
+                            <ng-container matColumnDef="vcrdate">
+                                <mat-header-cell *matHeaderCellDef mat-sort-header> Voucher Date </mat-header-cell>
+                                <mat-cell *matCellDef="let row" > {{ row.TRN_DATE | date: 'shortDate' }} </mat-cell>
+                            </ng-container> 
+                            
+                            <ng-container matColumnDef="narration">
+                                <mat-header-cell *matHeaderCellDef mat-sort-header> Description </mat-header-cell>
+                                <mat-cell *matCellDef="let row" > {{ row.NARRATION }} </mat-cell>
+                            </ng-container> 
+
+                            <ng-container matColumnDef="netamount">
+                                <mat-header-cell *matHeaderCellDef mat-sort-header> Net Amount </mat-header-cell>
+                                <mat-cell *matCellDef="let row" >{{ row.CURRENCY }} {{ row.NET_AMOUNT | number: '1.3' }} </mat-cell>
+                            </ng-container> 
+
+                            <!-- Button Column -->
+                            <ng-container matColumnDef="Actions">
+                                <mat-header-cell *matHeaderCellDef mat-sort-header> Actions </mat-header-cell>
+                                <mat-cell *matCellDef="let row">
+                                    <button md-raised-button color="primary" class="btn-primary ml-2 mat-button"  (click)="gotoPaymentVoucherDetails('/payables/payment-voucher/detail', row.TRN_NO)">
+                                        View
+                                    </button>              
+                                </mat-cell>
+                            </ng-container>
+                  
+                            <mat-header-row *matHeaderRowDef="columns"></mat-header-row>
+                            <mat-row matRipple *matRowDef="let row; columns: columns;"></mat-row>
+                        </mat-table>
+                        <mat-paginator #paginator [pageSize]="50" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons></mat-paginator>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br>
