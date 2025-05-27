@@ -25,6 +25,7 @@ import { ReceiptVoucherDetailComponent } from './receipt-voucher-component/recei
 import { ReceiptVoucherListComponent } from './receipt-voucher-component/receipt-voucher-list/receipt-voucher-list.component';
 import { ReceiptVoucherAllocationComponent } from './receipt-voucher-component/receipt-voucher-allocation/receipt-voucher-allocation.component';
 import { AbsPipe } from '../../pipes/abs.pipe';
+import { FinanceModule } from '../finance/finance.module';
 
 export const receivablesRoutes = [
   {
@@ -60,6 +61,7 @@ export const receivablesRoutes = [
   ],
   imports: [
     MatIconModule,
+    FinanceModule,
     CommonModule,
     NgChartsModule,
     MatTabsModule,
@@ -80,6 +82,9 @@ export const receivablesRoutes = [
     PdfViewerModule,
     ReactiveFormsModule,
     RouterModule.forChild(receivablesRoutes)  
+  ], 
+  exports: [
+    AbsPipe
   ]
 })
 export class ReceivablesModule { }

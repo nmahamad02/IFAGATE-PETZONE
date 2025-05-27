@@ -37,6 +37,7 @@ export class CustomerDetailComponent {
   branchList: any[] = []
   accCategoryList: any[] = []
   accTypeList: any[] = []
+  CustomerSearchList: any[] = []
   customerList: any[] = []
 
   soaData: any[] = []
@@ -60,6 +61,8 @@ export class CustomerDetailComponent {
     'ABOVE_365_DAYS': 0,
     'FUTURE_REMIT': 0
   };
+
+  searchText = ''
 
   public custForm: FormGroup;
 
@@ -88,6 +91,12 @@ export class CustomerDetailComponent {
       organisation: new FormControl('', [ Validators.required]),
       industry: new FormControl('', [ Validators.required]),
       contacts: new FormArray([]),
+    });
+    this.accountService.listOpbal(this.currentYear.toString(),'C').subscribe((res: any) => {
+      console.log(res.recordset)
+      this.customerList = res.recordset;
+    }, (error: any) => {
+      console.log(error);
     });
     /*const contact = new FormGroup({
       contactId: new FormControl('', [ Validators.required]),
@@ -224,13 +233,13 @@ export class CustomerDetailComponent {
       width: '80vw',  // 80% of viewport width
       maxHeight: '80vh',  // 80% of viewport height
     });
-    this.customerList = []
+    this.CustomerSearchList = []
   }
 
   quickCustomerSearch(search: string) {
     console.log(search)
     this.accountService.searchOpbal(this.currentYear.toString(),search,'C').subscribe((res: any) => {
-      this.customerList = res.recordset
+      this.CustomerSearchList = res.recordset
       }, (err: any) => {
       console.log(err)
     })
@@ -238,78 +247,117 @@ export class CustomerDetailComponent {
 
   ngOnInit() {
     this.route.params.subscribe(params => {
-        let pcode = params['pcode'];
-        console.log("Navigated to PCODE:", pcode);
-        this.getDetails(pcode); // Reload data
+      const pcode = params['pcode'];
+      console.log("Navigated to PCODE:", pcode);
+      this.loadCustomerDetails(pcode);
+    });
+  }
+
+  loadCustomerDetails(pcode: string) {
+    if (pcode === 'new') {
+      this.newForm();
+    } else if (pcode === '*') {
+      this.clearForm
+    } else {
+      this.getDetails(pcode);
+    }
+  }
+
+  clearForm(){
+    this.custForm = new FormGroup({
+      pcode: new FormControl('', [ Validators.required]),
+      title: new FormControl('', [ Validators.required]),
+      custName: new FormControl('', [ Validators.required]),
+      custCR: new FormControl('', [ Validators.required]),
+      custStatus: new FormControl('', [ Validators.required]),
+      custTaxNo: new FormControl('', [ Validators.required]),
+      custBranch: new FormControl('', [ Validators.required]),
+      custAccountType: new FormControl('', [ Validators.required]),
+      custAccountCategory: new FormControl('', [ Validators.required]),
+      custPhone1: new FormControl('', [ Validators.required]),
+      custPhone2: new FormControl('', [ Validators.required]),
+      mobile: new FormControl('', [ Validators.required]),
+      custEmail: new FormControl('', [ Validators.required]),
+      custAdd1: new FormControl('', [ Validators.required]),
+      custAdd2: new FormControl('', [ Validators.required]),
+      custAdd3: new FormControl('', [ Validators.required]),
+      remarks: new FormControl('', [ Validators.required]),
+      opbal: new FormControl('', [ Validators.required]),
+      division: new FormControl('', [ Validators.required]),
+      salesCat: new FormControl('', [ Validators.required]),
+      organisation: new FormControl('', [ Validators.required]),
+      industry: new FormControl('', [ Validators.required]),
+      contacts: new FormArray([]),
+    });
+    this.accountService.listOpbal(this.currentYear.toString(),'C').subscribe((res: any) => {
+      console.log(res.recordset)
+      this.customerList = res.recordset;
+    }, (error: any) => {
+      console.log(error);
     });
   }
 
   getDetails(pcode: string) {
-    console.log(pcode)
-    if (pcode === 'new') {
-      this.newForm();
-    } else {
-      this.accountService.getOpbal(this.currentYear.toString(), pcode).subscribe((res: any) => {
-        console.log(res)
-        this.custForm = new FormGroup({
-          pcode: new FormControl(res.recordset[0].PCODE, [ Validators.required]),
-          title: new FormControl(res.recordset[0].TITLE_CD, [ Validators.required]),
-          custName: new FormControl(res.recordset[0].CUST_NAME, [ Validators.required]),
-          custCR: new FormControl(res.recordset[0].CR_CPR, [ Validators.required]),
-          custStatus: new FormControl(res.recordset[0].STATUS, [ Validators.required]),
-          custTaxNo: new FormControl(res.recordset[0].TAX_1_NO, [ Validators.required]),
-          custBranch: new FormControl(res.recordset[0].BRANCH_NAME, [ Validators.required]),
-          custAccountType: new FormControl(res.recordset[0].Customertype, [ Validators.required]),
-          custAccountCategory: new FormControl(res.recordset[0].ACCOUNT_CATEGORY_DESC, [ Validators.required]),
-          custPhone1: new FormControl(res.recordset[0].PHONE1, [ Validators.required]),
-          custPhone2: new FormControl(res.recordset[0].PHONE2, [ Validators.required]),
-          mobile: new FormControl(res.recordset[0].MOBILE, [ Validators.required]),
-          custEmail: new FormControl(res.recordset[0].EMAIL, [ Validators.required]),
-          custAdd1: new FormControl(res.recordset[0].ADD1, [ Validators.required]),
-          custAdd2: new FormControl(res.recordset[0].ADD2, [ Validators.required]),
-          custAdd3: new FormControl(res.recordset[0].ADD3, [ Validators.required]),
-          remarks: new FormControl(res.recordset[0].REMARKS, [ Validators.required]),
-          opbal: new FormControl(res.recordset[0].OPBAL, [ Validators.required]),
-          division: new FormControl(res.recordset[0].SUBCATEGORY, [ Validators.required]),
-          salesCat: new FormControl(res.recordset[0].Salessubcategory, [ Validators.required]),
-          organisation: new FormControl(res.recordset[0].Orgnisation, [ Validators.required]),
-          industry: new FormControl(res.recordset[0].Industry, [ Validators.required]),
-          contacts: new FormArray([]),
-        });
-        this.accountService.getParty(res.recordset[0].PCODE).subscribe((resp: any) => {
-          console.log(resp)
-          for(let i=0;i<resp.recordset.length; i++){
-            const contact = new FormGroup({
-              contactId: new FormControl(resp.recordset[i].PARTY_ID, [ Validators.required]),
-              contactPerson: new FormControl(resp.recordset[i].NAME, [ Validators.required]),
-              contactMobile: new FormControl(resp.recordset[i].MOBILE, [ Validators.required]),
-              contactPhone1: new FormControl(resp.recordset[i].PHONE1, [ Validators.required]),
-              contactPhone2: new FormControl(resp.recordset[i].PHONE2, [ Validators.required]),
-              contactEmail: new FormControl(resp.recordset[i].EMAIL_ID, [ Validators.required]),
-              contactAddress1: new FormControl(resp.recordset[i].ADD1, [ Validators.required]),
-              contactAddress2: new FormControl(resp.recordset[i].ADD2, [ Validators.required]),
-              contactAddress3: new FormControl(resp.recordset[i].ADD3, [ Validators.required]),
-            });
-            this.contacts.push(contact);
-          }
-        }, (erro: any) => {
-          console.log(erro)
-        })
-      }, (err: any) => {
-        console.log(err)
+    this.accountService.getOpbal(this.currentYear.toString(), pcode).subscribe((res: any) => {
+      console.log(res)
+      this.custForm = new FormGroup({
+        pcode: new FormControl(res.recordset[0].PCODE, [ Validators.required]),
+        title: new FormControl(res.recordset[0].TITLE_CD, [ Validators.required]),
+        custName: new FormControl(res.recordset[0].CUST_NAME, [ Validators.required]),
+        custCR: new FormControl(res.recordset[0].CR_CPR, [ Validators.required]),
+        custStatus: new FormControl(res.recordset[0].STATUS, [ Validators.required]),
+        custTaxNo: new FormControl(res.recordset[0].TAX_1_NO, [ Validators.required]),
+        custBranch: new FormControl(res.recordset[0].BRANCH_NAME, [ Validators.required]),
+        custAccountType: new FormControl(res.recordset[0].Customertype, [ Validators.required]),
+        custAccountCategory: new FormControl(res.recordset[0].ACCOUNT_CATEGORY_DESC, [ Validators.required]),
+        custPhone1: new FormControl(res.recordset[0].PHONE1, [ Validators.required]),
+        custPhone2: new FormControl(res.recordset[0].PHONE2, [ Validators.required]),
+        mobile: new FormControl(res.recordset[0].MOBILE, [ Validators.required]),
+        custEmail: new FormControl(res.recordset[0].EMAIL, [ Validators.required]),
+        custAdd1: new FormControl(res.recordset[0].ADD1, [ Validators.required]),
+        custAdd2: new FormControl(res.recordset[0].ADD2, [ Validators.required]),
+        custAdd3: new FormControl(res.recordset[0].ADD3, [ Validators.required]),
+        remarks: new FormControl(res.recordset[0].REMARKS, [ Validators.required]),
+        opbal: new FormControl(res.recordset[0].OPBAL, [ Validators.required]),
+        division: new FormControl(res.recordset[0].SUBCATEGORY, [ Validators.required]),
+        salesCat: new FormControl(res.recordset[0].Salessubcategory, [ Validators.required]),
+        organisation: new FormControl(res.recordset[0].Orgnisation, [ Validators.required]),
+        industry: new FormControl(res.recordset[0].Industry, [ Validators.required]),
+        contacts: new FormArray([]),
+      });
+      this.accountService.getParty(res.recordset[0].PCODE).subscribe((resp: any) => {
+        console.log(resp)
+        for(let i=0;i<resp.recordset.length; i++){
+          const contact = new FormGroup({
+            contactId: new FormControl(resp.recordset[i].PARTY_ID, [ Validators.required]),
+            contactPerson: new FormControl(resp.recordset[i].NAME, [ Validators.required]),
+            contactMobile: new FormControl(resp.recordset[i].MOBILE, [ Validators.required]),
+            contactPhone1: new FormControl(resp.recordset[i].PHONE1, [ Validators.required]),
+            contactPhone2: new FormControl(resp.recordset[i].PHONE2, [ Validators.required]),
+            contactEmail: new FormControl(resp.recordset[i].EMAIL_ID, [ Validators.required]),
+            contactAddress1: new FormControl(resp.recordset[i].ADD1, [ Validators.required]),
+            contactAddress2: new FormControl(resp.recordset[i].ADD2, [ Validators.required]),
+            contactAddress3: new FormControl(resp.recordset[i].ADD3, [ Validators.required]),
+          });
+          this.contacts.push(contact);
+        }
+      }, (erro: any) => {
+        console.log(erro)
       })
-    }
+    }, (err: any) => {
+      console.log(err)
+    })
   }
 
-  goToDetailForm(pcode: string,route: string) {
-    this.dialog.closeAll();  // Close the dialog before navigation
-    if(route === 'customer'){
+  goToDetailForm(pcode: string, route: string) {
+    this.dialog.closeAll();  // Close modal if open
+    if (route === 'customer') {
       this.router.navigate(['receivables/customer/detail', pcode]);
-    } else if(route === 'contact') {
+    } else if (route === 'contact') {
       this.router.navigate(['receivables/contact/detail', pcode]);
     }
   }
-  
+
   submitForm() {
     const data = this.custForm.value
     console.log(data)
@@ -349,6 +397,25 @@ export class CustomerDetailComponent {
   }
 
   getCustomerSoa(){
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '60_DAYS': 0,
+      '120_DAYS': 0,
+      '180_DAYS': 0,
+      '365_DAYS': 0,
+      'ABOVE_365_DAYS': 0,
+      'FUTURE_REMIT': 0
+    };
+    this.unallocPaySummary = {
+      '60_DAYS': 0,
+      '120_DAYS': 0,
+      '180_DAYS': 0,
+      '365_DAYS': 0,
+      'ABOVE_365_DAYS': 0,
+      'FUTURE_REMIT': 0
+    };
     const data = this.custForm.value
     let dialogRef = this.dialog.open(this.soaLookupDialog);
     this.reportService.getCustomerSoa('C', data.pcode).subscribe((res: any) => {

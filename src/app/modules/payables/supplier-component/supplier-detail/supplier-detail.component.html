@@ -3,26 +3,26 @@
         <div class="visualization-heading col-12">
             <div class="heading-info">
                 <div class="row">
-                    <div class="col-10">                
-                        <h3 class="heading-title">Supplier Details</h3>
+                    <div class="col-9">                
+                        <h3 class="heading-title">Supplier Master</h3>
                     </div>
-                    <div class="col-2">
+                    <div class="col-3">
                         <div class="row">
                             <div class="col">
-                                <button class="btn-danger text-white btn btn-block btn-sm"  title="Search Supplier" style="float: right" (click)="searchsupplier()">
+                                <button class="btn-primary text-white btn btn-block btn-sm"  title="New Supplier" style="float: right" (click)="goToDetailForm('new','Supplier')">
+                                    <mat-icon>add</mat-icon> <!--New Supplier-->
+                                </button>
+                            </div>
+                            <div class="col">
+                                <button class="btn-danger text-white btn btn-block btn-sm"  title="Search Supplier" style="float: right" (click)="searchSupplier()">
                                     <mat-icon>search</mat-icon> <!--Search Supplier-->
                                 </button>
                             </div>
                             <div class="col">
-                                <button class="btn-primary text-white btn btn-block btn-sm"  title="Print Supplier Statement of Account" style="float: right" (click)="getSupplierSoa()">
+                                <button class="btn-info text-white btn btn-block btn-sm"  title="Print Supplier Statement of Account" style="float: right" (click)="getSupplierSoa()">
                                     <mat-icon>print</mat-icon> <!--Print Supplier Statement of Account-->
                                 </button>
                             </div>
-                            <!--<div class="col">
-                                <button class="btn-primary text-white btn btn-block btn-sm"  title="New Supplier" style="float: right" (click)="goToDetailForm('new','Supplier')">
-                                    <mat-icon>add</mat-icon> New Supplier
-                                </button>
-                            </div>-->
                             <!--<div class="col">
                                 <button class="btn-dark text-white btn btn-block btn-sm"  title="Copy to Contact" style="float: right" (click)="copyToContact()">
                                     <mat-icon>play_for_work</mat-icon> Copy to Contact
@@ -43,7 +43,34 @@
                 </div>
                 <hr>
                 <div class="row">
-                    <div class="col-12">
+                    <div class="col-4">
+                        <div class="mb-3">
+                            <input type="text" [(ngModel)]="searchText" class="form-control" placeholder="Search Suppliers..." />
+                        </div>
+                        <table class="table table-hover table-responsive-xxl">
+                            <thead class="table-dark">
+                                <tr class="table-reflow">
+                                    <th>PCODE</th>
+                                    <th>Supplier NAME</th>
+                                    <th>COUNTRY</th>                                    
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let sup of (SupplierList | filterTable:searchText| slice:0:5); let i = index;">
+                                    <td>{{ sup.PCODE }}</td>
+                                    <td>{{ sup.CUST_NAME }}</td>
+                                    <td>{{ sup.Country }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-secondary" (click)="goToDetailForm(sup.PCODE, 'Supplier')" title="View Supplier Details">
+                                            <mat-icon>edit</mat-icon>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-8">
                         <form [formGroup]="supForm" class="form-container">
                             <div class="row">
                                 <div class="col-2">
@@ -234,7 +261,7 @@
                    placeholder="Enter search keyword..." 
                    class="form-control form-control-sm" 
                    #search 
-                   (keyup)="quicksupplierSearch(search.value)">
+                   (keyup)="quickSupplierSearch(search.value)">
         </div>
     </div>
     <div mat-dialog-content>
@@ -250,13 +277,13 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let sup of supplierList; let i = index;">
+                <tr *ngFor="let sup of SupplierSearchList; let i = index;">
                     <td>{{sup.PCODE}}</td>
                     <td>{{sup.CUST_NAME}}</td>
                     <td>{{sup.MOBILE}}</td>
                     <td>{{sup.EMAIL}}</td>
                     <td>
-                        <button mat-raised-button class="bg-warning text-white btn btn-block" (click)="goToDetailForm(sup.PCODE,'supplier')">
+                        <button mat-raised-button class="bg-warning text-white btn btn-block" (click)="goToDetailForm(sup.PCODE,'Supplier')">
                             <mat-icon>arrow_forward</mat-icon>                                            
                         </button>
                     </td>
@@ -297,7 +324,7 @@
                     <td class="text-end">{{ row.AMOUNT | number:'1.3-3' }}</td>
                     <td class="text-end">{{ row.DEBIT | number:'1.3-3' }}</td>
                     <td class="text-end">{{ row.CREDIT | number:'1.3-3' }}</td>
-                    <td class="text-end">{{ row.BALANCE | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td>
+                    <td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td>
                     <td class="text-end">{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</td>                    
                 </tr>
             </tbody>

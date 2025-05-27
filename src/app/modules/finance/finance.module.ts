@@ -80,6 +80,9 @@ export const financeRoutes = [
     PdfViewerModule,
     ReactiveFormsModule,
     RouterModule.forChild(financeRoutes),
+  ],
+  exports: [
+    FilterTablePipe,
   ]
 })
 export class FinanceModule { }

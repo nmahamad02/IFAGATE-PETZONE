@@ -3,26 +3,26 @@
         <div class="visualization-heading col-12">
             <div class="heading-info">
                 <div class="row">
-                    <div class="col-10">                
-                        <h3 class="heading-title">Customer Details</h3>
+                    <div class="col-9">                
+                        <h3 class="heading-title">Customer Master</h3>
                     </div>
-                    <div class="col-2">
+                    <div class="col-3">
                         <div class="row">
+                            <div class="col">
+                                <button class="btn-primary text-white btn btn-block btn-sm"  title="New Customer" style="float: right" (click)="goToDetailForm('new','customer')">
+                                    <mat-icon>add</mat-icon> <!--New Customer-->
+                                </button>
+                            </div>
                             <div class="col">
                                 <button class="btn-danger text-white btn btn-block btn-sm"  title="Search Customer" style="float: right" (click)="searchCustomer()">
                                     <mat-icon>search</mat-icon> <!--Search Customer-->
                                 </button>
                             </div>
                             <div class="col">
-                                <button class="btn-primary text-white btn btn-block btn-sm"  title="Print Customer Statement of Account" style="float: right" (click)="getCustomerSoa()">
+                                <button class="btn-info text-white btn btn-block btn-sm"  title="Print Customer Statement of Account" style="float: right" (click)="getCustomerSoa()">
                                     <mat-icon>print</mat-icon> <!--Print Customer Statement of Account-->
                                 </button>
                             </div>
-                            <!--<div class="col">
-                                <button class="btn-primary text-white btn btn-block btn-sm"  title="New Customer" style="float: right" (click)="goToDetailForm('new','customer')">
-                                    <mat-icon>add</mat-icon> New Customer
-                                </button>
-                            </div>-->
                             <!--<div class="col">
                                 <button class="btn-dark text-white btn btn-block btn-sm"  title="Copy to Contact" style="float: right" (click)="copyToContact()">
                                     <mat-icon>play_for_work</mat-icon> Copy to Contact
@@ -43,7 +43,34 @@
                 </div>
                 <hr>
                 <div class="row">
-                    <div class="col-12">
+                    <div class="col-4">
+                        <div class="mb-3">
+                            <input type="text" [(ngModel)]="searchText" class="form-control" placeholder="Search customers..." />
+                        </div>
+                        <table class="table table-hover table-responsive-xxl">
+                            <thead class="table-dark">
+                                <tr class="table-reflow">
+                                    <th>PCODE</th>
+                                    <th>CUSTOMER NAME</th>
+                                    <th>COUNTRY</th>                                    
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let cust of (customerList | filterTable:searchText| slice:0:5); let i = index;">
+                                    <td>{{ cust.PCODE }}</td>
+                                    <td>{{ cust.CUST_NAME }}</td>
+                                    <td>{{ cust.Country }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-secondary" (click)="goToDetailForm(cust.PCODE, 'customer')" title="View Customer Details">
+                                            <mat-icon>edit</mat-icon>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-8">
                         <form [formGroup]="custForm" class="form-container">
                             <div class="row">
                                 <div class="col-2">
@@ -250,7 +277,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let cust of customerList; let i = index;">
+                <tr *ngFor="let cust of CustomerSearchList; let i = index;">
                     <td>{{cust.PCODE}}</td>
                     <td>{{cust.CUST_NAME}}</td>
                     <td>{{cust.MOBILE}}</td>
