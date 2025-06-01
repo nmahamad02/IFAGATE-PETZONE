@@ -46,12 +46,12 @@ export class CustomerDetailComponent {
   closingBalance = 0;
 
   ageingSummary = {
+    '30_DAYS': 0,
     '60_DAYS': 0,
+    '90_DAYS': 0,
     '120_DAYS': 0,
-    '180_DAYS': 0,
-    '365_DAYS': 0,
-    'ABOVE_365_DAYS': 0,
-    'FUTURE_REMIT': 0
+    'ABOVE_120_DAYS': 0,
+    'CURRENT': 0
   };
   unallocPaySummary = {
     '60_DAYS': 0,
@@ -401,12 +401,12 @@ export class CustomerDetailComponent {
     this.totalCredit = 0;
     this.closingBalance = 0;
     this.ageingSummary = {
+      '30_DAYS': 0,
       '60_DAYS': 0,
+      '90_DAYS': 0,
       '120_DAYS': 0,
-      '180_DAYS': 0,
-      '365_DAYS': 0,
-      'ABOVE_365_DAYS': 0,
-      'FUTURE_REMIT': 0
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
     };
     this.unallocPaySummary = {
       '60_DAYS': 0,
@@ -458,17 +458,17 @@ export class CustomerDetailComponent {
       const diff = Number(row.DAYS_DIFF);
       if (debit > 0) {
         if (diff < 0) {
-          this.ageingSummary.FUTURE_REMIT += debit;
+          this.ageingSummary.CURRENT += debit;
+        } else if (diff <= 30) {
+          this.ageingSummary['30_DAYS'] += debit;
         } else if (diff <= 60) {
           this.ageingSummary['60_DAYS'] += debit;
+        } else if (diff <= 90) {
+          this.ageingSummary['90_DAYS'] += debit;
         } else if (diff <= 120) {
           this.ageingSummary['120_DAYS'] += debit;
-        } else if (diff <= 180) {
-          this.ageingSummary['180_DAYS'] += debit;
-        } else if (diff <= 365) {
-          this.ageingSummary['365_DAYS'] += debit;
         } else {
-          this.ageingSummary['ABOVE_365_DAYS'] += debit;
+          this.ageingSummary['ABOVE_120_DAYS'] += debit;
         }
       }
       if (credit > 0) {
@@ -491,7 +491,7 @@ export class CustomerDetailComponent {
 
   }
 
-  printCOA(type: string) {
+  printCOA() {
     const data = this.custForm.value
     console.log(this.soaData); // Check the structure of chartData for debugging
     var doc = new jsPDF("portrait", "px", "a4");
@@ -499,22 +499,24 @@ export class CustomerDetailComponent {
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
     doc.text('Statement of Accounts', 160, 20);
-    doc.roundedRect(5, 32.5, 436, 55, 5, 5);
+    doc.roundedRect(5, 32.5, 436, 35, 5, 5);
     doc.setFontSize(10);
     doc.text(`${data.custName}`,10,42);
-    doc.text(`Date: ${this.mCurDate}`,375,42);
+    doc.text(`Account ID: ${data.pcode} (${data.custAccountType})`,330,42);
     doc.setFont('Helvetica', 'normal');
-    doc.text('Account ID',10,52);
-    doc.text(`: ${data.pcode} (${data.custAccountType})`,65,52);
-    doc.text('Division',10,62);
+    doc.text(`Date: ${this.mCurDate}`,330,52);
+    /*doc.text('Division',10,62);
     doc.text(`: ${data.division}`,65,62);
     doc.text('Sales Category',150,62);
     doc.text(`: ${data.salesCat}`,205,62);
     doc.text('Organisation',10,72);
     doc.text(`: ${data.organisation}`,65,72);
     doc.text('Country',10,82);
-    doc.text(`: ${data.custAccountCategory}`,65,82);
-    let firstPageStartY = 90; // Start Y position for first page
+    doc.text(`: ${data.custAccountCategory}`,65,82);*/
+    doc.text('Address',10,52);
+    doc.text(`:   `,45,52);
+    doc.text(`: ${data.custAccountCategory}`,45,62);
+    let firstPageStartY = 70; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
 
@@ -559,8 +561,6 @@ export class CustomerDetailComponent {
         }
       });
 
-    if(type == 'D') {
-      
       let finalY1 = doc.lastAutoTable?.finalY || 0
   
       autoTable(doc, {
@@ -591,7 +591,7 @@ export class CustomerDetailComponent {
         }
       });
  
-      let finalY2 = doc.lastAutoTable?.finalY || 0
+      /*let finalY2 = doc.lastAutoTable?.finalY || 0
   
       autoTable(doc, {
         html: '#unallocPayTable',
@@ -619,49 +619,7 @@ export class CustomerDetailComponent {
           4: { halign: 'center' },
           5: { halign: 'center' }
         }
-      });
-    } else {
-      /*autoTable(doc, {
-        html: '#soaTable',
-        //startY: firstPageStartY,
-        tableWidth: 435,
-        //margin: { left: 10 },
-        styles: { fontSize: 8 },
-        headStyles: {
-          fillColor: [0, 0, 0],
-          textColor: [255, 255, 255],
-          fontStyle: 'bold'
-        },
-        columnStyles: {
-          4: { halign: 'right' }, // Amount
-          5: { halign: 'right' }, // Debit
-          6: { halign: 'right' }, // Credit
-          7: { halign: 'right' }  // Balance
-        },
-        footStyles:{
-          fillColor: [0, 0, 0],
-          textColor: [255, 255, 255],
-          fontStyle: 'bold',
-          halign: 'center'
-        },
-        theme: 'striped',
-        didDrawPage: function () {
-          let totalPages = (doc.internal as any).getNumberOfPages(); // Type assertion to 'any'
-          if (!firstPage) {
-            //doc.setPage(totalPages);
-            //doc.setFontSize(10);
-            //doc.setTextColor(100);
-            //doc.text(Continued..., 10, nextPagesStartY - 10);
-          }
-          firstPage = false;
-        },
-        margin: { 
-          top: firstPage ? firstPageStartY : nextPagesStartY,
-          left: 5
-        } // Dynamically adjust margin
       });*/
-    }
-
 
     // Add watermark (if necessary)
     doc = this.addWaterMark(doc);

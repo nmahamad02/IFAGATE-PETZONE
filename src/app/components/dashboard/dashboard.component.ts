@@ -38,7 +38,12 @@ export class DashboardComponent {
   selectedCountryCode = 'un';
 
   custCount: number = 0;
+  suppCount: number = 0;
+  cntyCount: number = 0;
+  indsCount: number = 0;
+  orgnCount: number = 0;
   topCustList: any[] = [];
+  topSuppList: any[] = [];
   countrywiseYearwiseChartData: any[] = []
   
   updateFlag(countryName: string) {
@@ -58,15 +63,31 @@ export class DashboardComponent {
     'Qatar': { code: 'qa', currency: 'QAR' },
     'Kuwait': { code: 'kw', currency: 'KWD' },
     'Oman': { code: 'om', currency: 'OMR' },
-    // Add more as needed
+    // More if needed
+  };
+
+  currencyToCountryCode: { [key: string]: string } = {
+    'KWD': 'kw',
+    'USD': 'us',
+    'EUR': 'eu',
+    'GBP': 'gb',
+    'CAD': 'ca',
+    'AED': 'ae',
+    'SAR': 'sa',
+    'BHD': 'bh',
+    'JOD': 'jo',
+    'QAR': 'qa',
+    'OMR': 'om',
   };
   
-  getCountryCode(name: string): string {
-    return this.countryMap[name]?.code || 'xx';
+  getCountryCode(name: string, currency: string): string {
+    const countryCode = this.countryMap[name]?.code;
+    if (countryCode) return countryCode;
+    return this.currencyToCountryCode[currency] || 'xx';
   }
-  
+
   getCurrency(name: string): string {
-    return this.countryMap[name]?.currency || 'USD';
+    return this.countryMap[name]?.currency || 'KWD';
   }
   
   constructor(private reportService : ReportsService) {
@@ -74,13 +95,33 @@ export class DashboardComponent {
   }
 
   getARData(country: string){
-    this.reportService.getCustomerCount(country).subscribe((res: any) => {
+    this.reportService.getCustomerCount(country,'C').subscribe((res: any) => {
       console.log(res)
       this.custCount = res.recordset[0].CUSTCOUNT
     })
-    this.reportService.getCustomerList(country).subscribe((res: any) => {
+    this.reportService.getCustomerList(country,'C').subscribe((res: any) => {
       console.log(res)
       this.topCustList = res.recordset
+    })
+    this.reportService.getCustomerCount(country,'S').subscribe((res: any) => {
+      console.log(res)
+      this.suppCount = res.recordset[0].CUSTCOUNT
+    })
+    this.reportService.getCustomerList(country,'S').subscribe((res: any) => {
+      console.log(res)
+      this.topSuppList = res.recordset
+    })
+    this.reportService.getIndustry().subscribe((res: any) => {
+      console.log(res)
+      this.indsCount = res.recordset.length
+    })
+    this.reportService.getOrganisation().subscribe((res: any) => {
+      console.log(res)
+      this.orgnCount = res.recordset.length
+    })
+    this.reportService.getCountry().subscribe((res: any) => {
+      console.log(res)
+      this.cntyCount = res.recordset.length
     })
     this.reportService.getYearwiseCountrywiseList().subscribe((res: any) => {
       console.log(res)

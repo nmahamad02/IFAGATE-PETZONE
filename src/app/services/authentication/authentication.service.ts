@@ -10,7 +10,8 @@ import { LoggedUserModel } from 'src/app/models/logged-user';
   providedIn: 'root'
 })
 export class AuthenticationService {
-  private url = 'http://157.175.235.195:5075/api/user';
+  //private url = 'http://157.175.235.195:5075/api/user';
+private url = 'https://api.ifagate-petzone.duckdns.org/api/user'
 
   loggedUserSubject: BehaviorSubject<LoggedUserModel>;
   loggedUser: LoggedUserModel;

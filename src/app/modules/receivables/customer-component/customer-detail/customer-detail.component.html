@@ -305,27 +305,29 @@
             <thead>
                 <tr>
                     <th>Invoice No</th>
-                    <th>Remarks</th>
+                    <th>Reference</th>
+                    <th>Description</th>
                     <th>Invoice Date</th>
                     <th>Due Date</th>
-                    <th>Amount</th>
+                    <!--<th>Amount</th>-->
                     <th>Debit</th>
                     <th>Credit</th>
                     <th>Balance</th>
-                    <th>Overdue days</th>
+                    <!--<th>Overdue days</th>-->
                 </tr>
             </thead>
             <tbody>
                 <tr *ngFor="let row of soaData">
                     <td>{{ row.INV_NO }}</td>
                     <td>{{ row.REMARKS }}</td>
+                    <td>{{ row.DESCRIPTION }}</td>
                     <td>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</td>
                     <td>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</td>
-                    <td class="text-end">{{ row.AMOUNT | number:'1.3-3' }}</td>
+                    <!--<td class="text-end">{{ row.AMOUNT | number:'1.3-3' }}</td>-->
                     <td class="text-end">{{ row.DEBIT | number:'1.3-3' }}</td>
                     <td class="text-end">{{ row.CREDIT | number:'1.3-3' }}</td>
                     <td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td>
-                    <td class="text-end">{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</td>                    
+                    <!--<td class="text-end">{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</td>   -->                 
                 </tr>
             </tbody>
             <tfoot>
@@ -349,22 +351,22 @@
                     <th colspan="6" class="text-start">Ageing Summary</th>
                 </tr>
                 <tr class="text-end">
-                    <th>Future Remit</th>
-                    <th>60 Days</th>
-                    <th>120 Days</th>
-                    <th>180 Days</th>
-                    <th>365 Days</th>
-                    <th>Above 365</th>
+                    <th>Current</th>
+                    <th>0 - 30 days</th>
+                    <th>31 - 60 days</th>
+                    <th>61 - 90 days</th>
+                    <th>91 - 120 days</th>
+                    <th>Above 120 days</th>
                 </tr>
             </thead>
             <tbody>
                 <tr class="text-end">
-                    <td>{{ ageingSummary['FUTURE_REMIT'] | number:'1.3-3' }}</td>
+                    <td>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</td>
+                    <td>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</td>
                     <td>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</td>
+                    <td>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</td>
                     <td>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</td>
-                    <td>{{ ageingSummary['180_DAYS'] | number:'1.3-3' }}</td>
-                    <td>{{ ageingSummary['365_DAYS'] | number:'1.3-3' }}</td>
-                    <td>{{ ageingSummary['ABOVE_365_DAYS'] | number:'1.3-3' }}</td>
+                    <td>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
                 </tr>
             </tbody>
         </table>
@@ -397,15 +399,15 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-6"></div>
-         <div class="col-3">
+        <div class="col-9"></div>
+        <!---- <div class="col-3">
             <button mat-raised-button class="bg-primary text-white btn btn-block" (click)="printCOA('S')" style="float: right" title="print">
                 Print Statement Summary
             </button>
-        </div>
+        </div>-->
         <div class="col-3">
-            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCOA('D')" style="float: right" title="print">
-                Print Statement With Due
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCOA()" style="float: right" title="print">
+                Print Statement Summary
             </button>
         </div>
     </div>

@@ -5,7 +5,8 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class FinanceService {
-  private url = 'http://157.175.235.195:5075/api';
+  //private url = 'http://157.175.235.195:5075/api';
+private url = 'https://api.ifagate-petzone.duckdns.org/api'
 
   constructor(private http:HttpClient) { }
 
