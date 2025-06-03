@@ -304,10 +304,10 @@
         <table class="table table-striped table-sm" id="soaTable">
             <thead>
                 <tr>
+                    <th>Invoice Date</th>
                     <th>Invoice No</th>
                     <th>Reference</th>
                     <th>Description</th>
-                    <th>Invoice Date</th>
                     <th>Due Date</th>
                     <!--<th>Amount</th>-->
                     <th>Debit</th>
@@ -318,10 +318,10 @@
             </thead>
             <tbody>
                 <tr *ngFor="let row of soaData">
-                    <td>{{ row.INV_NO }}</td>
-                    <td>{{ row.REMARKS }}</td>
-                    <td>{{ row.DESCRIPTION }}</td>
                     <td>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</td>
+                    <td>{{ row.INV_NO }}</td>
+                    <td>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</td>
+                    <td>{{ row.DESCRIPTION }}</td>
                     <td>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</td>
                     <!--<td class="text-end">{{ row.AMOUNT | number:'1.3-3' }}</td>-->
                     <td class="text-end">{{ row.DEBIT | number:'1.3-3' }}</td>

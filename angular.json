@@ -34,7 +34,8 @@
               "src/styles.scss"
             ],
             "scripts": [
-              "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
+              "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js",
+              "src/assets/js/Amiri-Regular-normal.js"
             ]
           },
           "configurations": {
@@ -99,7 +100,9 @@
               "@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [
+              "src/assets/js/Amiri-Regular-normal.js"
+            ]
           }
         }
       }
