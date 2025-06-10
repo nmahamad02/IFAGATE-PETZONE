@@ -56,7 +56,7 @@ export const financeRoutes = [
     JournalVoucherListComponent,
     JournalVoucherDetailComponent,
     FilterTablePipe,
-    ReportsComponent  
+    ReportsComponent
   ],
   imports: [
     MatIconModule,

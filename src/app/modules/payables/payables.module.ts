@@ -23,7 +23,6 @@ import { NgChartsModule } from 'ng2-charts';
 import { PdfViewerModule } from 'ng2-pdf-viewer';
 import { PaymentVoucherDetailComponent } from './payment-voucher-component/payment-voucher-detail/payment-voucher-detail.component';
 import { PaymentVoucherListComponent } from './payment-voucher-component/payment-voucher-list/payment-voucher-list.component';
-import { AbsPipe } from 'src/app/pipes/abs.pipe';
 import { FinanceModule } from '../finance/finance.module';
 import { ReceivablesModule } from '../receivables/receivables.module';
 

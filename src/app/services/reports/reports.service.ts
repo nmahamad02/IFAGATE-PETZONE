@@ -26,6 +26,10 @@ private url = 'https://api.ifagate-petzone.duckdns.org/api'
     return this.http.get(this.url + '/report/get-customer-soa/' + type + '/' + pcode)
   }
 
+  getParentSoa(parentcode: string) {
+    return this.http.get(this.url + '/report/get-parent-soa/' + parentcode)
+  }
+
   getIndustry() {
     return this.http.get(this.url + '/report/get-industry')
   }
