@@ -19,7 +19,6 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTreeModule } from '@angular/material/tree';
 import { RouterModule } from '@angular/router';
-import { NgChartsModule } from 'ng2-charts';
 import { PdfViewerModule } from 'ng2-pdf-viewer';
 import { ReceiptVoucherDetailComponent } from './receipt-voucher-component/receipt-voucher-detail/receipt-voucher-detail.component';
 import { ReceiptVoucherListComponent } from './receipt-voucher-component/receipt-voucher-list/receipt-voucher-list.component';
@@ -63,7 +62,6 @@ export const receivablesRoutes = [
     MatIconModule,
     FinanceModule,
     CommonModule,
-    NgChartsModule,
     MatTabsModule,
     MatFormFieldModule,
     MatExpansionModule,

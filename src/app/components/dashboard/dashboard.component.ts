@@ -1,21 +1,6 @@
 import { Component } from '@angular/core';
 import { ReportsService } from 'src/app/services/reports/reports.service';
 
-interface RawRecord {
-  YEAR: number;
-  COUNTRY: string;
-  TOTAL_AMOUNT: number;
-}
-
-interface ChartSeries {
-  name: string;
-  value: number;
-}
-
-interface ChartGroup {
-  name: string;
-  series: ChartSeries[];
-}
 
 @Component({
   selector: 'app-dashboard',
@@ -45,6 +30,7 @@ export class DashboardComponent {
   topCustList: any[] = [];
   topSuppList: any[] = [];
   countrywiseYearwiseChartData: any[] = []
+  monthwiseSalesdata: any[] = []
   
   updateFlag(countryName: string) {
     const selected = this.countries.find(c => c.name === countryName);
@@ -79,6 +65,29 @@ export class DashboardComponent {
     'QAR': 'qa',
     'OMR': 'om',
   };
+
+  barData = [
+    { "name": "Apples", "value": 30 },
+    { "name": "Oranges", "value": 50 },
+    { "name": "Bananas", "value": 20 }
+  ]; 
+
+  lineData = [
+    {
+      name: "Sales",
+      series: [
+        { name: "Jan", value: 50 },
+        { name: "Feb", value: 80 },
+        { name: "Mar", value: 45 }
+      ]
+    }
+  ];
+
+  pieData = [
+    { name: "Download Sales", value: 40 },
+    { name: "In-Store Sales", value: 25 },
+    { name: "Mail Sales", value: 35 }
+  ];
   
   getCountryCode(name: string, currency: string): string {
     const countryCode = this.countryMap[name]?.code;
@@ -96,53 +105,51 @@ export class DashboardComponent {
 
   getARData(country: string){
     this.reportService.getCustomerCount(country,'C').subscribe((res: any) => {
-      console.log(res)
       this.custCount = res.recordset[0].CUSTCOUNT
     })
     this.reportService.getCustomerList(country,'C').subscribe((res: any) => {
-      console.log(res)
       this.topCustList = res.recordset
     })
     this.reportService.getCustomerCount(country,'S').subscribe((res: any) => {
-      console.log(res)
       this.suppCount = res.recordset[0].CUSTCOUNT
     })
     this.reportService.getCustomerList(country,'S').subscribe((res: any) => {
-      console.log(res)
       this.topSuppList = res.recordset
     })
     this.reportService.getIndustry().subscribe((res: any) => {
-      console.log(res)
       this.indsCount = res.recordset.length
     })
     this.reportService.getOrganisation().subscribe((res: any) => {
-      console.log(res)
       this.orgnCount = res.recordset.length
     })
     this.reportService.getCountry().subscribe((res: any) => {
-      console.log(res)
       this.cntyCount = res.recordset.length
     })
     this.reportService.getYearwiseCountrywiseList().subscribe((res: any) => {
       console.log(res)
-      this.countrywiseYearwiseChartData = this.transformToChartData(res.recordset)
+      this.countrywiseYearwiseChartData = res.recordset
+    })
+    this.reportService.getMonthwiseSalesdata(country).subscribe((res: any) => {
+      const monthNames = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      this.monthwiseSalesdata = [
+        {
+          name: 'Sales',
+          series: res.recordset.map((entry: any) => {
+            const [year, month] = entry.Month.split('-'); // '2025-03' → ['2025', '03']
+            const monthIndex = parseInt(month, 10) - 1;
+            return {
+              name: `${monthNames[monthIndex]} ${year}`, // Optional: show 'Mar 2025'
+              value: entry.Total_Invoiced
+            };
+          })
+        }
+      ];
     })
   }
   
-  transformToChartData(data: RawRecord[]): ChartGroup[] {
-    const yearToShow = 2023; // or 2024, or whichever you like
-    const filtered = data.filter(item => item.YEAR === yearToShow);
-  
-    const series = filtered.map(item => ({
-      name: item.COUNTRY,
-      value: item.TOTAL_AMOUNT
-    }));
-  
-    return [{
-      name: yearToShow.toString(),
-      series
-    }];
-  } 
 }
 
 

@@ -18,7 +18,7 @@
                         <mat-card-content>
                             <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
                                 <li class="nav-item active">
-                                    <a class="nav-link" (click)="openCSOA()">Customer Statement of Account</a>
+                                    <a class="nav-link" (click)="openCWSOA()">Customer Statement of Account</a>
                                 </li>
                                 <li class="nav-item active">
                                     <a class="nav-link" (click)="openPWSOA()">Parent-wise Statement of Account</a>
@@ -52,7 +52,7 @@
     </div>
 </div>
 
-<ng-template #csoaLookupDialog>
+<ng-template #cwsoaLookupDialog>
     <h3 matDialogTitle>
         <b>Customer Statement of Account Preview</b>
     </h3>
@@ -71,13 +71,13 @@
                     </thead>
                     <tbody>
                         <tr *ngFor="let cust of (customerList | filterTable:searchText| slice:0:10); let i = index;">
-                            <td (click)="getCSOA(cust)">{{ cust.CUST_NAME }}</td>
+                            <td (click)="getCWSOA(cust)">{{ cust.CUST_NAME }}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
             <div class="col-8">
-                <table class="table table-striped table-sm" id="cSoaTable">
+                <table class="table table-striped table-sm" id="cwSoaTable">
                     <thead class="table-dark">
                         <tr>
                             <th>Invoice Date</th>
@@ -93,7 +93,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let row of csoaData">
+                        <tr *ngFor="let row of cwsoaData">
                             <td>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</td>
                             <td>{{ row.INV_NO }}</td>
                             <td>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</td>
@@ -155,7 +155,7 @@
     <div class="row container-fluid">
         <div class="col-8"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCSOA()" style="float: right" title="print">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCWSOA()" style="float: right" title="print">
                 Print Statement Summary
             </button>
         </div>

@@ -93,26 +93,31 @@
     </div>
     <br>
     <div class="row">
-        <!--<div class="col-6">
+        <div class="col-12">
             <mat-card appearance="outlined">
                 <mat-card-header>
-                    <mat-card-subtitle>Yearwise Countrywise Breakdown</mat-card-subtitle>
+                    <mat-card-subtitle>Monthwise Total Invoiced (KWD)</mat-card-subtitle>
                 </mat-card-header>
                 <mat-card-content>
-                    <ngx-charts-bar-vertical
-                    [results]="countrywiseYearwiseChartData"
-                    [xAxis]="true"
-                    [yAxis]="true"
-                    [legend]="false"
-                    [showDataLabel]="true"
-                    [animations]="true">
-                    [scheme]="colorScheme"
-                    style="height: 400px;">
-                </ngx-charts-bar-vertical>
-
+                    <ngx-charts-line-chart
+                      [results]="monthwiseSalesdata"
+                      [xAxis]="true"
+                      [yAxis]="true"
+                      [legend]="false"
+                      [showXAxisLabel]="false"
+                      [showYAxisLabel]="false"
+                      [xAxisLabel]="'Month'"
+                      [yAxisLabel]="'Total Invoiced (KWD)'"
+                      [autoScale]="false"
+                      [animations]="true"
+                      [timeline]="false">
+                    </ngx-charts-line-chart>
                 </mat-card-content>
             </mat-card>  
-        </div> -->
+        </div>
+    </div>
+    <br>
+    <div class="row">
         <div class="col-6">
             <mat-card appearance="outlined">
                 <mat-card-header>
@@ -171,17 +176,41 @@
         </div>
     </div>
     <br>
+   <!--
     <div class="row">
-        <div class="col-4"></div>
-        <div class="col-4"></div>
-        <div class="col-4"></div>
+        <div class="col-4">
+            <ngx-charts-bar-vertical 
+              [results]="barData"
+              [xAxis]="true"
+              [yAxis]="true"
+              [legend]="false"
+              [showDataLabel]="true">
+              [scheme]="{ domain: ['#5AA454', '#A10A28', '#C7B42C'] }">
+            </ngx-charts-bar-vertical>
+        </div>
+        <div class="col-4">
+            <ngx-charts-line-chart
+              [results]="lineData"
+              [xAxis]="true"
+              [yAxis]="true"
+              [legend]="true"
+              [showXAxisLabel]="true"  
+              [showYAxisLabel]="true"
+              [autoScale]="true">
+            </ngx-charts-line-chart>
+        </div>
+        <div class="col-4">
+            <ngx-charts-pie-chart
+              [results]="pieData"
+              [legend]="true"
+              [explodeSlices]="false"
+              [labels]="true">
+            </ngx-charts-pie-chart>
+        </div>
     </div>
     <br>
-    <div class="row">
-        <div class="col-6"></div>
-        <div class="col-6"></div>
-    </div>
-    <br>
+    --> 
+    
     <div class="row">
         <div class="col-12"></div>
     </div>

@@ -22,13 +22,13 @@ declare module 'jspdf' {
   styleUrls: ['./reports.component.scss']
 })
 export class ReportsComponent {
-  @ViewChild('csoaLookupDialog', { static: false }) csoaLookupDialog!: TemplateRef<any>;
+  @ViewChild('cwsoaLookupDialog', { static: false }) cwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('pwsoaLookupDialog', { static: false }) pwsoaLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
 
-  csoaData: any[] = []
+  cwsoaData: any[] = []
   pwsoaData: any[] = []
   totalDebit = 0;
   totalCredit = 0;
@@ -65,8 +65,8 @@ export class ReportsComponent {
     })
   }
 
-  openCSOA() {
-    let dialogRef = this.dialog.open(this.csoaLookupDialog);
+  openCWSOA() {
+    let dialogRef = this.dialog.open(this.cwsoaLookupDialog);
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -80,15 +80,15 @@ export class ReportsComponent {
     };
   }
 
-  getCSOA(customer: any) {
+  getCWSOA(customer: any) {
     console.log(customer)
     this.selectedCustomer = customer
     this.reportService.getCustomerSoa('C', customer.PCODE).subscribe((res: any) => {
       console.log(res.recordset);
-      this.csoaData = res.recordset;
+      this.cwsoaData = res.recordset;
       let runningBalance = 0;
 
-      this.csoaData = this.csoaData.map(row => {
+      this.cwsoaData = this.cwsoaData.map(row => {
         const debit = Number(row.DEBIT) || 0;
         const credit = Number(row.CREDIT) || 0;
         this.totalDebit += debit;
@@ -117,7 +117,7 @@ export class ReportsComponent {
         };
       });
 
-      this.csoaData.forEach(row => {
+      this.cwsoaData.forEach(row => {
         const debit = Number(row.DEBIT) || 0;
         const credit = Number(row.CREDIT) || 0;
         const diff = Number(row.DAYS_DIFF);
@@ -140,7 +140,7 @@ export class ReportsComponent {
     });
   }
 
-  printCSOA() {
+  printCWSOA() {
     console.log(this.selectedCustomer)
     var doc = new jsPDF("portrait", "px", "a4");
     doc.setFontSize(16);
@@ -165,7 +165,7 @@ export class ReportsComponent {
     let firstPage = true;      // Flag to check if it's the first page
 
     autoTable(doc, {
-      html: '#cSoaTable',
+      html: '#cwSoaTable',
       //startY: firstPage ? firstPageStartY : nextPagesStartY,
       tableWidth: 435,
       //margin: { left: 5 },
@@ -314,6 +314,17 @@ export class ReportsComponent {
 
   getPWSOA(parent: any) {
     console.log(parent)
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
     this.selectedParent = parent
     this.reportService.getParentSoa(parent.PARENTNAME).subscribe((res: any) => {
       console.log(res.recordset);

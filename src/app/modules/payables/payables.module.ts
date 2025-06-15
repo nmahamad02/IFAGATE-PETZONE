@@ -19,7 +19,6 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTreeModule } from '@angular/material/tree';
 import { RouterModule } from '@angular/router';
-import { NgChartsModule } from 'ng2-charts';
 import { PdfViewerModule } from 'ng2-pdf-viewer';
 import { PaymentVoucherDetailComponent } from './payment-voucher-component/payment-voucher-detail/payment-voucher-detail.component';
 import { PaymentVoucherListComponent } from './payment-voucher-component/payment-voucher-list/payment-voucher-list.component';
@@ -57,7 +56,6 @@ export const payablesRoutes = [
     CommonModule,
     FinanceModule,
     ReceivablesModule,
-    NgChartsModule,
     MatTabsModule,
     MatFormFieldModule,
     MatExpansionModule,

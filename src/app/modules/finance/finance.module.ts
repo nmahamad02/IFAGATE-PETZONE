@@ -4,7 +4,6 @@ import { GeneralLedgerComponent } from './general-ledger-component/general-ledge
 import { MatTableModule } from '@angular/material/table';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTabsModule } from '@angular/material/tabs';
-import { NgChartsModule } from 'ng2-charts';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule } from '@angular/material/sort';
@@ -61,7 +60,6 @@ export const financeRoutes = [
   imports: [
     MatIconModule,
     CommonModule,
-    NgChartsModule,
     MatTabsModule,
     MatFormFieldModule,
     MatExpansionModule,

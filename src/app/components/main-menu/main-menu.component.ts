@@ -26,11 +26,12 @@ export class MainMenuComponent {
   }
 
   getRoles() {
+    console.log(this.userClass)
     this.authenticationService.getUserRole(this.userClass).subscribe((res: any) => {
-      //console.log(res);
+      console.log(res);
       for(let i=0; i<res.recordset.length; i++) {
         this.authenticationService.getUserSubmodules(this.userClass, res.recordset[i].MODULECODE).subscribe((resp: any) => {
-          //console.log(resp)
+          console.log(resp)
           var module = {
             MODULEDISPLAYNAME: res.recordset[i].MODULEDISPLAYNAME, 
             MODULEICON: res.recordset[i].MODULEICON, 

@@ -22,6 +22,10 @@ private url = 'https://api.ifagate-petzone.duckdns.org/api'
     return this.http.get(this.url + '/report/get-yearwise-countrywise-list')
   }
 
+  getMonthwiseSalesdata(country: string) {
+    return this.http.get(this.url + '/report/get-monthwise-salesdata/' + country)
+  }
+
   getCustomerSoa(type: string,pcode: string) {
     return this.http.get(this.url + '/report/get-customer-soa/' + type + '/' + pcode)
   }
