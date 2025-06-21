@@ -66,16 +66,21 @@ export class LoginComponent {
       this.encrypt(data.password);
       this.authenticationService.checkUser(data.username).subscribe ((res: any) => {
         console.log(res.recordset[0]);
-        this.authenticationService.signin(res.recordset[0].USERCODE, res.recordset[0].FIRSTNAME, res.recordset[0].LASTNAME, res.recordset[0].USERCLASS).subscribe((res: any) => {
+        this.authenticationService.signin(res.recordset[0].USERCODE, res.recordset[0].FIRSTNAME, res.recordset[0].LASTNAME, res.recordset[0].USERID).subscribe((res: any) => {
           this.router.navigate(['home/dashboard']).then(() => {
             // Then reload after navigation completes
             window.location.reload();
           });
         })
-       /* if(data.password === res.recordset[0].PASSWORD) {
+        if(data.password === res.recordset[0].PASSWORD) {
           this.error = "";
+          console.log(data.password)
+          this.router.navigate(['home/dashboard']).then(() => {
+            // Then reload after navigation completes
+            window.location.reload();
+          });
           // if signin success then:
-          this.crmservice.getMemberFromCPR(res.recordset[0].USERCODE).subscribe((resp: any) => {
+          /*this.crmservice.getMemberFromCPR(res.recordset[0].USERCODE).subscribe((resp: any) => {
             this.authenticationService.signin(res.recordset[0].USERCODE, res.recordset[0].FIRSTNAME, res.recordset[0].LASTNAME, res.recordset[0].USERCLASS).subscribe((res: any) => {
               this.router.navigate(['home/dashboard']);
             })
@@ -83,11 +88,11 @@ export class LoginComponent {
             this.authenticationService.signin(res.recordset[0].USERCODE, res.recordset[0].FIRSTNAME, res.recordset[0].LASTNAME, res.recordset[0].USERCLASS).subscribe((resP: any) => {
               this.router.navigate(['home/dashboard']);
             })
-          })
+          })*/
         }
         else {
           this.error = "Password is incorrect!";
-        }*/
+        }
       },
       (err: any) => {
         this.error = "Username or Password is incorrect!";
@@ -143,4 +148,13 @@ export class LoginComponent {
     // Decrement the index, go to the last image if at the start
     this.currentImageIndex = (this.currentImageIndex - 1 + this.images.length) % this.images.length;
   }
+
+  decrypt(encryptedPwd: string) {
+    let decrypted = '';
+    for (let i = 0; i < encryptedPwd.length; i++) {
+      decrypted += String.fromCharCode(encryptedPwd.charCodeAt(i) - 10);
+    }
+    return decrypted;
+  }
+
 }

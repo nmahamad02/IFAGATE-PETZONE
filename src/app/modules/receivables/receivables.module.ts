@@ -23,8 +23,7 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
 import { ReceiptVoucherDetailComponent } from './receipt-voucher-component/receipt-voucher-detail/receipt-voucher-detail.component';
 import { ReceiptVoucherListComponent } from './receipt-voucher-component/receipt-voucher-list/receipt-voucher-list.component';
 import { ReceiptVoucherAllocationComponent } from './receipt-voucher-component/receipt-voucher-allocation/receipt-voucher-allocation.component';
-import { AbsPipe } from '../../pipes/abs.pipe';
-import { FinanceModule } from '../finance/finance.module';
+import { SharedModule } from '../shared/shared.module';
 
 export const receivablesRoutes = [
   {
@@ -55,13 +54,12 @@ export const receivablesRoutes = [
     CustomerDetailComponent,
     ReceiptVoucherDetailComponent,
     ReceiptVoucherListComponent,
-    ReceiptVoucherAllocationComponent,
-    AbsPipe
+    ReceiptVoucherAllocationComponent
   ],
   imports: [
     MatIconModule,
-    FinanceModule,
     CommonModule,
+    SharedModule,
     MatTabsModule,
     MatFormFieldModule,
     MatExpansionModule,
@@ -80,9 +78,6 @@ export const receivablesRoutes = [
     PdfViewerModule,
     ReactiveFormsModule,
     RouterModule.forChild(receivablesRoutes)  
-  ], 
-  exports: [
-    AbsPipe
   ]
 })
 export class ReceivablesModule { }

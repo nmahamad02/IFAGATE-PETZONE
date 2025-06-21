@@ -191,7 +191,6 @@ export class ReportsComponent {
         halign: 'right'
       },
       columnStyles: {
-        4: { halign: 'right' },
         5: { halign: 'right' },
         6: { halign: 'right' },
         7: { halign: 'right' }
@@ -433,10 +432,9 @@ export class ReportsComponent {
         halign: 'right'
       },
       columnStyles: {
-        4: { halign: 'right' },
-        5: { halign: 'right' },
         6: { halign: 'right' },
-        7: { halign: 'right' }
+        7: { halign: 'right' },
+        8: { halign: 'right' }
       },
       margin: { 
         top: firstPage ? firstPageStartY : nextPagesStartY,

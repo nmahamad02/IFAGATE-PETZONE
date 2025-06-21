@@ -103,7 +103,9 @@
                             <td class="text-end">{{ row.DEBIT | number:'1.3-3' }}</td>
                             <td class="text-end">{{ row.CREDIT | number:'1.3-3' }}</td>
                             <!-- <td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td> -->
-                            <td class="text-end">{{ (row.BALANCE) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td>
+                            <td class="text-end">
+                                {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
+                            </td>
                             <!--<td class="text-end">{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</td>   -->                 
                         </tr>
                     </tbody>
@@ -113,10 +115,13 @@
                             <td>{{ totalDebit | number:'1.3-3' }}</td>
                             <td>{{ totalCredit | number:'1.3-3' }}</td>
                             <td>
+                                {{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')' : ((totalDebit - totalCredit) | number:'1.3-3') }}
+                            </td>
+                            <!--<td>
                                 {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
                                 {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
                                 {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </td>
+                            </td>-->
                             <td></td>
                         </tr>
                     </tfoot>
@@ -192,8 +197,8 @@
                 <table class="table table-striped table-sm" id="pwSoaTable">
                     <thead class="table-dark">
                         <tr>
-                            <th>Company Code</th>
-                            <th>Name</th>
+                            <!--<th>Company Code</th>-->
+                            <th>Branch Name</th>
                             <th>Invoice Date</th>
                             <th>Invoice No</th>
                             <th>Reference</th>
@@ -208,7 +213,7 @@
                     </thead>
                     <tbody>
                         <tr *ngFor="let row of pwsoaData">
-                            <td>{{ row.CUST_CODE }}</td>
+                            <!--<td>{{ row.CUST_CODE }}</td>-->
                             <td>{{ row.CUST_NAME }}</td>
                             <td>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</td>
                             <td>{{ row.INV_NO }}</td>
@@ -218,21 +223,26 @@
                             <!--<td class="text-end">{{ row.AMOUNT | number:'1.3-3' }}</td>-->
                             <td class="text-end">{{ row.DEBIT | number:'1.3-3' }}</td>
                             <td class="text-end">{{ row.CREDIT | number:'1.3-3' }}</td>
-                            <!-- <td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td> -->
-                            <td class="text-end">{{ (row.BALANCE) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td>
+                            <td class="text-end">
+                                {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
+                            </td>
+                            <!--<td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td> -->
                             <!--<td class="text-end">{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</td>   -->                 
                         </tr>
                     </tbody>
                     <tfoot>
                         <tr class="fw-bold text-end">
-                            <td colspan="7" class="text-start">Total</td>
+                            <td colspan="6" class="text-start">Total</td>
                             <td>{{ totalDebit | number:'1.3-3' }}</td>
                             <td>{{ totalCredit | number:'1.3-3' }}</td>
                             <td>
+                                {{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')' : ((totalDebit - totalCredit) | number:'1.3-3') }}
+                            </td>
+                            <!--<td>
                                 {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
                                 {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
                                 {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </td>
+                            </td>-->
                             <td></td>
                         </tr>
                     </tfoot>

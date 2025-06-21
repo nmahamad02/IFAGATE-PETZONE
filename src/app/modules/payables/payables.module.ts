@@ -22,8 +22,7 @@ import { RouterModule } from '@angular/router';
 import { PdfViewerModule } from 'ng2-pdf-viewer';
 import { PaymentVoucherDetailComponent } from './payment-voucher-component/payment-voucher-detail/payment-voucher-detail.component';
 import { PaymentVoucherListComponent } from './payment-voucher-component/payment-voucher-list/payment-voucher-list.component';
-import { FinanceModule } from '../finance/finance.module';
-import { ReceivablesModule } from '../receivables/receivables.module';
+import { SharedModule } from '../shared/shared.module';
 
 export const payablesRoutes = [
   {
@@ -35,13 +34,13 @@ export const payablesRoutes = [
     component: SupplierDetailComponent
   },
   {
-      path: 'payment-voucher',
-      component: PaymentVoucherListComponent
-    } ,
-    {
-      path: 'payment-voucher/detail/:id',
-      component: PaymentVoucherDetailComponent
-    }
+    path: 'payment-voucher',
+    component: PaymentVoucherListComponent
+  } ,
+  {
+    path: 'payment-voucher/detail/:id',
+    component: PaymentVoucherDetailComponent
+  }
 ];
 
 @NgModule({
@@ -54,8 +53,7 @@ export const payablesRoutes = [
   imports: [
     MatIconModule,
     CommonModule,
-    FinanceModule,
-    ReceivablesModule,
+    SharedModule,
     MatTabsModule,
     MatFormFieldModule,
     MatExpansionModule,

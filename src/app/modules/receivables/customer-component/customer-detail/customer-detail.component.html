@@ -326,7 +326,10 @@
                     <!--<td class="text-end">{{ row.AMOUNT | number:'1.3-3' }}</td>-->
                     <td class="text-end">{{ row.DEBIT | number:'1.3-3' }}</td>
                     <td class="text-end">{{ row.CREDIT | number:'1.3-3' }}</td>
-                    <td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td>
+                    <td class="text-end">
+                        {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
+                    </td>
+                    <!--<td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td> -->
                     <!--<td class="text-end">{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</td>   -->                 
                 </tr>
             </tbody>

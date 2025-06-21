@@ -24,6 +24,7 @@ import { JournalVoucherListComponent } from './journal-voucher-component/journal
 import { JournalVoucherDetailComponent } from './journal-voucher-component/journal-voucher-detail/journal-voucher-detail.component';
 import { FilterTablePipe } from '../../pipes/filterTable.pipe';
 import { ReportsComponent } from './finance-report-component/reports/reports.component';
+import { SharedModule } from '../shared/shared.module';
 
 export const financeRoutes = [
   {
@@ -54,12 +55,12 @@ export const financeRoutes = [
     GeneralLedgerDetailComponent,
     JournalVoucherListComponent,
     JournalVoucherDetailComponent,
-    FilterTablePipe,
     ReportsComponent
   ],
   imports: [
     MatIconModule,
     CommonModule,
+    SharedModule,
     MatTabsModule,
     MatFormFieldModule,
     MatExpansionModule,
@@ -78,7 +79,7 @@ export const financeRoutes = [
     PdfViewerModule,
     ReactiveFormsModule,
     RouterModule.forChild(financeRoutes),
-  ],
+],
   exports: [
     FilterTablePipe,
   ]
