@@ -300,8 +300,8 @@
         <b>Statement of Account Preview</b>
     </h3>
     <hr>
-    <div mat-dialog-content>
-        <table class="table table-striped table-sm" id="soaTable">
+    <div mat-dialog-content style="font-size: small;">
+        <table class="table table-striped table-sm table-bordered" id="soaTable">
             <thead>
                 <tr>
                     <th>Invoice Date</th>
@@ -343,17 +343,16 @@
                         {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
                         {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
                     </td>
-                    <td></td>
                 </tr>
             </tfoot>
         </table>
         <br>
-        <table id="ageingSummaryTable" class="table table-sm">
+        <table id="ageingSummaryTable" class="table table-sm table-bordered">
             <thead>
-                <tr>
+                <tr class="table-primary">
                     <th colspan="6" class="text-start">Ageing Summary</th>
                 </tr>
-                <tr class="text-end">
+                <tr class="text-end table-secondary">
                     <th>Current</th>
                     <th>0 - 30 days</th>
                     <th>31 - 60 days</th>
@@ -374,12 +373,12 @@
             </tbody>
         </table>
         <br>
-        <table id="unallocPayTable" class="table table-sm">
+        <table id="unallocPayTable" class="table table-sm table-bordered">
             <thead>
-                <tr>
+                <tr class="table-primary">
                     <th colspan="6" class="text-start">Unallocated Payments Summary</th>
                 </tr>
-                <tr class="text-end">
+                <tr class="text-end table-secondary">
                     <th>Future Remit</th>
                     <th>60 Days</th>
                     <th>120 Days</th>
