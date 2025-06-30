@@ -24,6 +24,7 @@ import { ReceiptVoucherDetailComponent } from './receipt-voucher-component/recei
 import { ReceiptVoucherListComponent } from './receipt-voucher-component/receipt-voucher-list/receipt-voucher-list.component';
 import { ReceiptVoucherAllocationComponent } from './receipt-voucher-component/receipt-voucher-allocation/receipt-voucher-allocation.component';
 import { SharedModule } from '../shared/shared.module';
+import { ReportsComponent } from './reports-component/reports/reports.component';
 
 export const receivablesRoutes = [
   {
@@ -45,6 +46,10 @@ export const receivablesRoutes = [
   {
     path: 'receipt-voucher/allocation/:id/:pcode',
     component: ReceiptVoucherAllocationComponent
+  },
+  {
+    path: 'Financial-Reports',
+    component: ReportsComponent
   }
 ];
 
@@ -54,7 +59,8 @@ export const receivablesRoutes = [
     CustomerDetailComponent,
     ReceiptVoucherDetailComponent,
     ReceiptVoucherListComponent,
-    ReceiptVoucherAllocationComponent
+    ReceiptVoucherAllocationComponent,
+    ReportsComponent
   ],
   imports: [
     MatIconModule,
