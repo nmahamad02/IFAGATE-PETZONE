@@ -24,12 +24,18 @@ declare module 'jspdf' {
 export class ReportsComponent {
   @ViewChild('cwsoaLookupDialog', { static: false }) cwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('pwsoaLookupDialog', { static: false }) pwsoaLookupDialog!: TemplateRef<any>;
+  @ViewChild('cwaslLookupDialog', { static: false }) cwaslLookupDialog!: TemplateRef<any>;
+  @ViewChild('pwaslLookupDialog', { static: false }) pwaslLookupDialog!: TemplateRef<any>;
+  @ViewChild('pcaslLookupDialog', { static: false }) pcaslLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
 
   cwsoaData: any[] = []
   pwsoaData: any[] = []
+  customerAgeingSummaryList: any[] = [];
+  parentAgeingSummaryList: any[] = [];
+  parentWiseCustomerAgeingList: any[] = [];
   totalDebit = 0;
   totalCredit = 0;
   closingBalance = 0;
@@ -217,7 +223,7 @@ export class ReportsComponent {
     let finalY1 = doc.lastAutoTable?.finalY || 0
   
     autoTable(doc, {
-      html: '#cAgeingSummaryTable',
+      html: '#cwsoaAgeingSummaryTable',
       startY: finalY1 + 5,
       tableWidth: 435,
       margin: { left: 5 },
@@ -458,7 +464,7 @@ export class ReportsComponent {
     let finalY1 = doc.lastAutoTable?.finalY || 0
   
     autoTable(doc, {
-      html: '#pwAgeingSummaryTable',
+      html: '#pwsoaAgeingSummaryTable',
       startY: finalY1 + 5,
       tableWidth: 435,
       margin: { left: 5 },
@@ -536,6 +542,552 @@ export class ReportsComponent {
     // Save the PDF
     doc.save(`${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}.pdf`);
   }
+
+  openCWASL() {
+    let dialogRef = this.dialog.open(this.cwaslLookupDialog);
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.getCWASL()
+  }
+
+  getCWASL() {
+    this.customerAgeingSummaryList = [];
+
+    this.customerList.forEach(customer => {
+      this.reportService.getCustomerSoa('C', customer.PCODE).subscribe(
+        (response: any) => {
+          console.log(response)
+          const soaList = response.recordset.map((item: any) => {
+            const btdDate = new Date(item.DUEDATE);
+            const today = new Date();
+            const daysDiff = Math.ceil((today.getTime() - btdDate.getTime()) / (1000 * 3600 * 24));
+            return { ...item, DAYS_DIFF: daysDiff };
+          });
+
+          const ageingSummary = this.calculateAgeing(soaList);
+          const total = (Object.values(ageingSummary) as number[]).reduce(
+            (acc, val) => acc + val, 
+            0
+          );
+          this.customerAgeingSummaryList.push({
+            pcode: customer.PCODE,
+            customerName: customer.CUST_NAME,
+            ageingSummary,
+            total
+          });
+          this.ageingSummary.CURRENT += ageingSummary['CURRENT']
+          this.ageingSummary['30_DAYS'] += ageingSummary['30_DAYS']
+          this.ageingSummary['60_DAYS'] += ageingSummary['60_DAYS']
+          this.ageingSummary['90_DAYS'] += ageingSummary['90_DAYS']
+          this.ageingSummary['120_DAYS'] += ageingSummary['120_DAYS']
+          this.ageingSummary.ABOVE_120_DAYS += ageingSummary['ABOVE_120_DAYS']
+        },
+        (error) => {
+          console.error(`Failed to fetch SOA for ${customer.CUST_NAME}`, error);
+        }
+      );
+    });
+  }
+
+  printCWASL() {
+    console.log(this.selectedCustomer)
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Customer Ageing Statement', 150, 20);
+    let firstPageStartY = 30; // Start Y position for first page
+
+    autoTable(doc, {
+      html: '#cwAslTable',
+      //startY: firstPage ? firstPageStartY : nextPagesStartY,
+      tableWidth: 435,
+      //margin: { left: 5 },
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' }
+      },
+      margin: { 
+        top: firstPageStartY,
+        left: 5
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+  
+    autoTable(doc, {
+      html: '#cwaslAgeingSummaryTable',
+      startY: finalY1 + 5,
+      tableWidth: 435,
+      margin: { left: 5 },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' }
+      }
+    });
+
+    let finalY2 = doc.lastAutoTable?.finalY || 0
+
+    // Bilingual footer text
+    doc.setFontSize(8);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.setFont('Helvetica', 'normal')
+    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 435, finalY2+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc);
+    // Save the PDF
+    doc.save(`customer-ageing-statement-${this.mCurDate}.pdf`);
+  }
+
+  openPWASL() {
+    let dialogRef = this.dialog.open(this.pwaslLookupDialog);
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.getPWASL()
+  }
+
+  getPWASL() {
+    this.parentAgeingSummaryList = [];
+
+    this.parentList.forEach(parent => {
+      this.reportService.getParentSoa(parent.PARENTNAME).subscribe(
+        (response: any) => {
+          console.log(response)
+          const soaList = response.recordset.map((item: any) => {
+            const btdDate = new Date(item.DUEDATE);
+            const today = new Date();
+            const daysDiff = Math.ceil((today.getTime() - btdDate.getTime()) / (1000 * 3600 * 24));
+            return { ...item, DAYS_DIFF: daysDiff };
+          });
+
+          const ageingSummary = this.calculateAgeing(soaList);
+          const total = (Object.values(ageingSummary) as number[]).reduce(
+            (acc, val) => acc + val, 
+            0
+          );
+          this.parentAgeingSummaryList.push({
+            pcode: parent.pcode,
+            parentName: parent.PARENTNAME,
+            ageingSummary,
+            total
+          });
+          this.ageingSummary.CURRENT += ageingSummary['CURRENT']
+          this.ageingSummary['30_DAYS'] += ageingSummary['30_DAYS']
+          this.ageingSummary['60_DAYS'] += ageingSummary['60_DAYS']
+          this.ageingSummary['90_DAYS'] += ageingSummary['90_DAYS']
+          this.ageingSummary['120_DAYS'] += ageingSummary['120_DAYS']
+          this.ageingSummary.ABOVE_120_DAYS += ageingSummary['ABOVE_120_DAYS']
+        },
+        (error) => {
+          console.error(`Failed to fetch SOA for ${parent.PARENTNAME}`, error);
+        }
+      );
+    });
+  }
+
+  printPWASL() {
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Parent Ageing Statement', 145, 20);
+    let firstPageStartY = 30; // Start Y position for first page
+
+    autoTable(doc, {
+      html: '#pwAslTable',
+      //startY: firstPage ? firstPageStartY : nextPagesStartY,
+      tableWidth: 435,
+      //margin: { left: 5 },
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' }
+      },
+      margin: { 
+        top: firstPageStartY,
+        left: 5
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+  
+    autoTable(doc, {
+      html: '#pwaslAgeingSummaryTable',
+      startY: finalY1 + 5,
+      tableWidth: 435,
+      margin: { left: 5 },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' }
+      }
+    });
+
+    let finalY2 = doc.lastAutoTable?.finalY || 0
+
+    // Bilingual footer text
+    doc.setFontSize(8);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.setFont('Helvetica', 'normal')
+    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 435, finalY2+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc);
+    // Save the PDF
+    doc.save(`parent-ageing-statement-${this.mCurDate}.pdf`);
+  }
+
+  openPCASL() {
+    let dialogRef = this.dialog.open(this.pcaslLookupDialog);
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+  }
+
+  getPCASL(parent: any) {
+    console.log(parent)
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.selectedParent = parent
+    this.reportService.getParentSoa(parent.PARENTNAME).subscribe((res: any) => {
+        const data = res.recordsets[0]; // assuming the actual data is in recordsets[0]
+        const groupedByCustomer = new Map<string, any[]>();
+
+        data.forEach((entry: any) => {
+          const code = entry.CUST_CODE;
+          if (!groupedByCustomer.has(code)) {
+            groupedByCustomer.set(code, []);
+          }
+          groupedByCustomer.get(code)?.push(entry);
+        });
+
+        groupedByCustomer.forEach((entries, custCode) => {
+          const custName = entries[0].CUST_NAME;
+
+          const soaList = entries.map((item: any) => {
+            const btdDate = new Date(item.DUEDATE);
+            const today = new Date();
+            const daysDiff = Math.ceil((today.getTime() - btdDate.getTime()) / (1000 * 3600 * 24));
+            return { ...item, DAYS_DIFF: daysDiff };
+          });
+
+          const ageingSummary = this.calculateAgeing(soaList);
+          const total = (Object.values(ageingSummary) as number[]).reduce((acc, val) => acc + val, 0);
+
+          this.parentWiseCustomerAgeingList.push({
+            custCode,
+            custName,
+            ageingSummary,
+            total
+          });
+
+          // Also add to the running total if you want a grand summary
+          this.ageingSummary.CURRENT += ageingSummary['CURRENT'];
+          this.ageingSummary['30_DAYS'] += ageingSummary['30_DAYS'];
+          this.ageingSummary['60_DAYS'] += ageingSummary['60_DAYS'];
+          this.ageingSummary['90_DAYS'] += ageingSummary['90_DAYS'];
+          this.ageingSummary['120_DAYS'] += ageingSummary['120_DAYS'];
+          this.ageingSummary.ABOVE_120_DAYS += ageingSummary['ABOVE_120_DAYS'];
+        });
+
+      },
+      error => {
+        console.error(`Failed to fetch parent SOA for ${parent.PARENTNAME}`, error);
+      }
+      
+    );
+  }
+
+  printPCASL(){
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Parent-wise Customer Ageing Statement', 130, 20);
+    doc.roundedRect(5, 32.5, 436, 55, 5, 5);
+    doc.setFontSize(10);
+    doc.text(`${this.selectedParent.PARENTNAME}`,10,42);
+    doc.text(`Group Acc ID: ${this.selectedParent.pcode}`,330,42);// (${this.selectedParent.customertype})`,330,42);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,52);
+    doc.text('Address',10,52);
+    doc.text(`: ${this.selectedParent.add1}`,45,52);
+    doc.text(`  ${this.selectedParent.country}`,45,62);
+    doc.text('Mobile',10,72);
+    doc.text(`: ${this.selectedParent.mobile}`,45,72);
+    doc.text('Email',10,82);
+    doc.text(`: ${this.selectedParent.email}`,45,82);
+    let firstPageStartY = 90; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#pcAslTable',
+      //startY: firstPage ? firstPageStartY : nextPagesStartY,
+      tableWidth: 435,
+      //margin: { left: 5 },
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' }
+      },
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+  
+    autoTable(doc, {
+      html: '#pcaslAgeingSummaryTable',
+      startY: finalY1 + 5,
+      tableWidth: 435,
+      margin: { left: 5 },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' }
+      }
+    });
+
+    let finalY2 = doc.lastAutoTable?.finalY || 0
+
+    // Bilingual footer text
+    doc.setFontSize(8);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.setFont('Helvetica', 'normal')
+    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 435, finalY2+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc);
+    // Save the PDF
+    doc.save(`${this.selectedParent.pcode}-parent-ageing-statement-${this.mCurDate}.pdf`);
+
+  }
+
+
+calculateAgeing(data: any[]): any {
+  const ageing = {
+    CURRENT: 0,
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    ABOVE_120_DAYS: 0,
+  };
+
+  for (const row of data) {
+    const debit = Number(row.DEBIT) || 0;
+    const diff = row.DAYS_DIFF;
+
+    if (debit > 0) {
+      if (diff < 0) ageing.CURRENT += debit;
+      else if (diff <= 30) ageing['30_DAYS'] += debit;
+      else if (diff <= 60) ageing['60_DAYS'] += debit;
+      else if (diff <= 90) ageing['90_DAYS'] += debit;
+      else if (diff <= 120) ageing['120_DAYS'] += debit;
+      else ageing.ABOVE_120_DAYS += debit;
+    }
+  }
+
+  return ageing;
+}
+
 
   addWaterMark(doc: any) {
     var totalPages = doc.internal.getNumberOfPages();

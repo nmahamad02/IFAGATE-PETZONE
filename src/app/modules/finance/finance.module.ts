@@ -23,7 +23,6 @@ import { GeneralLedgerDetailComponent } from './general-ledger-component/general
 import { JournalVoucherListComponent } from './journal-voucher-component/journal-voucher-list/journal-voucher-list.component';
 import { JournalVoucherDetailComponent } from './journal-voucher-component/journal-voucher-detail/journal-voucher-detail.component';
 import { FilterTablePipe } from '../../pipes/filterTable.pipe';
-import { ReportsComponent } from './finance-report-component/reports/reports.component';
 import { SharedModule } from '../shared/shared.module';
 
 export const financeRoutes = [
@@ -42,10 +41,6 @@ export const financeRoutes = [
   {
     path: 'journal-voucher/detail/:id',
     component: JournalVoucherDetailComponent
-  },
-  {
-    path: 'Financial-Reports',
-    component: ReportsComponent
   }
 ];
 
@@ -55,7 +50,6 @@ export const financeRoutes = [
     GeneralLedgerDetailComponent,
     JournalVoucherListComponent,
     JournalVoucherDetailComponent,
-    ReportsComponent
   ],
   imports: [
     MatIconModule,

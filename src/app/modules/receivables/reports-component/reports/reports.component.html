@@ -23,6 +23,15 @@
                                 <li class="nav-item active">
                                     <a class="nav-link" (click)="openPWSOA()">Parent-wise Statement of Account</a>
                                 </li>
+                                <li class="nav-item active">
+                                    <a class="nav-link" (click)="openCWASL()">Customer Ageing Statement</a>
+                                </li>
+                                <li class="nav-item active">
+                                    <a class="nav-link" (click)="openPWASL()">Parent Ageing Statement</a>
+                                </li>
+                                <li class="nav-item active">
+                                    <a class="nav-link" (click)="openPCASL()">Parent-wise Customer Ageing Statement</a>
+                                </li>
                             </ul>
                         </mat-card-content>
                     </mat-card>
@@ -126,7 +135,7 @@
                     </tfoot>
                 </table>
                 <br>
-                <table id="cAgeingSummaryTable" class="table table-sm table-bordered">
+                <table id="cwsoaAgeingSummaryTable" class="table table-sm table-bordered">
                     <thead>
                         <tr>
                             <th colspan="6" class="text-start">Ageing Summary</th>
@@ -246,7 +255,7 @@
                     </tfoot>
                 </table>
                 <br>
-                <table id="pwAgeingSummaryTable" class="table table-sm table-bordered">
+                <table id="pwsoaAgeingSummaryTable" class="table table-sm table-bordered">
                     <thead>
                         <tr class="table-primary">
                             <th colspan="6" class="text-start">Ageing Summary</th>
@@ -280,6 +289,249 @@
         <div class="col-8"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printPWSOA()" style="float: right" title="print">
+                Print Statement Summary
+            </button>
+        </div>
+    </div>
+    <br>
+</ng-template>
+
+
+<ng-template #cwaslLookupDialog>
+    <h3 matDialogTitle>
+        <b>Customer Ageing Statement Preview</b>
+    </h3>
+    <hr>
+    <div mat-dialog-content style="font-size: small;">
+        <div class="col-12">
+            <table id="cwaslAgeingSummaryTable" class="table table-sm table-bordered">
+                <thead>
+                    <tr class="table-primary">
+                        <th colspan="6" class="text-start">Ageing Summary</th>
+                    </tr>
+                    <tr class="text-end table-secondary">
+                        <th>Current</th>
+                        <th>0 - 30 days</th>
+                        <th>31 - 60 days</th>
+                        <th>61 - 90 days</th>
+                        <th>91 - 120 days</th>
+                        <th>Above 120 days</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="text-end">
+                        <td>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</td>
+                        <td>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</td>
+                        <td>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</td>
+                        <td>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</td>
+                        <td>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</td>
+                        <td>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <br>
+            <table class="table table-hover table-sm table-bordered" id="cwAslTable">
+                <thead class="table-dark">
+                    <tr class="table-reflow">
+                        <th>CUSTOMER CODE</th>
+                        <th>NAME</th>
+                        <th>CURRENT</th>
+                        <th>30 DAYS</th>
+                        <th>60 DAYS</th>
+                        <th>90 DAYS</th>
+                        <th>120 DAYS</th>
+                        <th>ABOVE 120 DAYS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let cust of customerAgeingSummaryList ; let i = index;">
+                        <td>{{ cust.pcode }}</td>
+                        <td>{{ cust.customerName }}</td>
+                        <td class="text-end">{{ cust.ageingSummary['CURRENT'] | number:'1.3-3'  }}</td>
+                        <td class="text-end">{{ cust.ageingSummary['30_DAYS'] | number:'1.3-3'  }}</td>
+                        <td class="text-end">{{ cust.ageingSummary['60_DAYS'] | number:'1.3-3'  }}</td>
+                        <td class="text-end">{{ cust.ageingSummary['90_DAYS'] | number:'1.3-3'  }}</td>
+                        <td class="text-end">{{ cust.ageingSummary['120_DAYS'] | number:'1.3-3'  }}</td>
+                        <td class="text-end">{{ cust.ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3'  }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>  
+    </div>
+    <hr>
+    <div class="row container-fluid">
+        <div class="col-8"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCWASL()" style="float: right" title="print">
+                Print Statement Summary
+            </button>
+        </div>
+    </div>
+    <br>
+</ng-template>
+
+
+<ng-template #pwaslLookupDialog>
+    <h3 matDialogTitle>
+        <b>Parent Ageing Statement Preview</b>
+    </h3>
+    <hr>
+    <div mat-dialog-content style="font-size: small;">
+        <div class="col-12">
+            <table id="pwaslAgeingSummaryTable" class="table table-sm table-bordered">
+                <thead>
+                    <tr class="table-primary">
+                        <th colspan="6" class="text-start">Ageing Summary</th>
+                    </tr>
+                    <tr class="text-end table-secondary">
+                        <th>Current</th>
+                        <th>0 - 30 days</th>
+                        <th>31 - 60 days</th>
+                        <th>61 - 90 days</th>
+                        <th>91 - 120 days</th>
+                        <th>Above 120 days</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="text-end">
+                        <td>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</td>
+                        <td>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</td>
+                        <td>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</td>
+                        <td>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</td>
+                        <td>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</td>
+                        <td>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <br>
+            <table class="table table-hover table-sm table-bordered" id="pwAslTable">
+                <thead class="table-dark">
+                    <tr class="table-reflow">
+                        <th>PARENT CODE</th>
+                        <th>NAME</th>
+                        <th>CURRENT</th>
+                        <th>30 DAYS</th>
+                        <th>60 DAYS</th>
+                        <th>90 DAYS</th>
+                        <th>120 DAYS</th>
+                        <th>ABOVE 120 DAYS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let cust of parentAgeingSummaryList ; let i = index;">
+                        <td>{{ cust.pcode }}</td>
+                        <td>{{ cust.parentName }}</td>
+                        <td class="text-end">{{ cust.ageingSummary['CURRENT'] | number:'1.3-3'  }}</td>
+                        <td class="text-end">{{ cust.ageingSummary['30_DAYS'] | number:'1.3-3'  }}</td>
+                        <td class="text-end">{{ cust.ageingSummary['60_DAYS'] | number:'1.3-3'  }}</td>
+                        <td class="text-end">{{ cust.ageingSummary['90_DAYS'] | number:'1.3-3'  }}</td>
+                        <td class="text-end">{{ cust.ageingSummary['120_DAYS'] | number:'1.3-3'  }}</td>
+                        <td class="text-end">{{ cust.ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3'  }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>  
+    </div>
+    <hr>
+    <div class="row container-fluid">
+        <div class="col-8"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printPWASL()" style="float: right" title="print">
+                Print Statement Summary
+            </button>
+        </div>
+    </div>
+    <br>
+</ng-template>
+
+
+<ng-template #pcaslLookupDialog>
+    <h3 matDialogTitle>
+        <b>Parent-wise Customer Statement Preview</b>
+    </h3>
+    <hr>
+    <div mat-dialog-content style="font-size: small;">
+        <div class="row">
+            <div class="col-3">
+                <div class="mb-3">
+                    <input type="text" [(ngModel)]="searchText" class="form-control" placeholder="Search parents..." />
+                </div>
+                <table class="table table-hover table-sm table-bordered">
+                    <thead class="table-dark">
+                        <tr class="table-reflow">
+                            <th>PARENT NAME</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let cust of (parentList | filterTable:searchText| slice:0:10); let i = index;">
+                            <td (click)="getPCASL(cust)">{{ cust.PARENTNAME }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-9">
+                <table id="pcaslAgeingSummaryTable" class="table table-sm table-bordered">
+                    <thead>
+                        <tr class="table-primary">
+                            <th colspan="6" class="text-start">Ageing Summary</th>
+                        </tr>
+                        <tr class="text-end table-secondary">
+                            <th>Current</th>
+                            <th>0 - 30 days</th>
+                            <th>31 - 60 days</th>
+                            <th>61 - 90 days</th>
+                            <th>91 - 120 days</th>
+                            <th>Above 120 days</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="text-end">
+                            <td>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</td>
+                            <td>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</td>
+                            <td>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</td>
+                            <td>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</td>
+                            <td>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</td>
+                            <td>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <br>
+                <table class="table table-hover table-sm table-bordered" id="pcAslTable">
+                    <thead class="table-dark">
+                        <tr class="table-reflow">
+                            <th>CUSTOMER CODE</th>
+                            <th>NAME</th>
+                            <th>CURRENT</th>
+                            <th>30 DAYS</th>
+                            <th>60 DAYS</th>
+                            <th>90 DAYS</th>
+                            <th>120 DAYS</th>
+                            <th>ABOVE 120 DAYS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let cust of parentWiseCustomerAgeingList ; let i = index;">
+                            <td>{{ cust.custCode }}</td>
+                            <td>{{ cust.custName }}</td>
+                            <td class="text-end">{{ cust.ageingSummary['CURRENT'] | number:'1.3-3'  }}</td>
+                            <td class="text-end">{{ cust.ageingSummary['30_DAYS'] | number:'1.3-3'  }}</td>
+                            <td class="text-end">{{ cust.ageingSummary['60_DAYS'] | number:'1.3-3'  }}</td>
+                            <td class="text-end">{{ cust.ageingSummary['90_DAYS'] | number:'1.3-3'  }}</td>
+                            <td class="text-end">{{ cust.ageingSummary['120_DAYS'] | number:'1.3-3'  }}</td>
+                            <td class="text-end">{{ cust.ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3'  }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <br>
+    </div>
+    <hr>
+    <div class="row container-fluid">
+        <div class="col-8"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printPCASL()" style="float: right" title="print">
                 Print Statement Summary
             </button>
         </div>
