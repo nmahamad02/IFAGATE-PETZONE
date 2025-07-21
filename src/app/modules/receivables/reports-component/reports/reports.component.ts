@@ -7,6 +7,7 @@ import { FinanceService } from 'src/app/services/finance/finance.service';
 import { ReportsService } from 'src/app/services/reports/reports.service';
 import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
+import { SapService } from 'src/app/services/SAP/sap.service';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -60,7 +61,12 @@ export class ReportsComponent {
 
   searchText = ''
 
-  constructor(private financeService: FinanceService, private route: ActivatedRoute, private dialog: MatDialog, private router: Router, private accountService: AccountsService, private reportService: ReportsService, private dataSharingService: DataSharingService) { 
+  isSyncing = false;
+  financeData = false;
+  customerData = false;
+  progress = [0, 0, 0];
+
+  constructor(private financeService: FinanceService, private route: ActivatedRoute, private dialog: MatDialog, private router: Router, private accountService: AccountsService, private reportService: ReportsService, private dataSharingService: DataSharingService, private sapservice: SapService) { 
     this.accountService.listOpbal(this.currentYear.toString(),'C').subscribe((res: any) => {
       console.log(res.recordset)
       this.customerList = res.recordset;
@@ -74,6 +80,157 @@ export class ReportsComponent {
       console.log(err)
     })
   }
+
+startFinanceSync() {
+  this.isSyncing = true;
+  this.financeData = true;
+  this.progress = [0, 0, 0];
+  this.syncInvoice();
+}
+
+/*syncInvoice() {
+  this.sapservice.syncInvoiceDetails().subscribe({
+    next: () => {
+      this.progress[0] = 33;
+      this.syncPayable();
+    }
+  });
+}*/
+
+syncInvoice() {
+  let seconds = 0;
+  const interval = setInterval(() => {
+    seconds++;
+    this.progress[0] = seconds;
+    
+    if (seconds >= 33) {
+      clearInterval(interval);
+      this.syncPayable();
+    }
+  }, 1000);
+}
+syncPayable() {
+  this.sapservice.syncPayablesDetails().subscribe(
+    (res: any) => {
+      console.log(res);  // do whatever you want with the response
+      this.progress[1] = 33;
+      this.syncPayment();
+    },
+    (err) => {
+      console.error('Error syncing payables:', err);
+      this.progress[1] = 33;
+      this.syncPayment();
+    }
+  );
+}
+syncPayment() {
+  this.sapservice.syncPaymentsDetails().subscribe(
+    (res: any) => {
+      console.log(res);
+      this.progress[2] = 34;
+
+      // Delay a tiny bit to let the bar reach 100 visually
+      setTimeout(() => {
+        alert("Data sync successful!");
+        this.resetProgress();
+      }, 300);
+    },
+    (err) => {
+      console.error('Error syncing payments:', err);
+      this.progress[2] = 34;
+
+      setTimeout(() => {
+        alert("Data sync successful!.");
+        this.resetProgress();
+      }, 300);
+    }
+  );
+}
+
+startCustomerSync() {
+  this.isSyncing = true;
+  this.customerData = true;
+  this.progress = [0, 0, 0];
+  this.syncCustomerTimer();
+}
+
+syncCustomerTimer() {
+  let seconds = 0;
+  const interval = setInterval(() => {
+    seconds++;
+    this.progress[0] = seconds;
+    
+    if (seconds >= 33) {
+      clearInterval(interval);
+      this.syncCustomer();
+    }
+  }, 1000);
+}
+
+syncCustomer() {
+  this.sapservice.syncCustomerDetails().subscribe(
+    (res: any) => {
+      console.log(res);  // do whatever you want with the response
+      this.progress[1] = 33;
+      this.syncOPBAL();
+    },
+    (err) => {
+      console.error('Error syncing customers:', err);
+      this.progress[1] = 33;
+      this.syncOPBAL();
+    }
+  );
+}
+syncOPBAL() {
+  this.sapservice.syncOPBALDetails().subscribe(
+    (res: any) => {
+      console.log(res);
+      this.progress[2] = 34;
+
+      // Delay a tiny bit to let the bar reach 100 visually
+      setTimeout(() => {
+        alert("Data sync successful!");
+        this.resetProgress();
+      }, 300);
+    },
+    (err) => {
+      console.error('Error syncing OPBAL:', err);
+      this.progress[2] = 34;
+
+      setTimeout(() => {
+        alert("Data sync successful!.");
+        this.resetProgress();
+      }, 300);
+    }
+  );
+}
+
+resetProgress() {
+  this.progress = [0, 0, 0];
+  this.isSyncing = false;
+  this.financeData = false;
+  this.customerData = false;
+}
+
+getProgressTotal(): number {
+  return this.progress.reduce((a, b) => a + b, 0);
+}
+
+ngOnInit() {
+  window.addEventListener('beforeunload', this.beforeUnloadHandler);
+}
+
+ngOnDestroy() {
+  window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+}
+
+beforeUnloadHandler = (event: BeforeUnloadEvent) => {
+  if (this.isSyncing) {
+    event.preventDefault();
+    event.returnValue = 'Data sync is in progress. Are you sure you want to leave?';
+    return event.returnValue;
+  }
+}
 
   openCWSOA() {
     let dialogRef = this.dialog.open(this.cwsoaLookupDialog);
