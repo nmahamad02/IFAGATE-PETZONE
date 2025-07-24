@@ -30,6 +30,7 @@ export class ReportsComponent {
   @ViewChild('pcaslLookupDialog', { static: false }) pcaslLookupDialog!: TemplateRef<any>;
   @ViewChild('cosoaLookupDialog', { static: false }) cosoaLookupDialog!: TemplateRef<any>;
   @ViewChild('posoaLookupDialog', { static: false }) posoaLookupDialog!: TemplateRef<any>;
+  @ViewChild('cposoaLookupDialog', { static: false }) cposoaLookupDialog!: TemplateRef<any>;
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
 
@@ -40,6 +41,19 @@ export class ReportsComponent {
   parentWiseCustomerAgeingList: any[] = [];
   cosoaData: any[] = []
   posoaData: any[] = []
+  cposoaData: any[] = []
+
+  periodTotalDebit = 0;
+  periodTotalCredit = 0;
+  periodClosingBalance = 0;
+  periodAgeingSummary = {
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    'ABOVE_120_DAYS': 0,
+    'CURRENT': 0
+  };
 
   totalDebit = 0;
   totalCredit = 0;
@@ -49,6 +63,9 @@ export class ReportsComponent {
 
   selectedCustomer: any
   selectedParent: any
+
+  startDate: Date;
+  endDate: Date;
 
   ageingSummary = {
     '30_DAYS': 0,
@@ -88,15 +105,6 @@ startFinanceSync() {
   this.syncInvoice();
 }
 
-/*syncInvoice() {
-  this.sapservice.syncInvoiceDetails().subscribe({
-    next: () => {
-      this.progress[0] = 33;
-      this.syncPayable();
-    }
-  });
-}*/
-
 syncInvoice() {
   let seconds = 0;
   const interval = setInterval(() => {
@@ -109,6 +117,7 @@ syncInvoice() {
     }
   }, 1000);
 }
+
 syncPayable() {
   this.sapservice.syncPayablesDetails().subscribe(
     (res: any) => {
@@ -123,6 +132,7 @@ syncPayable() {
     }
   );
 }
+
 syncPayment() {
   this.sapservice.syncPaymentsDetails().subscribe(
     (res: any) => {
@@ -181,6 +191,7 @@ syncCustomer() {
     }
   );
 }
+
 syncOPBAL() {
   this.sapservice.syncOPBALDetails().subscribe(
     (res: any) => {
@@ -345,9 +356,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
     autoTable(doc, {
       html: '#cwSoaTable',
-      //startY: firstPage ? firstPageStartY : nextPagesStartY,
       tableWidth: 435,
-      //margin: { left: 5 },
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
         fontSize: 8,
@@ -380,16 +389,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       },
       didDrawPage: function () {
         firstPage = false;
-
-        /*const table = doc.lastAutoTable;
-        if (table) {
-          const lastPage = table.pageCount;
-          const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-          // Remove footer if it's not the last page
-          if (currentPage < lastPage) {
-            table.foot = []; // zap the footer content for intermediate pages
-          }
-        }*/
       }
     });
 
@@ -425,34 +424,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     });
 
     let finalY2 = doc.lastAutoTable?.finalY || 0
-  /*
-    autoTable(doc, {
-      html: '#unallocPayTable',
-      startY: finalY2 + 5,
-      tableWidth: 435,
-      margin: { left: 5 },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'center'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold'
-      },
-      columnStyles: {
-        0: { halign: 'center' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' },
-        5: { halign: 'center' }
-      }
-    });*/
 
     // Bilingual footer text
     doc.setFontSize(8);
@@ -588,9 +559,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
     autoTable(doc, {
       html: '#pwSoaTable',
-      //startY: firstPage ? firstPageStartY : nextPagesStartY,
       tableWidth: 435,
-      //margin: { left: 5 },
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
         fontSize: 8,
@@ -623,16 +592,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       },
       didDrawPage: function () {
         firstPage = false;
-
-        /*const table = doc.lastAutoTable;
-        if (table) {
-          const lastPage = table.pageCount;
-          const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-          // Remove footer if it's not the last page
-          if (currentPage < lastPage) {
-            table.foot = []; // zap the footer content for intermediate pages
-          }
-        }*/
       }
     });
 
@@ -668,34 +627,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     });
 
     let finalY2 = doc.lastAutoTable?.finalY || 0
-  /*
-    autoTable(doc, {
-      html: '#unallocPayTable',
-      startY: finalY2 + 5,
-      tableWidth: 435,
-      margin: { left: 5 },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'center'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold'
-      },
-      columnStyles: {
-        0: { halign: 'center' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' },
-        5: { halign: 'center' }
-      }
-    });*/
 
     // Bilingual footer text
     doc.setFontSize(8);
@@ -796,9 +727,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
     autoTable(doc, {
       html: '#cwAslTable',
-      //startY: firstPage ? firstPageStartY : nextPagesStartY,
       tableWidth: 435,
-      //margin: { left: 5 },
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
         fontSize: 8,
@@ -967,9 +896,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
     autoTable(doc, {
       html: '#pwAslTable',
-      //startY: firstPage ? firstPageStartY : nextPagesStartY,
       tableWidth: 435,
-      //margin: { left: 5 },
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
         fontSize: 8,
@@ -1167,9 +1094,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
     autoTable(doc, {
       html: '#pcAslTable',
-      //startY: firstPage ? firstPageStartY : nextPagesStartY,
       tableWidth: 435,
-      //margin: { left: 5 },
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
         fontSize: 8,
@@ -1359,7 +1284,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Customer-wise Open Statement of Accounts', 120, 20);
+    doc.text('Customer Open Statement of Accounts', 125, 20);
     doc.roundedRect(5, 32.5, 436, 55, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedCustomer.CUST_NAME}`,10,42);
@@ -1379,9 +1304,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
     autoTable(doc, {
       html: '#coSoaTable',
-      //startY: firstPage ? firstPageStartY : nextPagesStartY,
       tableWidth: 435,
-      //margin: { left: 5 },
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
         fontSize: 8,
@@ -1414,16 +1337,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       },
       didDrawPage: function () {
         firstPage = false;
-
-        /*const table = doc.lastAutoTable;
-        if (table) {
-          const lastPage = table.pageCount;
-          const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-          // Remove footer if it's not the last page
-          if (currentPage < lastPage) {
-            table.foot = []; // zap the footer content for intermediate pages
-          }
-        }*/
       }
     });
 
@@ -1459,34 +1372,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     });
 
     let finalY2 = doc.lastAutoTable?.finalY || 0
-  /*
-    autoTable(doc, {
-      html: '#unallocPayTable',
-      startY: finalY2 + 5,
-      tableWidth: 435,
-      margin: { left: 5 },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'center'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold'
-      },
-      columnStyles: {
-        0: { halign: 'center' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' },
-        5: { halign: 'center' }
-      }
-    });*/
 
     // Bilingual footer text
     doc.setFontSize(8);
@@ -1622,9 +1507,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
     autoTable(doc, {
       html: '#poSoaTable',
-      //startY: firstPage ? firstPageStartY : nextPagesStartY,
       tableWidth: 435,
-      //margin: { left: 5 },
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
         fontSize: 8,
@@ -1657,16 +1540,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       },
       didDrawPage: function () {
         firstPage = false;
-
-        /*const table = doc.lastAutoTable;
-        if (table) {
-          const lastPage = table.pageCount;
-          const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-          // Remove footer if it's not the last page
-          if (currentPage < lastPage) {
-            table.foot = []; // zap the footer content for intermediate pages
-          }
-        }*/
       }
     });
 
@@ -1702,34 +1575,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     });
 
     let finalY2 = doc.lastAutoTable?.finalY || 0
-  /*
-    autoTable(doc, {
-      html: '#unallocPayTable',
-      startY: finalY2 + 5,
-      tableWidth: 435,
-      margin: { left: 5 },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'center'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold'
-      },
-      columnStyles: {
-        0: { halign: 'center' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' },
-        5: { halign: 'center' }
-      }
-    });*/
 
     // Bilingual footer text
     doc.setFontSize(8);
@@ -1753,6 +1598,284 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.save(`${this.selectedParent.pcode}-open-statement-of-accounts-${this.mCurDate}.pdf`);
   }
 
+  openCPOSOA() {
+    let dialogRef = this.dialog.open(this.cposoaLookupDialog);
+    this.periodTotalDebit = 0;
+    this.periodTotalCredit = 0;
+    this.periodClosingBalance = 0;
+    this.periodAgeingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.cosoaData = []
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.cposoaData = []
+  }
+
+  getCPOSOA(customer: any) {
+    console.log(customer)
+    this.cposoaData = []
+    this.selectedCustomer = customer
+  }
+
+setCPOSOA() {
+  // Reset period totals
+  this.periodTotalCredit = 0;
+  this.periodTotalDebit = 0;
+  this.totalCredit = 0;
+  this.totalDebit = 0;
+
+  // Start and end of the day to ensure inclusive date range
+  const start = new Date(this.startDate);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(this.endDate);
+  end.setHours(23, 59, 59, 999);
+
+  console.log("Start:", start.toISOString());
+  console.log("End:", end.toISOString());
+
+  if (!this.startDate || !this.endDate) {
+    alert('Please select both start and end dates.');
+    return;
+  }
+
+  this.reportService.getCustomerOpenSoa('C', this.selectedCustomer.PCODE).subscribe((res: any) => {
+    const data = res.recordset;
+    console.log("Raw SOA Data:", data);
+
+    let runningBalance = 0;
+    this.ageingSummary = {
+      CURRENT: 0,
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0
+    };
+
+    this.cosoaData = data.map((row: any) => {
+      const debit = Number(row.DEBIT) || 0;
+      const credit = Number(row.CREDIT) || 0;
+
+      this.totalDebit += debit;
+      this.totalCredit += credit;
+
+      runningBalance += debit - credit;
+
+      let daysDiff: number | null = null;
+      if ((debit - credit) > 0 && row.DUEDATE) {
+        const dueDate = new Date(row.DUEDATE);
+        const today = new Date();
+        dueDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+
+        const diffTime = today.getTime() - dueDate.getTime();
+        daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      const amt = debit - credit;
+      if (daysDiff !== null) {
+        if (daysDiff < 0) {
+          this.ageingSummary.CURRENT += amt;
+        } else if (daysDiff <= 30) {
+          this.ageingSummary['30_DAYS'] += amt;
+        } else if (daysDiff <= 60) {
+          this.ageingSummary['60_DAYS'] += amt;
+        } else if (daysDiff <= 90) {
+          this.ageingSummary['90_DAYS'] += amt;
+        } else if (daysDiff <= 120) {
+          this.ageingSummary['120_DAYS'] += amt;
+        } else {
+          this.ageingSummary['ABOVE_120_DAYS'] += amt;
+        }
+      }
+
+      return {
+        ...row,
+        BALANCE: runningBalance,
+        DAYS_DIFF: daysDiff
+      };
+    });
+
+    // Filter based on INV_DATE range
+    this.cposoaData = this.cosoaData.filter(row => {
+      const txnDate = new Date(row.INV_DATE);
+      const inRange = txnDate >= start && txnDate <= end;
+      console.log(`Checking INV_DATE: ${txnDate.toISOString()} -> In range: ${inRange}`);
+      return inRange;
+    });
+
+    console.log("Filtered CPOSOA length:", this.cposoaData.length);
+    if(this.cposoaData.length === 0) {
+      alert('No data available in selected range!')
+    }
+
+    // Calculate period-wise balances
+    let periodRunningBalance = 0;
+    this.cposoaData = this.cposoaData.map(row => {
+      const debit = Number(row.DEBIT) || 0;
+      const credit = Number(row.CREDIT) || 0;
+
+      this.periodTotalDebit += debit;
+      this.periodTotalCredit += credit;
+      periodRunningBalance += debit - credit;
+
+      return {
+        ...row,
+        BALANCE: periodRunningBalance
+      };
+    });
+
+    // Calculate ageing for filtered data
+    this.periodAgeingSummary = this.calculateAgeing(this.cposoaData);
+  });
+}
+
+  printCPOSOA() {
+    if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    } else {
+      console.log(this.selectedCustomer)
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Period-wise Customer Open Statement of Accounts', 110, 20);
+    doc.roundedRect(5, 32.5, 436, 65, 5, 5);
+    doc.setFontSize(10);
+    doc.text(`${this.selectedCustomer.CUST_NAME}`,10,42);
+    doc.text(`Account ID: ${this.selectedCustomer.PCODE} (B2B)`,330,42);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,52);
+    doc.text('Address',10,52);
+    doc.text(`: ${this.selectedCustomer.ADD1}`,45,52);
+    doc.text(`  ${this.selectedCustomer.ACCOUNT_CATEGORY_DESC}`,45,62);
+    doc.text('Mobile',10,72);
+    doc.text(`: ${this.selectedCustomer.MOBILE}`,45,72);
+    doc.text('Email',10,82);
+    doc.text(`: ${this.selectedCustomer.EMAIL}`,45,82);
+    doc.text('Period',10,92);
+    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 92)
+    let firstPageStartY = 100; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#cpoSoaTable',
+      tableWidth: 435,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' }
+      },
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+  
+    autoTable(doc, {
+      html: '#cposoaAgeingSummaryTable',
+      startY: finalY1 + 5,
+      tableWidth: 435,
+      margin: { left: 5 },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' },
+        6: { halign: 'center' }
+      }
+    });
+
+    let finalY2 = doc.lastAutoTable?.finalY || 0
+
+    doc.text(`Total Debit (All): ${this.totalDebit.toFixed(2)}`, 10, finalY2 + 15);
+    doc.text(`Total Debit (Period): ${this.periodTotalDebit.toFixed(2)}`, 220, finalY2 + 15);
+
+    doc.text(`Total Credit (All): ${this.totalCredit.toFixed(2)}`, 10, finalY2 + 25);
+    doc.text(`Total Credit (Period): ${this.periodTotalCredit.toFixed(2)}`, 220, finalY2 + 25);
+
+
+    // Bilingual footer text
+    doc.setFontSize(8);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.text(engText, 10, finalY2+45);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 435, finalY2+45, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc);
+    // Save the PDF
+    doc.save(`${this.selectedCustomer.PCODE}-open-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
+    }
+  }
 
 calculateAgeing(data: any[]): any {
   const ageing = {
