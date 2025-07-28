@@ -66,7 +66,7 @@ export class LoginComponent {
       this.encrypt(data.password);
       this.authenticationService.checkUser(data.username).subscribe ((res: any) => {
         console.log(res.recordset[0]);
-        this.authenticationService.signin(res.recordset[0].USERCODE, res.recordset[0].FIRSTNAME, res.recordset[0].LASTNAME, res.recordset[0].USERID).subscribe((res: any) => {
+        this.authenticationService.signin(res.recordset[0].USERCODE, res.recordset[0].FIRSTNAME, res.recordset[0].LASTNAME, res.recordset[0].USERID, res.recordset[0].SPECIAL_ADMIN_RIGHTS).subscribe((res: any) => {
           this.router.navigate(['home/dashboard']).then(() => {
             // Then reload after navigation completes
             window.location.reload();

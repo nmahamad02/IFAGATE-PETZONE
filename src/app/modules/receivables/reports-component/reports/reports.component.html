@@ -6,12 +6,12 @@
                     <div class="col-8">
                         <h2 class="heading-title">Financial Reports</h2>
                     </div>
-                    <div class="col-2">
+                    <div class="col-2" *ngIf="userRight==='true'">
                         <button mat-raised-button class="bg-primary text-white btn btn-block" (click)="startFinanceSync()" title="Update Transaction Data" style="float: right">
                             <mat-icon>refresh</mat-icon> Finance Data
                         </button>
                     </div>
-                    <div class="col-2">
+                    <div class="col-2" *ngIf="userRight==='true'">
                         <button mat-raised-button class="bg-secondary text-white btn btn-block" (click)="startCustomerSync()" title="Update Customer Data" style="float: right">
                             <mat-icon>refresh</mat-icon> Customer Data
                         </button>
@@ -889,7 +889,7 @@
                 <table id="cposoaAgeingSummaryTable" class="table table-sm table-bordered">
                     <thead>
                         <tr>
-                            <th colspan="7" class="text-start">Open Ageing Summary</th>
+                            <th colspan="7" class="text-start">Period-wise Open Ageing Summary</th>
                         </tr>
                         <tr class="text-end">
                             <th>Current</th>

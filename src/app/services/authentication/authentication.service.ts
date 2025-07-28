@@ -26,7 +26,7 @@ private url = 'https://api.ifagate-petzone.duckdns.org/api/user'
   }
 
   // tslint:disable-next-line:max-line-length
-  setUser(userid: string, firstname: string, lastname: string, userclass: string) {
+  setUser(userid: string, firstname: string, lastname: string, userclass: string, userright: string) {
     // this sets a default user for the template
     this.loggedUser = new LoggedUserModel();
     this.loggedUser.firstname = firstname;
@@ -38,6 +38,7 @@ private url = 'https://api.ifagate-petzone.duckdns.org/api/user'
     localStorage.setItem('firstname', JSON.stringify(firstname));
     localStorage.setItem('lastname', JSON.stringify(lastname));
     localStorage.setItem('userclass', JSON.stringify(userclass));
+    localStorage.setItem('userright', JSON.stringify(userright));
   }
 
   checkUser(username: string): Observable<any> {
@@ -53,8 +54,8 @@ private url = 'https://api.ifagate-petzone.duckdns.org/api/user'
     return this.http.get(this.url + 's/roles/submodules/' + userclass + '/' + module)
   }
 
-  signin(usercode: string, firstname: string, lastname: string, userclass: string): Observable<any> {
-    this.setUser(usercode,firstname, lastname, userclass);
+  signin(usercode: string, firstname: string, lastname: string, userclass: string, userRight: string): Observable<any> {
+    this.setUser(usercode,firstname, lastname, userclass, userRight);
     // your log in logic should go here
     this.loggedUserSubject.next(this.loggedUser);
     return of(true);
@@ -82,6 +83,7 @@ private url = 'https://api.ifagate-petzone.duckdns.org/api/user'
     localStorage.removeItem('firstname');
     localStorage.removeItem('lastname');
     localStorage.removeItem('userclass');
+    localStorage.removeItem('userright');
     localStorage.removeItem('moduleList');
   
     // Small delay to allow processing
@@ -92,6 +94,7 @@ private url = 'https://api.ifagate-petzone.duckdns.org/api/user'
         !localStorage.getItem('firstname') &&
         !localStorage.getItem('lastname') &&
         !localStorage.getItem('userclass') &&
+        !localStorage.getItem('userright') &&        
         !localStorage.getItem('moduleList')
       ) {
         // First navigate to the login page

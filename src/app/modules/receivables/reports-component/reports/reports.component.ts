@@ -23,6 +23,9 @@ declare module 'jspdf' {
   styleUrls: ['./reports.component.scss']
 })
 export class ReportsComponent {
+
+  userRight = localStorage.getItem('userright')!
+
   @ViewChild('cwsoaLookupDialog', { static: false }) cwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('pwsoaLookupDialog', { static: false }) pwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('cwaslLookupDialog', { static: false }) cwaslLookupDialog!: TemplateRef<any>;
@@ -54,6 +57,11 @@ export class ReportsComponent {
     'ABOVE_120_DAYS': 0,
     'CURRENT': 0
   };
+  openingBalanceData = {
+    DEBIT: 0,
+    CREDIT: 0,
+    BALANCE: 0,
+  };
 
   totalDebit = 0;
   totalCredit = 0;
@@ -84,6 +92,7 @@ export class ReportsComponent {
   progress = [0, 0, 0];
 
   constructor(private financeService: FinanceService, private route: ActivatedRoute, private dialog: MatDialog, private router: Router, private accountService: AccountsService, private reportService: ReportsService, private dataSharingService: DataSharingService, private sapservice: SapService) { 
+    console.log(this.userRight)
     this.accountService.listOpbal(this.currentYear.toString(),'C').subscribe((res: any) => {
       console.log(res.recordset)
       this.customerList = res.recordset;
@@ -149,10 +158,13 @@ syncPayment() {
       console.error('Error syncing payments:', err);
       this.progress[2] = 34;
 
-      setTimeout(() => {
-        alert("Data sync successful!.");
-        this.resetProgress();
-      }, 300);
+      if (err.status === 401) {
+        alert("OPBAL Data sync unsuccessful: Unauthorized.");
+      } else {
+        alert("OPBAL Data sync successful."); // fallback in case it was a weird parse error
+      }
+
+      this.resetProgress();
     }
   );
 }
@@ -208,10 +220,13 @@ syncOPBAL() {
       console.error('Error syncing OPBAL:', err);
       this.progress[2] = 34;
 
-      setTimeout(() => {
-        alert("Data sync successful!.");
-        this.resetProgress();
-      }, 300);
+      if (err.status === 401) {
+        alert("OPBAL Data sync unsuccessful: Unauthorized.");
+      } else {
+        alert("OPBAL Data sync successful."); // fallback in case it was a weird parse error
+      }
+
+      this.resetProgress();
     }
   );
 }
@@ -1712,13 +1727,58 @@ setCPOSOA() {
       };
     });
 
-    // Filter based on INV_DATE range
+
+  // Reset opening balance
+  this.openingBalanceData = { DEBIT: 0, CREDIT: 0, BALANCE: 0 };
+
+  // Calculate opening balance for transactions before startDate
+  const openingData = this.cosoaData.filter(row => {
+    const txnDate = new Date(row.INV_DATE);
+    txnDate.setHours(0, 0, 0, 0);
+    return txnDate < start;
+  });
+
+  openingData.forEach(row => {
+    const debit = Number(row.DEBIT) || 0;
+    const credit = Number(row.CREDIT) || 0;
+    this.openingBalanceData.DEBIT += debit;
+    this.openingBalanceData.CREDIT += credit;
+    this.openingBalanceData.BALANCE += debit - credit;
+  });
+
+    /* Filter based on INV_DATE range
     this.cposoaData = this.cosoaData.filter(row => {
       const txnDate = new Date(row.INV_DATE);
       const inRange = txnDate >= start && txnDate <= end;
       console.log(`Checking INV_DATE: ${txnDate.toISOString()} -> In range: ${inRange}`);
       return inRange;
-    });
+    });*/
+
+    // Filter transactions in selected period
+const filteredPeriodRows = this.cosoaData.filter(row => {
+  const txnDate = new Date(row.INV_DATE);
+  return txnDate >= start && txnDate <= end;
+});
+
+// Build opening balance row
+const openingRow = {
+  INV_NO: 'OPENING BALANCE',
+  INV_DATE: null,
+  DEBIT: this.openingBalanceData.DEBIT,
+  CREDIT: this.openingBalanceData.CREDIT,
+  BALANCE: this.openingBalanceData.BALANCE,
+  DAYS_DIFF: null,
+  DUEDATE: null,
+  DOC_TYPE: '',
+  REMARKS: '',
+  VENDOR_REF_NO: '',
+  CUST_REF_NO: '',
+  ...this.selectedCustomer // optional: to keep column structure consistent
+};
+
+// Combine into final list
+this.cposoaData = [openingRow, ...filteredPeriodRows];
+
 
     console.log("Filtered CPOSOA length:", this.cposoaData.length);
     if(this.cposoaData.length === 0) {
@@ -1845,17 +1905,25 @@ setCPOSOA() {
       }
     });
 
-    let finalY2 = doc.lastAutoTable?.finalY || 0
-
-    doc.text(`Total Debit (All): ${this.totalDebit.toFixed(2)}`, 10, finalY2 + 15);
-    doc.text(`Total Debit (Period): ${this.periodTotalDebit.toFixed(2)}`, 220, finalY2 + 15);
-
-    doc.text(`Total Credit (All): ${this.totalCredit.toFixed(2)}`, 10, finalY2 + 25);
-    doc.text(`Total Credit (Period): ${this.periodTotalCredit.toFixed(2)}`, 220, finalY2 + 25);
-
-
     // Bilingual footer text
-    doc.setFontSize(8);
+    doc.setFontSize(9);
+    let finalY2 = doc.lastAutoTable?.finalY || 0
+/*
+    doc.text(`Total Debit (All)`, 10, finalY2 + 15);
+    doc.text(`: ${this.totalDebit.toFixed(3)}`, 85, finalY2 + 15);
+    doc.text(`Total Debit (Period)`, 250, finalY2 + 15);
+    doc.text(`: ${this.periodTotalDebit.toFixed(3)}`, 325, finalY2 + 15);
+
+    doc.text(`Total Credit (All)`, 10, finalY2 + 25);
+    doc.text(`: ${this.totalCredit.toFixed(3)}`, 85, finalY2 + 25);
+    doc.text(`Total Credit (Period)`, 250, finalY2 + 25);
+    doc.text(`: ${this.periodTotalCredit.toFixed(3)}`, 325, finalY2 + 25);
+
+    doc.text(`Total Balance (All)`, 10, finalY2 + 35);
+    doc.text(`: ${(this.totalDebit - this.totalCredit).toFixed(3)}`, 85, finalY2 + 35);
+    doc.text(`Total Balance (Period)`, 250, finalY2 + 35);
+    doc.text(`: ${(this.periodTotalDebit - this.periodTotalCredit).toFixed(3)}`, 325, finalY2 + 35);
+*/
     // Now the font is already registered thanks to the JS file!
     doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
     doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
@@ -1866,9 +1934,9 @@ setCPOSOA() {
     // Calculate X to center
     const centerX = pageWidth / 2;
     doc.setFontSize(10)
-    doc.text(engText, 10, finalY2+45);//, { align: 'center' });
+    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
     doc.setFont('Amiri-Regular', 'normal')
-    doc.text(araText, 435, finalY2+45, { align: 'right' });
+    doc.text(araText, 435, finalY2+15, { align: 'right' });
 
     // Add watermark (if necessary)
     doc = this.addWaterMark(doc);
