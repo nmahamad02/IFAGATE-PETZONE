@@ -33,7 +33,7 @@ export class ReportsComponent {
   @ViewChild('pcaslLookupDialog', { static: false }) pcaslLookupDialog!: TemplateRef<any>;
   @ViewChild('cosoaLookupDialog', { static: false }) cosoaLookupDialog!: TemplateRef<any>;
   @ViewChild('posoaLookupDialog', { static: false }) posoaLookupDialog!: TemplateRef<any>;
-  @ViewChild('cposoaLookupDialog', { static: false }) cposoaLookupDialog!: TemplateRef<any>;
+  @ViewChild('cpwsoaLookupDialog', { static: false }) cpwsoaLookupDialog!: TemplateRef<any>;
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
 
@@ -44,7 +44,7 @@ export class ReportsComponent {
   parentWiseCustomerAgeingList: any[] = [];
   cosoaData: any[] = []
   posoaData: any[] = []
-  cposoaData: any[] = []
+  cpwsoaData: any[] = []
 
   periodTotalDebit = 0;
   periodTotalCredit = 0;
@@ -159,9 +159,9 @@ syncPayment() {
       this.progress[2] = 34;
 
       if (err.status === 401) {
-        alert("OPBAL Data sync unsuccessful: Unauthorized.");
+        alert("Data sync unsuccessful: Unauthorized.");
       } else {
-        alert("OPBAL Data sync successful."); // fallback in case it was a weird parse error
+        alert("Data sync successful!"); // fallback in case it was a weird parse error
       }
 
       this.resetProgress();
@@ -221,9 +221,9 @@ syncOPBAL() {
       this.progress[2] = 34;
 
       if (err.status === 401) {
-        alert("OPBAL Data sync unsuccessful: Unauthorized.");
+        alert("Data sync unsuccessful: Unauthorized.");
       } else {
-        alert("OPBAL Data sync successful."); // fallback in case it was a weird parse error
+        alert("Data sync successful!!!"); // fallback in case it was a weird parse error
       }
 
       this.resetProgress();
@@ -1613,8 +1613,8 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.save(`${this.selectedParent.pcode}-open-statement-of-accounts-${this.mCurDate}.pdf`);
   }
 
-  openCPOSOA() {
-    let dialogRef = this.dialog.open(this.cposoaLookupDialog);
+  openCPWSOA() {
+    let dialogRef = this.dialog.open(this.cpwsoaLookupDialog);
     this.periodTotalDebit = 0;
     this.periodTotalCredit = 0;
     this.periodClosingBalance = 0;
@@ -1626,7 +1626,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       'ABOVE_120_DAYS': 0,
       'CURRENT': 0
     };
-    this.cosoaData = []
+    this.cwsoaData = []
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -1638,16 +1638,16 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       'ABOVE_120_DAYS': 0,
       'CURRENT': 0
     };
-    this.cposoaData = []
+    this.cpwsoaData = []
   }
 
-  getCPOSOA(customer: any) {
+  getCPWSOA(customer: any) {
     console.log(customer)
-    this.cposoaData = []
+    this.cpwsoaData = []
     this.selectedCustomer = customer
   }
 
-setCPOSOA() {
+setCPWSOA() {
   // Reset period totals
   this.periodTotalCredit = 0;
   this.periodTotalDebit = 0;
@@ -1669,7 +1669,7 @@ setCPOSOA() {
     return;
   }
 
-  this.reportService.getCustomerOpenSoa('C', this.selectedCustomer.PCODE).subscribe((res: any) => {
+  this.reportService.getCustomerSoa('C', this.selectedCustomer.PCODE).subscribe((res: any) => {
     const data = res.recordset;
     console.log("Raw SOA Data:", data);
 
@@ -1747,7 +1747,7 @@ setCPOSOA() {
   });
 
     /* Filter based on INV_DATE range
-    this.cposoaData = this.cosoaData.filter(row => {
+    this.cpwsoaData = this.cosoaData.filter(row => {
       const txnDate = new Date(row.INV_DATE);
       const inRange = txnDate >= start && txnDate <= end;
       console.log(`Checking INV_DATE: ${txnDate.toISOString()} -> In range: ${inRange}`);
@@ -1777,17 +1777,17 @@ const openingRow = {
 };
 
 // Combine into final list
-this.cposoaData = [openingRow, ...filteredPeriodRows];
+this.cpwsoaData = [openingRow, ...filteredPeriodRows];
 
 
-    console.log("Filtered CPOSOA length:", this.cposoaData.length);
-    if(this.cposoaData.length === 0) {
+    console.log("Filtered CPWSOA length:", this.cpwsoaData.length);
+    if(this.cpwsoaData.length === 0) {
       alert('No data available in selected range!')
     }
 
     // Calculate period-wise balances
     let periodRunningBalance = 0;
-    this.cposoaData = this.cposoaData.map(row => {
+    this.cpwsoaData = this.cpwsoaData.map(row => {
       const debit = Number(row.DEBIT) || 0;
       const credit = Number(row.CREDIT) || 0;
 
@@ -1802,11 +1802,11 @@ this.cposoaData = [openingRow, ...filteredPeriodRows];
     });
 
     // Calculate ageing for filtered data
-    this.periodAgeingSummary = this.calculateAgeing(this.cposoaData);
+    this.periodAgeingSummary = this.calculateAgeing(this.cpwsoaData);
   });
 }
 
-  printCPOSOA() {
+  printCPWSOA() {
     if (!this.startDate || !this.endDate) {
       alert('Please select both start and end dates.');
       return;
@@ -1816,7 +1816,7 @@ this.cposoaData = [openingRow, ...filteredPeriodRows];
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Period-wise Customer Open Statement of Accounts', 110, 20);
+    doc.text('Period-wise Customer Statement of Accounts', 115, 20);
     doc.roundedRect(5, 32.5, 436, 65, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedCustomer.CUST_NAME}`,10,42);
@@ -1837,7 +1837,7 @@ this.cposoaData = [openingRow, ...filteredPeriodRows];
     let firstPage = true;      // Flag to check if it's the first page
 
     autoTable(doc, {
-      html: '#cpoSoaTable',
+      html: '#cpwSoaTable',
       tableWidth: 435,
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
@@ -1877,7 +1877,7 @@ this.cposoaData = [openingRow, ...filteredPeriodRows];
     let finalY1 = doc.lastAutoTable?.finalY || 0
   
     autoTable(doc, {
-      html: '#cposoaAgeingSummaryTable',
+      html: '#cpwsoaAgeingSummaryTable',
       startY: finalY1 + 5,
       tableWidth: 435,
       margin: { left: 5 },
@@ -1941,7 +1941,7 @@ this.cposoaData = [openingRow, ...filteredPeriodRows];
     // Add watermark (if necessary)
     doc = this.addWaterMark(doc);
     // Save the PDF
-    doc.save(`${this.selectedCustomer.PCODE}-open-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
+    doc.save(`${this.selectedCustomer.PCODE}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
     }
   }
 
