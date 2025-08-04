@@ -34,6 +34,7 @@ export class ReportsComponent {
   @ViewChild('cosoaLookupDialog', { static: false }) cosoaLookupDialog!: TemplateRef<any>;
   @ViewChild('posoaLookupDialog', { static: false }) posoaLookupDialog!: TemplateRef<any>;
   @ViewChild('cpwsoaLookupDialog', { static: false }) cpwsoaLookupDialog!: TemplateRef<any>;
+  @ViewChild('ppwsoaLookupDialog', { static: false }) ppwsoaLookupDialog!: TemplateRef<any>;
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
 
@@ -45,6 +46,7 @@ export class ReportsComponent {
   cosoaData: any[] = []
   posoaData: any[] = []
   cpwsoaData: any[] = []
+  ppwsoaData: any[] = []
 
   periodTotalDebit = 0;
   periodTotalCredit = 0;
@@ -1683,7 +1685,7 @@ setCPWSOA() {
       'ABOVE_120_DAYS': 0
     };
 
-    this.cosoaData = data.map((row: any) => {
+    this.cwsoaData = data.map((row: any) => {
       const debit = Number(row.DEBIT) || 0;
       const credit = Number(row.CREDIT) || 0;
 
@@ -1732,7 +1734,7 @@ setCPWSOA() {
   this.openingBalanceData = { DEBIT: 0, CREDIT: 0, BALANCE: 0 };
 
   // Calculate opening balance for transactions before startDate
-  const openingData = this.cosoaData.filter(row => {
+  const openingData = this.cwsoaData.filter(row => {
     const txnDate = new Date(row.INV_DATE);
     txnDate.setHours(0, 0, 0, 0);
     return txnDate < start;
@@ -1755,7 +1757,7 @@ setCPWSOA() {
     });*/
 
     // Filter transactions in selected period
-const filteredPeriodRows = this.cosoaData.filter(row => {
+const filteredPeriodRows = this.cwsoaData.filter(row => {
   const txnDate = new Date(row.INV_DATE);
   return txnDate >= start && txnDate <= end;
 });
@@ -1777,8 +1779,7 @@ const openingRow = {
 };
 
 // Combine into final list
-this.cpwsoaData = [openingRow, ...filteredPeriodRows];
-
+this.cpwsoaData = [openingRow, ...filteredPeriodRows]
 
     console.log("Filtered CPWSOA length:", this.cpwsoaData.length);
     if(this.cpwsoaData.length === 0) {
@@ -1942,6 +1943,338 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows];
     doc = this.addWaterMark(doc);
     // Save the PDF
     doc.save(`${this.selectedCustomer.PCODE}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
+    }
+  }
+
+
+  openPPWSOA() {
+    let dialogRef = this.dialog.open(this.ppwsoaLookupDialog);
+    this.periodTotalDebit = 0;
+    this.periodTotalCredit = 0;
+    this.periodClosingBalance = 0;
+    this.periodAgeingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.pwsoaData = []
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.ppwsoaData = []
+  }
+
+  getPPWSOA(parent: any) {
+    console.log(parent)
+    this.ppwsoaData = []
+    this.selectedParent = parent
+  }
+
+setPPWSOA() {
+  // Reset period totals
+  this.periodTotalCredit = 0;
+  this.periodTotalDebit = 0;
+  this.totalCredit = 0;
+  this.totalDebit = 0;
+
+  // Start and end of the day to ensure inclusive date range
+  const start = new Date(this.startDate);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(this.endDate);
+  end.setHours(23, 59, 59, 999);
+
+  console.log("Start:", start.toISOString());
+  console.log("End:", end.toISOString());
+
+  if (!this.startDate || !this.endDate) {
+    alert('Please select both start and end dates.');
+    return;
+  }
+
+  this.reportService.getParentSoa(this.selectedParent.PARENTNAME).subscribe((res: any) => {
+    const data = res.recordset;
+    console.log("Raw SOA Data:", data);
+
+    let runningBalance = 0;
+    this.ageingSummary = {
+      CURRENT: 0,
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0
+    };
+
+    this.pwsoaData = data.map((row: any) => {
+      const debit = Number(row.DEBIT) || 0;
+      const credit = Number(row.CREDIT) || 0;
+
+      this.totalDebit += debit;
+      this.totalCredit += credit;
+
+      runningBalance += debit - credit;
+
+      let daysDiff: number | null = null;
+      if ((debit - credit) > 0 && row.DUEDATE) {
+        const dueDate = new Date(row.DUEDATE);
+        const today = new Date();
+        dueDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+
+        const diffTime = today.getTime() - dueDate.getTime();
+        daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      const amt = debit - credit;
+      if (daysDiff !== null) {
+        if (daysDiff < 0) {
+          this.ageingSummary.CURRENT += amt;
+        } else if (daysDiff <= 30) {
+          this.ageingSummary['30_DAYS'] += amt;
+        } else if (daysDiff <= 60) {
+          this.ageingSummary['60_DAYS'] += amt;
+        } else if (daysDiff <= 90) {
+          this.ageingSummary['90_DAYS'] += amt;
+        } else if (daysDiff <= 120) {
+          this.ageingSummary['120_DAYS'] += amt;
+        } else {
+          this.ageingSummary['ABOVE_120_DAYS'] += amt;
+        }
+      }
+
+      return {
+        ...row,
+        BALANCE: runningBalance,
+        DAYS_DIFF: daysDiff
+      };
+    });
+
+
+  // Reset opening balance
+  this.openingBalanceData = { DEBIT: 0, CREDIT: 0, BALANCE: 0 };
+
+  // Calculate opening balance for transactions before startDate
+  const openingData = this.pwsoaData.filter(row => {
+    const txnDate = new Date(row.INV_DATE);
+    txnDate.setHours(0, 0, 0, 0);
+    return txnDate < start;
+  });
+
+  openingData.forEach(row => {
+    const debit = Number(row.DEBIT) || 0;
+    const credit = Number(row.CREDIT) || 0;
+    this.openingBalanceData.DEBIT += debit;
+    this.openingBalanceData.CREDIT += credit;
+    this.openingBalanceData.BALANCE += debit - credit;
+  });
+
+    /* Filter based on INV_DATE range
+    this.cpwsoaData = this.cosoaData.filter(row => {
+      const txnDate = new Date(row.INV_DATE);
+      const inRange = txnDate >= start && txnDate <= end;
+      console.log(`Checking INV_DATE: ${txnDate.toISOString()} -> In range: ${inRange}`);
+      return inRange;
+    });*/
+
+    // Filter transactions in selected period
+const filteredPeriodRows = this.pwsoaData.filter(row => {
+  const txnDate = new Date(row.INV_DATE);
+  return txnDate >= start && txnDate <= end;
+});
+
+// Build opening balance row
+const openingRow = {
+  INV_NO: 'OPENING BALANCE',
+  INV_DATE: null,
+  DEBIT: this.openingBalanceData.DEBIT,
+  CREDIT: this.openingBalanceData.CREDIT,
+  BALANCE: this.openingBalanceData.BALANCE,
+  DAYS_DIFF: null,
+  DUEDATE: null,
+  DOC_TYPE: '',
+  REMARKS: '',
+  VENDOR_REF_NO: '',
+  CUST_REF_NO: '',
+  ...this.selectedParent // optional: to keep column structure consistent
+};
+
+// Combine into final list
+this.ppwsoaData = [openingRow, ...filteredPeriodRows];
+
+    console.log("Filtered CPWSOA length:", this.ppwsoaData.length);
+    if(this.ppwsoaData.length === 0) {
+      alert('No data available in selected range!')
+    }
+
+    // Calculate period-wise balances
+    let periodRunningBalance = 0;
+    this.ppwsoaData = this.ppwsoaData.map(row => {
+      const debit = Number(row.DEBIT) || 0;
+      const credit = Number(row.CREDIT) || 0;
+
+      this.periodTotalDebit += debit;
+      this.periodTotalCredit += credit;
+      periodRunningBalance += debit - credit;
+
+      return {
+        ...row,
+        BALANCE: periodRunningBalance
+      };
+    });
+
+    // Calculate ageing for filtered data
+    this.periodAgeingSummary = this.calculateAgeing(this.ppwsoaData);
+  });
+}
+
+  printPPWSOA() {
+    if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    } else {
+      console.log(this.selectedParent)
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Period-wise Parent-wise Customer Statement of Accounts', 100, 20);
+    doc.roundedRect(5, 32.5, 436, 65, 5, 5);
+    doc.setFontSize(10);
+    doc.text(`${this.selectedParent.PARENTNAME}`,10,42);
+    doc.text(`Account ID: ${this.selectedParent.pcode} (B2B)`,330,42);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,52);
+    doc.text('Address',10,52);
+    doc.text(`: ${this.selectedParent.add1}`,45,52);
+    doc.text(`  ${this.selectedParent.country}`,45,62);
+    doc.text('Mobile',10,72);
+    doc.text(`: ${this.selectedParent.mobile}`,45,72);
+    doc.text('Email',10,82);
+    doc.text(`: ${this.selectedParent.email}`,45,82);
+    doc.text('Period',10,92);
+    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 92)
+    let firstPageStartY = 100; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#ppwSoaTable',
+      tableWidth: 435,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' }
+      },
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+  
+    autoTable(doc, {
+      html: '#ppwsoaAgeingSummaryTable',
+      startY: finalY1 + 5,
+      tableWidth: 435,
+      margin: { left: 5 },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' },
+        6: { halign: 'center' }
+      }
+    });
+
+    // Bilingual footer text
+    doc.setFontSize(9);
+    let finalY2 = doc.lastAutoTable?.finalY || 0
+/*
+    doc.text(`Total Debit (All)`, 10, finalY2 + 15);
+    doc.text(`: ${this.totalDebit.toFixed(3)}`, 85, finalY2 + 15);
+    doc.text(`Total Debit (Period)`, 250, finalY2 + 15);
+    doc.text(`: ${this.periodTotalDebit.toFixed(3)}`, 325, finalY2 + 15);
+
+    doc.text(`Total Credit (All)`, 10, finalY2 + 25);
+    doc.text(`: ${this.totalCredit.toFixed(3)}`, 85, finalY2 + 25);
+    doc.text(`Total Credit (Period)`, 250, finalY2 + 25);
+    doc.text(`: ${this.periodTotalCredit.toFixed(3)}`, 325, finalY2 + 25);
+
+    doc.text(`Total Balance (All)`, 10, finalY2 + 35);
+    doc.text(`: ${(this.totalDebit - this.totalCredit).toFixed(3)}`, 85, finalY2 + 35);
+    doc.text(`Total Balance (Period)`, 250, finalY2 + 35);
+    doc.text(`: ${(this.periodTotalDebit - this.periodTotalCredit).toFixed(3)}`, 325, finalY2 + 35);
+*/
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 435, finalY2+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc);
+    // Save the PDF
+    doc.save(`${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
     }
   }
 
