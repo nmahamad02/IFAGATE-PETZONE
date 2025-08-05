@@ -54,6 +54,10 @@ private url = 'https://api.ifagate-petzone.duckdns.org/api'
     return this.http.get(this.url + '/report/get-parent')
   }
 
+  getParentFromOrg(org: string) {
+    return this.http.get(this.url + '/report/get-parent-from-organisation/' + org)
+  }
+
   getCategory() {
     return this.http.get(this.url + '/report/get-category')
   }

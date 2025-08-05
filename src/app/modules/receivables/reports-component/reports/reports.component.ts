@@ -35,6 +35,9 @@ export class ReportsComponent {
   @ViewChild('posoaLookupDialog', { static: false }) posoaLookupDialog!: TemplateRef<any>;
   @ViewChild('cpwsoaLookupDialog', { static: false }) cpwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('ppwsoaLookupDialog', { static: false }) ppwsoaLookupDialog!: TemplateRef<any>;
+  @ViewChild('pwoutLookupDialog', { static: false }) pwoutLookupDialog!: TemplateRef<any>;
+  @ViewChild('catovrLookupDialog', { static: false }) catovrLookupDialog!: TemplateRef<any>;
+
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
 
@@ -47,6 +50,11 @@ export class ReportsComponent {
   posoaData: any[] = []
   cpwsoaData: any[] = []
   ppwsoaData: any[] = []
+  pwoutData: any[] = []
+  catovrData: any[] = []
+
+  industryList: any[] = [];
+  organisationList: any[] = [];
 
   periodTotalDebit = 0;
   periodTotalCredit = 0;
@@ -73,6 +81,7 @@ export class ReportsComponent {
 
   selectedCustomer: any
   selectedParent: any
+  selectedCategory: string = ''
 
   startDate: Date;
   endDate: Date;
@@ -106,6 +115,15 @@ export class ReportsComponent {
       this.parentList = res.recordset
     }, (err: any) => {
       console.log(err)
+    })
+
+    this.reportService.getIndustry().subscribe((res: any) => {
+      this.industryList = res.recordset
+      console.log(this.industryList)
+    })
+    this.reportService.getOrganisation().subscribe((res: any) => {
+      this.organisationList = res.recordset
+      console.log(this.organisationList)
     })
   }
 
@@ -1649,7 +1667,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     this.selectedCustomer = customer
   }
 
-setCPWSOA() {
+  setCPWSOA() {
   // Reset period totals
   this.periodTotalCredit = 0;
   this.periodTotalDebit = 0;
@@ -1805,7 +1823,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     // Calculate ageing for filtered data
     this.periodAgeingSummary = this.calculateAgeing(this.cpwsoaData);
   });
-}
+  }
 
   printCPWSOA() {
     if (!this.startDate || !this.endDate) {
@@ -1946,7 +1964,6 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     }
   }
 
-
   openPPWSOA() {
     let dialogRef = this.dialog.open(this.ppwsoaLookupDialog);
     this.periodTotalDebit = 0;
@@ -1981,7 +1998,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     this.selectedParent = parent
   }
 
-setPPWSOA() {
+  setPPWSOA() {
   // Reset period totals
   this.periodTotalCredit = 0;
   this.periodTotalDebit = 0;
@@ -2137,7 +2154,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     // Calculate ageing for filtered data
     this.periodAgeingSummary = this.calculateAgeing(this.ppwsoaData);
   });
-}
+  }
 
   printPPWSOA() {
     if (!this.startDate || !this.endDate) {
@@ -2275,6 +2292,441 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     doc = this.addWaterMark(doc);
     // Save the PDF
     doc.save(`${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
+    }
+  }
+
+  openPWOUT() {
+    let dialogRef = this.dialog.open(this.pwoutLookupDialog);
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.pwoutData = []
+  }
+
+  getPWOUT(parent: any) {
+    console.log(parent)
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.pwoutData = []
+    this.selectedParent = parent
+    this.reportService.getParentSoa(parent.PARENTNAME).subscribe((res: any) => {
+      console.log(res.recordset);
+
+      const rawData = res.recordset;
+
+      const debitList: any[] = [];
+      const creditList: any[] = [];
+
+      // Step 1: Segregate
+      rawData.forEach((row: any) => {
+        const debit = Number(row.DEBIT) || 0;
+        const credit = Number(row.CREDIT) || 0;
+        if (debit > 0 && credit === 0) {
+          debitList.push({ ...row, DEBIT: debit, CREDIT: 0 });
+        } else if (credit > 0 && debit === 0) {
+          creditList.push({ ...row, DEBIT: 0, CREDIT: credit });
+        }    
+      });
+
+      // Step 2: Calculate total credit
+      let runningCredit = creditList.reduce((sum, row) => sum + row.CREDIT, 0);
+      let runningBalance = 0;
+
+      // Step 3: Reconcile  
+      for (const row of debitList) {
+        const originalDebit = row.DEBIT;
+
+        if (runningCredit === 0) {
+          this.pwoutData.push(row);
+          continue;
+        }
+        if (runningCredit >= originalDebit) {
+          // Fully offset
+          runningCredit -= originalDebit;
+        } else {
+          // Partially offset
+          const netDebit = originalDebit - runningCredit;
+          runningCredit = 0;
+          this.pwoutData.push({ ...row, DEBIT: netDebit });
+        }
+      }
+      // Step 4: Compute DAYS_DIFF and ageing
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      this.pwoutData = this.pwoutData.map(row => {
+        const debit = Number(row.DEBIT) || 0;
+        const dueDate = new Date(row.DUEDATE);
+        dueDate.setHours(0, 0, 0, 0);
+
+        const diffTime = today.getTime() - dueDate.getTime();
+        const daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+       
+        this.totalDebit += debit;
+        runningBalance += debit;
+        // Step 5: Ageing classification
+        if (daysDiff < 0) {
+          this.ageingSummary.CURRENT += debit;
+        } else if (daysDiff <= 30) {
+          this.ageingSummary['30_DAYS'] += debit;
+        } else if (daysDiff <= 60) {
+          this.ageingSummary['60_DAYS'] += debit;
+        } else if (daysDiff <= 90) {
+          this.ageingSummary['90_DAYS'] += debit;
+        } else if (daysDiff <= 120) {
+          this.ageingSummary['120_DAYS'] += debit;
+        } else {
+          this.ageingSummary['ABOVE_120_DAYS'] += debit;
+        }
+        return {
+          ...row,
+          BALANCE: runningBalance,
+          DAYS_DIFF: daysDiff
+        };
+      });
+
+    console.log('Filtered Outstanding:', this.pwoutData);
+    console.log('Ageing Summary:', this.ageingSummary);
+  });
+  }
+
+  printPWOUT() {
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Parent-wise Outstanding', 150, 20);
+    doc.roundedRect(5, 32.5, 436, 55, 5, 5);
+    doc.setFontSize(10);
+    doc.text(`${this.selectedParent.PARENTNAME}`,10,42);
+    doc.text(`Group Acc ID: ${this.selectedParent.pcode}`,330,42);// (${this.selectedParent.customertype})`,330,42);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,52);
+    doc.text('Address',10,52);
+    doc.text(`: ${this.selectedParent.add1}`,45,52);
+    doc.text(`  ${this.selectedParent.country}`,45,62);
+    doc.text('Mobile',10,72);
+    doc.text(`: ${this.selectedParent.mobile}`,45,72);
+    doc.text('Email',10,82);
+    doc.text(`: ${this.selectedParent.email}`,45,82);
+    let firstPageStartY = 90; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#pwOutTable',
+      tableWidth: 435,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      columnStyles: {
+        6: { halign: 'right' },
+        7: { halign: 'right' },
+        8: { halign: 'right' }
+      },
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+  
+    autoTable(doc, {
+      html: '#pwoutAgeingSummaryTable',
+      startY: finalY1 + 5,
+      tableWidth: 435,
+      margin: { left: 5 },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' },
+        6: { halign: 'center' }
+      }
+    });
+
+    let finalY2 = doc.lastAutoTable?.finalY || 0
+
+    // Bilingual footer text
+    doc.setFontSize(8);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 435, finalY2+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc);
+    // Save the PDF
+    doc.save(`${this.selectedParent.pcode}-outstanding-${this.mCurDate}.pdf`);
+  }
+
+  openCATOVR() {
+    let dialogRef = this.dialog.open(this.catovrLookupDialog);
+    this.periodTotalDebit = 0;
+    this.periodTotalCredit = 0;
+    this.periodClosingBalance = 0;
+    this.periodAgeingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.catovrData = []
+  }
+
+  getCATOVR(category: any) {
+    console.log(category)
+    this.selectedCategory = category
+  }
+  
+  setCATOVR() {
+    console.log(this.selectedCategory)
+
+    if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    }
+
+    const start = new Date(this.startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(this.endDate);
+    end.setHours(23, 59, 59, 999);
+
+    this.reportService.getParentFromOrg(this.selectedCategory).subscribe((res: any) => {
+      this.catovrData = res.recordset
+      console.log(this.catovrData)
+      this.catovrData.forEach((parent, index) => {
+        console.log(parent.PARENTNAMEID)
+        this.reportService.getParentSoa(parent.PARENTNAMEID).subscribe((resp: any) => {
+          const data = resp.recordset;
+    
+          console.log("Raw SOA Data:", data);
+
+          let runningBalance = 0;
+          let localAgeing = {
+            CURRENT: 0,
+            '30_DAYS': 0,
+            '60_DAYS': 0,
+            '90_DAYS': 0,
+            '120_DAYS': 0,
+            'ABOVE_120_DAYS': 0
+          };
+          let totalCollection = 0;
+
+          data.forEach((row: any) => {
+            const debit = Number(row.DEBIT) || 0;
+            const credit = Number(row.CREDIT) || 0;
+            runningBalance += debit - credit;
+
+            const dueDate = new Date(row.DUEDATE)
+            // Collection (credit) within date range
+
+            let daysDiff: number | null = null;
+            if ((debit - credit) > 0 && row.DUEDATE) {
+              const today = new Date();
+              dueDate.setHours(0, 0, 0, 0);
+              today.setHours(0, 0, 0, 0);
+              const diffTime = today.getTime() - dueDate.getTime();
+              daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            }
+
+            const amt = debit - credit
+            if (daysDiff !== null) {
+              if (daysDiff < 0) {
+                localAgeing.CURRENT += amt;
+              } else if (daysDiff <= 30) {
+                localAgeing['30_DAYS'] += amt;
+              } else if (daysDiff <= 60) {
+                localAgeing['60_DAYS'] += amt;
+              } else if (daysDiff <= 90) {
+                localAgeing['90_DAYS'] += amt;
+              } else if (daysDiff <= 120) {
+                localAgeing['120_DAYS'] += amt;
+              } else {
+                localAgeing['ABOVE_120_DAYS'] += amt;
+              }
+            }
+
+            const trnDate = new Date(row.INV_DATE)
+
+            if ((trnDate >= start && trnDate <= end) && (row.DESCRIPTION === 'Payment')) {
+              totalCollection += credit;
+            }
+          });
+
+          // Step 3: Calculate overdue
+          const overdue = runningBalance - localAgeing.CURRENT;
+
+          // Step 4: Inject into the catovrData row
+          this.catovrData[index] = {
+            ...parent,
+            BALANCE: runningBalance,
+            CURRENT: localAgeing.CURRENT,
+            OVERDUE: overdue,
+            COLLECTED: totalCollection
+          };
+        })
+      })
+    })
+  }
+
+  printCATOVR() {
+    if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    } else {
+      console.log(this.selectedParent)
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Category-wise Customer Overdue Statement', 130, 20);
+    doc.roundedRect(5, 32.5, 436, 25, 5, 5);
+    doc.setFontSize(10);
+    doc.text(`${this.selectedCategory}`,10,42);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,42);
+    doc.text('Period',10,52);
+    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 52)
+    let firstPageStartY = 60; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#catOvrTable',
+      tableWidth: 435,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' }
+      },
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+
+    // Bilingual footer text
+    doc.setFontSize(9);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.text(engText, 10, finalY1+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 435, finalY1+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc);
+    // Save the PDF
+    doc.save(`${this.selectedCategory}-overdue-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
     }
   }
 

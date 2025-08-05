@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { ReportsService } from 'src/app/services/reports/reports.service';
 
-
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
