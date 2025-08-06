@@ -212,7 +212,12 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-8"></div>
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportCWSOA()" style="float: right" title="export">
+                Export to Excel
+            </button>
+        </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCWSOA()" style="float: right" title="print">
                 Print Statement
@@ -338,7 +343,12 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-8"></div>
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportPWSOA()" style="float: right" title="export">
+                Export to Excel
+            </button>
+        </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printPWSOA()" style="float: right" title="print">
                 Print Statement
@@ -417,7 +427,12 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-8"></div>
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="exportCWASL()" style="float: right" title="export">
+                Export to Excel
+            </button>
+        </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCWASL()" style="float: right" title="print">
                 Print Statement
@@ -495,7 +510,12 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-8"></div>
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportPWASL()" style="float: right" title="export">
+                Export to Excel
+            </button>
+        </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printPWASL()" style="float: right" title="print">
                 Print Statement
@@ -597,7 +617,12 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-8"></div>
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportPCASL()" style="float: right" title="export">
+                Export to Excel
+            </button>
+        </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printPCASL()" style="float: right" title="print">
                 Print Statement
@@ -719,7 +744,12 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-8"></div>
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-block btn btn-block" (click)="exportCOSOA()" style="float: right" title="export">
+                Export to Excel
+            </button>
+        </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCOSOA()" style="float: right" title="print">
                 Print Statement
@@ -845,7 +875,12 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-8"></div>
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportPOSOA()" style="float: right" title="export">
+                Export to Excel
+            </button>
+        </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printPOSOA()" style="float: right" title="print">
                 Print Statement
@@ -982,7 +1017,12 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-8"></div>
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportCPWSOA()" style="float: right" title="export">
+                Export to Excel
+            </button>
+        </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCPWSOA()" style="float: right" title="print">
                 Print Statement
@@ -1121,7 +1161,12 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-8"></div>
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportPPWSOA()" style="float: right" title="export">
+                Export to Excel
+            </button>
+        </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printPPWSOA()" style="float: right" title="print">
                 Print Statement
@@ -1247,7 +1292,12 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-8"></div>
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportPWOUT()" style="float: right" title="export">
+                Export to Excel
+            </button>
+        </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printPWOUT()" style="float: right" title="print">
                 Print Statement
@@ -1300,17 +1350,30 @@
                         <td>{{ row.PARENTNAMEID }}</td>
                         <td>{{ row.ORGNISATION }}</td>
                         <td class="text-end">{{ row.BALANCE | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.OVERDUE | number:'1.3-3' }}</td>
+                        <td class="text-end">{{ (row.OVERDUE > 0 ? row.OVERDUE : 0) | number:'1.3-3' }}</td>
                         <td class="text-end">{{ row.COLLECTED | number:'1.3-3' }}</td>                        
                     </tr>
                 </tbody>
+                <tfoot>
+                        <tr class="fw-bold text-end" >
+                            <th colspan="2" class="text-end">Total</th>
+                            <th class="text-end">{{ getCATOVRTotal('BALANCE') | number:'1.3-3' }}</th>
+                            <th class="text-end">{{ getCATOVRTotal('OVERDUE') | number:'1.3-3' }}</th>
+                            <th class="text-end">{{ getCATOVRTotal('COLLECTED') | number:'1.3-3' }}</th>
+                        </tr>
+                    </tfoot>
             </table>
         </div>
         <br>
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-8"></div>
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportCATOVR()" style="float: right" title="export">
+                Export to Excel
+            </button>
+        </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCATOVR()" style="float: right" title="print">
                 Print Statement

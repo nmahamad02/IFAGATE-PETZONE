@@ -8,6 +8,8 @@ import { ReportsService } from 'src/app/services/reports/reports.service';
 import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
 import { SapService } from 'src/app/services/SAP/sap.service';
+import * as XLSX from 'xlsx';
+import * as FileSaver from 'file-saver';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -482,6 +484,64 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.save(`${this.selectedCustomer.PCODE}-statement-of-accounts-${this.mCurDate}.pdf`);
   }
 
+  exportCWSOA(): void {
+    const fileName = `${this.selectedCustomer.PCODE}-statement-of-accounts-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.cwsoaData.map(row => ({
+      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
+      'Invoice No': row.INV_NO,
+      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
+      'Description': row.DESCRIPTION,
+      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
+      'Debit': row.DEBIT || '',
+      'Credit': row.CREDIT || '',
+      'Balance': row.BALANCE
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.ageingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.ageingSummary['CURRENT'] || 0) +
+        (this.ageingSummary['30_DAYS'] || 0) +
+        (this.ageingSummary['60_DAYS'] || 0) +
+        (this.ageingSummary['90_DAYS'] || 0) +
+        (this.ageingSummary['120_DAYS'] || 0) +
+        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwsoaSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
   openPWSOA() {
     let dialogRef = this.dialog.open(this.pwsoaLookupDialog);
     this.totalDebit = 0;
@@ -685,6 +745,65 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.save(`${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}.pdf`);
   }
 
+  exportPWSOA(): void {
+    const fileName = `${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.pwsoaData.map(row => ({
+      'Branch Name': row.CUST_NAME,
+      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
+      'Invoice No': row.INV_NO,
+      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
+      'Description': row.DESCRIPTION,
+      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
+      'Debit': row.DEBIT || '',
+      'Credit': row.CREDIT || '',
+      'Balance': row.BALANCE
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.ageingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.ageingSummary['CURRENT'] || 0) +
+        (this.ageingSummary['30_DAYS'] || 0) +
+        (this.ageingSummary['60_DAYS'] || 0) +
+        (this.ageingSummary['90_DAYS'] || 0) +
+        (this.ageingSummary['120_DAYS'] || 0) +
+        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwsoaSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
   openCWASL() {
     let dialogRef = this.dialog.open(this.cwaslLookupDialog);
     this.totalDebit = 0;
@@ -855,6 +974,66 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.save(`customer-ageing-statement-${this.mCurDate}.pdf`);
   }
 
+  exportCWASL(): void {
+    const fileName = `customer-ageing-statement-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.customerAgeingSummaryList.map(row => ({
+      'Customer Code': row.pcode,
+      'Name': row.customerName,
+      'Current': row.ageingSummary['CURRENT'],
+      '30 Days': row.ageingSummary['30_DAYS'],
+      '60 Days': row.ageingSummary['60_DAYS'],
+      '90 Days': row.ageingSummary['90_DAYS'],
+      '120 Days': row.ageingSummary['120_DAYS'],
+      'Above 20 Days': row.ageingSummary['ABOVE_120_DAYS'],
+      'Total': row.total,
+      
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.ageingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.ageingSummary['CURRENT'] || 0) +
+        (this.ageingSummary['30_DAYS'] || 0) +
+        (this.ageingSummary['60_DAYS'] || 0) +
+        (this.ageingSummary['90_DAYS'] || 0) +
+        (this.ageingSummary['120_DAYS'] || 0) +
+        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwsoaSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
   openPWASL() {
     let dialogRef = this.dialog.open(this.pwaslLookupDialog);
     this.totalDebit = 0;
@@ -1022,6 +1201,66 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc = this.addWaterMark(doc);
     // Save the PDF
     doc.save(`parent-ageing-statement-${this.mCurDate}.pdf`);
+  }
+
+  exportPWASL(): void {
+    const fileName = `parent-ageing-statement-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.parentAgeingSummaryList.map(row => ({
+      'Parent Code': row.pcode,
+      'Name': row.parentName,
+      'Current': row.ageingSummary['CURRENT'],
+      '30 Days': row.ageingSummary['30_DAYS'],
+      '60 Days': row.ageingSummary['60_DAYS'],
+      '90 Days': row.ageingSummary['90_DAYS'],
+      '120 Days': row.ageingSummary['120_DAYS'],
+      'Above 20 Days': row.ageingSummary['ABOVE_120_DAYS'],
+      'Total': row.total,
+      
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.ageingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.ageingSummary['CURRENT'] || 0) +
+        (this.ageingSummary['30_DAYS'] || 0) +
+        (this.ageingSummary['60_DAYS'] || 0) +
+        (this.ageingSummary['90_DAYS'] || 0) +
+        (this.ageingSummary['120_DAYS'] || 0) +
+        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwsoaSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
   }
 
   openPCASL() {
@@ -1224,6 +1463,66 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     // Save the PDF
     doc.save(`${this.selectedParent.pcode}-parent-ageing-statement-${this.mCurDate}.pdf`);
 
+  }
+
+  exportPCASL(): void {
+    const fileName = `${this.selectedParent.pcode}-parent-ageing-statement-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.parentWiseCustomerAgeingList.map(row => ({
+      'Customer Code': row.custCode,
+      'Name': row.custName,
+      'Current': row.ageingSummary['CURRENT'],
+      '30 Days': row.ageingSummary['30_DAYS'],
+      '60 Days': row.ageingSummary['60_DAYS'],
+      '90 Days': row.ageingSummary['90_DAYS'],
+      '120 Days': row.ageingSummary['120_DAYS'],
+      'Above 20 Days': row.ageingSummary['ABOVE_120_DAYS'],
+      'Total': row.total,
+      
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.ageingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.ageingSummary['CURRENT'] || 0) +
+        (this.ageingSummary['30_DAYS'] || 0) +
+        (this.ageingSummary['60_DAYS'] || 0) +
+        (this.ageingSummary['90_DAYS'] || 0) +
+        (this.ageingSummary['120_DAYS'] || 0) +
+        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwsoaSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
   }
 
   openCOSOA() {
@@ -1430,6 +1729,64 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.save(`${this.selectedCustomer.PCODE}-open-statement-of-accounts-${this.mCurDate}.pdf`);
   }
 
+  exportCOSOA(): void {
+    const fileName = `${this.selectedCustomer.PCODE}-open-statement-of-accounts-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.cosoaData.map(row => ({
+      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
+      'Invoice No': row.INV_NO,
+      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
+      'Description': row.DESCRIPTION,
+      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
+      'Debit': row.DEBIT || '',
+      'Credit': row.CREDIT || '',
+      'Balance': row.BALANCE
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.ageingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.ageingSummary['CURRENT'] || 0) +
+        (this.ageingSummary['30_DAYS'] || 0) +
+        (this.ageingSummary['60_DAYS'] || 0) +
+        (this.ageingSummary['90_DAYS'] || 0) +
+        (this.ageingSummary['120_DAYS'] || 0) +
+        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwsoaSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
   openPOSOA() {
     let dialogRef = this.dialog.open(this.posoaLookupDialog);
     this.totalDebit = 0;
@@ -1631,6 +1988,65 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc = this.addWaterMark(doc);
     // Save the PDF
     doc.save(`${this.selectedParent.pcode}-open-statement-of-accounts-${this.mCurDate}.pdf`);
+  }
+
+  exportPOSOA(): void {
+    const fileName = `${this.selectedParent.pcode}-open-statement-of-accounts-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.posoaData.map(row => ({
+      'Branch Name': row.CUST_NAME,
+      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
+      'Invoice No': row.INV_NO,
+      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
+      'Description': row.DESCRIPTION,
+      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
+      'Debit': row.DEBIT || '',
+      'Credit': row.CREDIT || '',
+      'Balance': row.BALANCE
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.ageingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.ageingSummary['CURRENT'] || 0) +
+        (this.ageingSummary['30_DAYS'] || 0) +
+        (this.ageingSummary['60_DAYS'] || 0) +
+        (this.ageingSummary['90_DAYS'] || 0) +
+        (this.ageingSummary['120_DAYS'] || 0) +
+        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwsoaSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
   }
 
   openCPWSOA() {
@@ -1964,6 +2380,64 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     }
   }
 
+  exportCPWSOA(): void {
+    const fileName = `${this.selectedCustomer.PCODE}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.cpwsoaData.map(row => ({
+      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
+      'Invoice No': row.INV_NO,
+      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
+      'Description': row.DESCRIPTION,
+      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
+      'Debit': row.DEBIT || '',
+      'Credit': row.CREDIT || '',
+      'Balance': row.BALANCE
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.periodAgeingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.periodAgeingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.periodAgeingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.periodAgeingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.periodAgeingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.periodAgeingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.periodAgeingSummary['CURRENT'] || 0) +
+        (this.periodAgeingSummary['30_DAYS'] || 0) +
+        (this.periodAgeingSummary['60_DAYS'] || 0) +
+        (this.periodAgeingSummary['90_DAYS'] || 0) +
+        (this.periodAgeingSummary['120_DAYS'] || 0) +
+        (this.periodAgeingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwsoaSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
   openPPWSOA() {
     let dialogRef = this.dialog.open(this.ppwsoaLookupDialog);
     this.periodTotalDebit = 0;
@@ -2295,6 +2769,65 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     }
   }
 
+  exportPPWSOA(): void {
+    const fileName = `${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.ppwsoaData.map(row => ({
+      'Branch Name': row.CUST_NAME,
+      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
+      'Invoice No': row.INV_NO,
+      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
+      'Description': row.DESCRIPTION,
+      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
+      'Debit': row.DEBIT || '',
+      'Credit': row.CREDIT || '',
+      'Balance': row.BALANCE
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.periodAgeingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.periodAgeingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.periodAgeingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.periodAgeingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.periodAgeingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.periodAgeingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.periodAgeingSummary['CURRENT'] || 0) +
+        (this.periodAgeingSummary['30_DAYS'] || 0) +
+        (this.periodAgeingSummary['60_DAYS'] || 0) +
+        (this.periodAgeingSummary['90_DAYS'] || 0) +
+        (this.periodAgeingSummary['120_DAYS'] || 0) +
+        (this.periodAgeingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwsoaSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
   openPWOUT() {
     let dialogRef = this.dialog.open(this.pwoutLookupDialog);
     this.totalDebit = 0;
@@ -2522,6 +3055,65 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     doc.save(`${this.selectedParent.pcode}-outstanding-${this.mCurDate}.pdf`);
   }
 
+  exportPWOUT(): void {
+    const fileName = `${this.selectedParent.pcode}-outstanding-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.pwoutData.map(row => ({
+      'Branch Name': row.CUST_NAME,
+      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
+      'Invoice No': row.INV_NO,
+      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
+      'Description': row.DESCRIPTION,
+      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
+      'Debit': row.DEBIT || '',
+      'Credit': row.CREDIT || '',
+      'Balance': row.BALANCE
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.ageingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.ageingSummary['CURRENT'] || 0) +
+        (this.ageingSummary['30_DAYS'] || 0) +
+        (this.ageingSummary['60_DAYS'] || 0) +
+        (this.ageingSummary['90_DAYS'] || 0) +
+        (this.ageingSummary['120_DAYS'] || 0) +
+        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwsoaSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
   openCATOVR() {
     let dialogRef = this.dialog.open(this.catovrLookupDialog);
     this.periodTotalDebit = 0;
@@ -2645,6 +3237,18 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     })
   }
 
+  getCATOVRTotal(field: 'BALANCE' | 'OVERDUE' | 'COLLECTED'): number {
+    if (!this.catovrData || this.catovrData.length === 0) return 0;
+
+    return this.catovrData.reduce((total, row) => {
+        const value = Number(row[field]);
+        if (field === 'OVERDUE') {
+            return total + (value > 0 ? value : 0); // ignore negative overdue
+        }
+        return total + (isNaN(value) ? 0 : value);
+    }, 0);
+  }
+
   printCATOVR() {
     if (!this.startDate || !this.endDate) {
       alert('Please select both start and end dates.');
@@ -2728,6 +3332,40 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     // Save the PDF
     doc.save(`${this.selectedCategory}-overdue-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
     }
+  }
+
+  exportCATOVR(): void {
+    const fileName = `${this.selectedCategory}-overdue-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.catovrData.map(row => ({
+      'Customer Name': row.PARENTNAMEID,
+      'Category': row.ORGNISATION,
+      'Outstanding Balance': row.BALANCE,
+      'Overdue Amount': row.OVERDUE,
+      'Period Collection': row.COLLECTED,
+    })));
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwsoaSheet,
+      },
+      SheetNames: ['Statement']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
   }
 
 calculateAgeing(data: any[]): any {
