@@ -17,6 +17,18 @@
             <mat-card appearance="outlined">
                 <mat-card-header>
                     <mat-card-title align="start">                    
+                        <i class="bi bi-buildings-fill"></i>
+                        {{ busiCount }}
+                    </mat-card-title>
+                    <mat-card-subtitle>Businesses</mat-card-subtitle>
+                </mat-card-header>
+                <br>
+            </mat-card>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+            <mat-card appearance="outlined">
+                <mat-card-header>
+                    <mat-card-title align="start">                    
                         <i class="bi bi-truck-front-fill"></i>
                         {{ suppCount }}
                     </mat-card-title>
@@ -45,18 +57,6 @@
                         {{ orgnCount }}
                     </mat-card-title>
                     <mat-card-subtitle>Organisations</mat-card-subtitle>
-                </mat-card-header>
-                <br>
-            </mat-card>
-        </div>
-        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-            <mat-card appearance="outlined">
-                <mat-card-header>
-                    <mat-card-title align="start">                    
-                        <i class="bi bi-globe2"></i>
-                        {{ cntyCount }}
-                    </mat-card-title>
-                    <mat-card-subtitle>Countries</mat-card-subtitle>
                 </mat-card-header>
                 <br>
             </mat-card>
@@ -96,6 +96,31 @@
         <div class="col-12">
             <mat-card appearance="outlined">
                 <mat-card-header>
+                    <mat-card-subtitle>Monthwise Total Sales (KWD)</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                    <ngx-charts-line-chart
+                    [results]="monthlySales"
+                    [xAxis]="true"
+                    [yAxis]="true"
+                    [legend]="false"
+                    [showXAxisLabel]="true"
+                    [showYAxisLabel]="true"
+                    [xAxisLabel]="'Month'"
+                    [yAxisLabel]="'Revenue (KWD)'"
+                    [autoScale]="false"
+                    [animations]="true"
+                    [timeline]="false">
+                    </ngx-charts-line-chart>
+                </mat-card-content>
+            </mat-card>  
+        </div>
+    </div>
+    <br>
+    <!--<div class="row">
+        <div class="col-12">
+            <mat-card appearance="outlined">
+                <mat-card-header>
                     <mat-card-subtitle>Monthwise Total Invoiced (KWD)</mat-card-subtitle>
                 </mat-card-header>
                 <mat-card-content>
@@ -115,10 +140,38 @@
                 </mat-card-content>
             </mat-card>  
         </div>
-    </div>
+    </div>-->
     <br>
     <div class="row">
-        <div class="col-6">
+        <div class="col-4">
+            <mat-card appearance="outlined">
+                <mat-card-header>
+                    <mat-card-subtitle>Top 10 Businesses</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                    <table class="table table-sm">
+                        <thead>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let business of topBusiList; let i = index">
+                                <td>{{ i + 1 }}</td>
+                                <td>
+                                    <img [src]="'https://flagcdn.com/w20/' + getCountryCode(business.COUNTRY, business.CURRENCY).toLowerCase() + '.png'" alt="{{ business.COUNTRY || business.CURRENCY }}"  style="width: 25px; height: auto;" style="margin-right: 8px;"/> 
+                                    {{ business.CUST_NAME }}
+                                </td>
+                                <td class="text-end">
+                                    {{ business.TOTAL_AMOUNT_KWD | currency:'KWD' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </mat-card-content>
+            </mat-card>      
+        </div>
+        <div class="col-4">
             <mat-card appearance="outlined">
                 <mat-card-header>
                     <mat-card-subtitle>Top 10 Customers</mat-card-subtitle>
@@ -131,14 +184,13 @@
                             <th></th>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let customer of topCustList; let i = index">
+                            <tr *ngFor="let business of topCustList; let i = index">
                                 <td>{{ i + 1 }}</td>
                                 <td>
-                                    <img [src]="'https://flagcdn.com/w20/' + getCountryCode(customer.COUNTRY, customer.CURRENCY).toLowerCase() + '.png'" alt="{{ customer.COUNTRY || customer.CURRENCY }}"  style="width: 25px; height: auto;" style="margin-right: 8px;"/>
-                                    {{ customer.CUST_NAME }}
+                                    {{ business.CUSTOMERNAME }}
                                 </td>
                                 <td class="text-end">
-                                    {{ customer.TOTAL_AMOUNT_KWD | currency:'KWD' }}
+                                    {{ business.TotalValue_KWD | currency:'KWD' }}
                                 </td>
                             </tr>
                         </tbody>
@@ -146,7 +198,7 @@
                 </mat-card-content>
             </mat-card>      
         </div>
-        <div class="col-6">
+        <div class="col-4">
             <mat-card appearance="outlined">
                 <mat-card-header>
                     <mat-card-subtitle>Top 10 Suppliers</mat-card-subtitle>
@@ -173,6 +225,59 @@
                     </table>
                 </mat-card-content>
             </mat-card>      
+        </div>
+    </div>
+    <br>
+    <div class="row">
+        <div class="col-6">
+            <mat-card appearance="outlined">
+                <mat-card-header>
+                    <mat-card-subtitle>Top 10 Products/Services</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                    <table class="table table-sm">
+                        <thead>
+                            <th></th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Value</th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let product of topProdList; let i = index">
+                                <td>{{ i + 1 }}</td>
+                                <td>
+                                    {{ product.productName }}
+                                </td>
+                                <td>
+                                    {{ product.productCategoryName }}
+                                </td>
+                                <td class="text-end">
+                                    {{ product.TotalValue_KWD | currency:'KWD' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </mat-card-content>
+            </mat-card>      
+        </div>
+        <div class="col-6">
+            <mat-card appearance="outlined" class="pie-card">
+                <mat-card-header>
+                    <mat-card-subtitle>Sales at Locations (KWD)</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content class="pie-card-content">
+                    <div class="chart-wrapper">
+                        <ngx-charts-pie-chart
+                        [results]="topLocaList"
+                        [legend]="true"
+                        [legendPosition]="legendPosition"
+                        [labels]="false"
+                        [doughnut]="false"
+                        [explodeSlices]="false">
+                    </ngx-charts-pie-chart>
+                </div>
+            </mat-card-content>
+        </mat-card>
         </div>
     </div>
     <br>

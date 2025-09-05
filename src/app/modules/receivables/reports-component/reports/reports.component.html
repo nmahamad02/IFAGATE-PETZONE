@@ -31,7 +31,7 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-4">
+                <div class="col-6">
                     <mat-card class="bg-secondary">
                         <mat-card-header>
                             <h3>Finance</h3>
@@ -72,25 +72,20 @@
                         </mat-card-content>
                     </mat-card>
                 </div>
-                <div class="col-4">
+                <div class="col-6">
                     <mat-card class="bg-secondary">
                         <mat-card-header>
-                            <h3>Inventory</h3>                            
-                        </mat-card-header>
-                        <mat-card-content>
-                            
-                        </mat-card-content>
-                    </mat-card>
-                </div>
-                <div class="col-4">
-                    <mat-card class="bg-secondary">
-                        <mat-card-header>
-                            <h3>Business Partners</h3>
+                            <h3>Revenue</h3>
                         </mat-card-header>
                         <mat-card-content>
                             <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
                                 <li class="nav-item active">
                                     <a class="nav-link" (click)="openCATOVR()">Category-wise Overdue Statement</a>
+                                </li>
+                            </ul>
+                            <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+                                <li class="nav-item active">
+                                    <a class="nav-link" (click)="openLOCMOS()">Location-wise Monthly Sales</a>
                                 </li>
                             </ul>
                         </mat-card-content>
@@ -1376,6 +1371,78 @@
         </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCATOVR()" style="float: right" title="print">
+                Print Statement
+            </button>
+        </div>
+    </div>
+    <br>
+</ng-template>
+
+
+<ng-template #locmosLookupDialog>
+    <h3 matDialogTitle>
+        <b>Location-wise Monthly Sales Preview</b>
+    </h3>
+    <hr>
+    <div mat-dialog-content style="font-size: small;">
+        <div class="col-12">
+            <div class="row">
+                <div class="col-9">
+                    <select [(ngModel)]="selectedLocation" class="form-control form-control-sm">
+                        <option value="NULL">--- All Locations ---</option>
+                        <option *ngFor="let loc of locationList" [value]="loc.locationCode">
+                            {{ loc.locationName }}
+                        </option>
+                    </select>                    
+                </div>
+                <div class="col-3">
+                    <button class="btn btn-sm btn-primary" (click)="getLOCMOS(selectedLocation)" >Filter</button>
+                </div>
+            </div>
+            <br>
+            <table class="table table-striped table-sm table-bordered" id="locMosTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Month</th>
+                        <th colspan="2">Location</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <ng-container *ngFor="let group of groupedData">
+                        <tr *ngFor="let row of group.rows">
+                            <td>{{ row.MonthYear }}</td>
+                            <td>{{ row.SALESUNITID }}</td>
+                            <td>{{ row.LOCATIONNAME }}</td>
+                            <td class="text-end">{{ row.Sales_KWD | number:'1.3-3' }}</td>
+                        </tr>
+                        <!-- Subtotal row per location -->
+                        <tr class="fw-bold bg-light">
+                            <td colspan="3" class="text-end">{{ group.location }} Subtotal</td>
+                            <td class="text-end">{{ group.subtotal | number:'1.3-3' }}</td>
+                        </tr>
+                    </ng-container>
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold text-end table-secondary">
+                        <td colspan="3">Grand Total</td>
+                        <td>{{ grandTotal | number:'1.3-3' }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <br>
+    </div>
+    <hr>
+    <div class="row container-fluid">
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportLOCMOS()" style="float: right" title="export">
+                Export to Excel
+            </button>
+        </div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printLOCMOS()" style="float: right" title="print">
                 Print Statement
             </button>
         </div>

@@ -39,6 +39,7 @@ export class ReportsComponent {
   @ViewChild('ppwsoaLookupDialog', { static: false }) ppwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('pwoutLookupDialog', { static: false }) pwoutLookupDialog!: TemplateRef<any>;
   @ViewChild('catovrLookupDialog', { static: false }) catovrLookupDialog!: TemplateRef<any>;
+  @ViewChild('locmosLookupDialog', { static: false }) locmosLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
@@ -54,9 +55,14 @@ export class ReportsComponent {
   ppwsoaData: any[] = []
   pwoutData: any[] = []
   catovrData: any[] = []
+  locmosData: any[] = []
+
+  groupedData: { location: string, rows: any[], subtotal: number }[] = [];
+  grandTotal: number = 0;
 
   industryList: any[] = [];
   organisationList: any[] = [];
+  locationList: any[] = [];
 
   periodTotalDebit = 0;
   periodTotalCredit = 0;
@@ -84,6 +90,7 @@ export class ReportsComponent {
   selectedCustomer: any
   selectedParent: any
   selectedCategory: string = ''
+  selectedLocation: string = 'NULL'
 
   startDate: Date;
   endDate: Date;
@@ -118,7 +125,6 @@ export class ReportsComponent {
     }, (err: any) => {
       console.log(err)
     })
-
     this.reportService.getIndustry().subscribe((res: any) => {
       this.industryList = res.recordset
       console.log(this.industryList)
@@ -126,6 +132,10 @@ export class ReportsComponent {
     this.reportService.getOrganisation().subscribe((res: any) => {
       this.organisationList = res.recordset
       console.log(this.organisationList)
+    })
+    this.reportService.getLocation().subscribe((res: any) => {
+      this.locationList = res.recordset
+      console.log(this.locationList)
     })
   }
 
@@ -749,7 +759,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     const fileName = `${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.pwsoaData.map(row => ({
+    const pwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.pwsoaData.map(row => ({
       'Branch Name': row.CUST_NAME,
       'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
       'Invoice No': row.INV_NO,
@@ -784,7 +794,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': cwsoaSheet,
+        'Statement': pwsoaSheet,
         'Ageing Summary': ageingSheet
       },
       SheetNames: ['Statement', 'Ageing Summary']
@@ -978,7 +988,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     const fileName = `customer-ageing-statement-${this.mCurDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.customerAgeingSummaryList.map(row => ({
+    const cwaslSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.customerAgeingSummaryList.map(row => ({
       'Customer Code': row.pcode,
       'Name': row.customerName,
       'Current': row.ageingSummary['CURRENT'],
@@ -1014,7 +1024,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': cwsoaSheet,
+        'Statement': cwaslSheet,
         'Ageing Summary': ageingSheet
       },
       SheetNames: ['Statement', 'Ageing Summary']
@@ -1207,7 +1217,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     const fileName = `parent-ageing-statement-${this.mCurDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.parentAgeingSummaryList.map(row => ({
+    const pwaslSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.parentAgeingSummaryList.map(row => ({
       'Parent Code': row.pcode,
       'Name': row.parentName,
       'Current': row.ageingSummary['CURRENT'],
@@ -1243,7 +1253,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': cwsoaSheet,
+        'Statement': pwaslSheet,
         'Ageing Summary': ageingSheet
       },
       SheetNames: ['Statement', 'Ageing Summary']
@@ -1469,7 +1479,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     const fileName = `${this.selectedParent.pcode}-parent-ageing-statement-${this.mCurDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.parentWiseCustomerAgeingList.map(row => ({
+    const pcaslSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.parentWiseCustomerAgeingList.map(row => ({
       'Customer Code': row.custCode,
       'Name': row.custName,
       'Current': row.ageingSummary['CURRENT'],
@@ -1505,7 +1515,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': cwsoaSheet,
+        'Statement': pcaslSheet,
         'Ageing Summary': ageingSheet
       },
       SheetNames: ['Statement', 'Ageing Summary']
@@ -1733,7 +1743,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     const fileName = `${this.selectedCustomer.PCODE}-open-statement-of-accounts-${this.mCurDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.cosoaData.map(row => ({
+    const cosoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.cosoaData.map(row => ({
       'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
       'Invoice No': row.INV_NO,
       'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
@@ -1767,7 +1777,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': cwsoaSheet,
+        'Statement': cosoaSheet,
         'Ageing Summary': ageingSheet
       },
       SheetNames: ['Statement', 'Ageing Summary']
@@ -1994,7 +2004,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     const fileName = `${this.selectedParent.pcode}-open-statement-of-accounts-${this.mCurDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.posoaData.map(row => ({
+    const posoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.posoaData.map(row => ({
       'Branch Name': row.CUST_NAME,
       'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
       'Invoice No': row.INV_NO,
@@ -2029,7 +2039,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': cwsoaSheet,
+        'Statement': posoaSheet,
         'Ageing Summary': ageingSheet
       },
       SheetNames: ['Statement', 'Ageing Summary']
@@ -2384,7 +2394,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     const fileName = `${this.selectedCustomer.PCODE}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.cpwsoaData.map(row => ({
+    const cpwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.cpwsoaData.map(row => ({
       'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
       'Invoice No': row.INV_NO,
       'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
@@ -2418,7 +2428,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': cwsoaSheet,
+        'Statement': cpwsoaSheet,
         'Ageing Summary': ageingSheet
       },
       SheetNames: ['Statement', 'Ageing Summary']
@@ -2773,7 +2783,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     const fileName = `${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.ppwsoaData.map(row => ({
+    const ppwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.ppwsoaData.map(row => ({
       'Branch Name': row.CUST_NAME,
       'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
       'Invoice No': row.INV_NO,
@@ -2808,7 +2818,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': cwsoaSheet,
+        'Statement': ppwsoaSheet,
         'Ageing Summary': ageingSheet
       },
       SheetNames: ['Statement', 'Ageing Summary']
@@ -3059,7 +3069,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     const fileName = `${this.selectedParent.pcode}-outstanding-${this.mCurDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.pwoutData.map(row => ({
+    const pwoutSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.pwoutData.map(row => ({
       'Branch Name': row.CUST_NAME,
       'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
       'Invoice No': row.INV_NO,
@@ -3094,7 +3104,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': cwsoaSheet,
+        'Statement': pwoutSheet,
         'Ageing Summary': ageingSheet
       },
       SheetNames: ['Statement', 'Ageing Summary']
@@ -3338,7 +3348,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     const fileName = `${this.selectedCategory}-overdue-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.catovrData.map(row => ({
+    const catovrSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.catovrData.map(row => ({
       'Customer Name': row.PARENTNAMEID,
       'Category': row.ORGNISATION,
       'Outstanding Balance': row.BALANCE,
@@ -3349,7 +3359,151 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': cwsoaSheet,
+        'Statement': catovrSheet,
+      },
+      SheetNames: ['Statement']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
+  openLOCMOS() {
+    let dialogRef = this.dialog.open(this.locmosLookupDialog);
+    this.locmosData = []
+  }
+
+  getLOCMOS(location: any) {
+    console.log(location);
+    this.selectedLocation = location;
+    this.reportService.getLocationwiseMonthlySales(location).subscribe((res: any) => {
+      const raw = res.recordset;
+      console.log(raw)
+      // Reset
+      this.groupedData = [];
+      this.grandTotal = 0;
+      // Group by location
+      const tempGroup: { [loc: string]: any[] } = {};
+      raw.forEach((row: any) => {
+        const loc = row.LOCATIONNAME;
+        if (!tempGroup[loc]) tempGroup[loc] = [];
+        tempGroup[loc].push(row);
+      });
+      // Convert to array with subtotal
+      for (const loc of Object.keys(tempGroup)) {
+        const rows = tempGroup[loc];
+        const subtotal = rows.reduce((sum, r) => sum + Number(r.Sales_KWD || 0), 0);
+        this.groupedData.push({ location: loc, rows, subtotal });
+        this.grandTotal += subtotal;
+      }
+
+      // Optional: sort by location name
+      this.groupedData.sort((a, b) => a.location.localeCompare(b.location));
+    });
+  }
+
+  printLOCMOS() {
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Location-wise Monthly Sales', 150, 20);
+    doc.roundedRect(5, 32.5, 436, 55, 5, 5);
+    doc.setFontSize(10);
+    let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
+    doc.text(`${locationLabel}`, 10, 42);    
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,42);
+    let firstPageStartY = 55; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#locMosTable',
+      tableWidth: 435,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      columnStyles: {
+        4: { halign: 'right' }
+      },
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+  
+    // Bilingual footer text
+    doc.setFontSize(8);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.text(engText, 10, finalY1+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 435, finalY1+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc);
+    // Save the PDF
+    doc.save(`${locationLabel}-monthly-sales-${this.mCurDate}.pdf`);
+  }
+
+  exportLOCMOS(): void {
+    let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
+    const fileName = `${locationLabel}-monthly-sales-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const locmosSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.locmosData.map(row => ({
+      'Month': row.MonthYear,
+      'Location ID': row.SALESUNITID,
+      'Location Name': row.LOCATIONNAME,
+      'Sales (KWD)': row.Sales_KWD,
+    })));
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': locmosSheet,
       },
       SheetNames: ['Statement']
     };

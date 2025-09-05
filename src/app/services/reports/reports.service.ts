@@ -6,16 +6,32 @@ import { Injectable } from '@angular/core';
 })
 export class ReportsService {
   //private url = 'http://157.175.235.195:5075/api';
-private url = 'https://api.ifagate-petzone.duckdns.org/api'
+private url = 'https://api.ifagate-petzone.theworkpc.com/api'
 
   constructor(private http:HttpClient) { }
 
-  getCustomerCount(country: string,type: string) {
-    return this.http.get(this.url + '/report/get-customer-count/' + country + '/' + type)
+  getBusinessCount(country: string,type: string) {
+    return this.http.get(this.url + '/report/get-business-count/' + country + '/' + type)
+  }    
+  
+  getCustomerCount() {
+    return this.http.get(this.url + '/report/get-customer-count')
   }  
 
-  getCustomerList(country: string,type: string) {
-    return this.http.get(this.url + '/report/get-customer-list/' + country + '/' + type)
+  getBusinessList(country: string,type: string) {
+    return this.http.get(this.url + '/report/get-business-list/' + country + '/' + type)
+  }
+
+  getCustomerList() {
+    return this.http.get(this.url + '/report/get-customer-list')
+  }  
+  
+  getProductList() {
+    return this.http.get(this.url + '/report/get-product-list')
+  } 
+  
+  getLocationList() {
+    return this.http.get(this.url + '/report/get-location-list')
   }
 
   getYearwiseCountrywiseList() {
@@ -68,5 +84,17 @@ private url = 'https://api.ifagate-petzone.duckdns.org/api'
 
   getCountry() {
     return this.http.get(this.url + '/report/get-country')
+  }
+
+  getLocation() {
+    return this.http.get(this.url + '/report/get-location')
+  }
+
+  getMonthlySales() {
+    return this.http.get(this.url + '/report/get-monthly-sales')
+  }
+
+  getLocationwiseMonthlySales(loc: string) {
+    return this.http.get(this.url + '/report/get-locationwise-monthly-sales/' + loc)
   }
 }

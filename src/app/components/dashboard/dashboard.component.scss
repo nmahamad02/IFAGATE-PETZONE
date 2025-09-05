@@ -5,3 +5,27 @@
     padding-bottom: 0 !important;
   }
   
+
+.pie-card-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 100%;
+}
+
+.chart-wrapper {
+  width: 100%;
+//  max-width: 600px; /* optional, for large screens */
+  height: 0;
+  padding: 25%; /* keeps the container square */
+ // position: relative;
+}
+
+.chart-wrapper ngx-charts-pie-chart {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+}

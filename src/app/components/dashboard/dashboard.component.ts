@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { ReportsService } from 'src/app/services/reports/reports.service';
+import { LegendPosition } from '@swimlane/ngx-charts';
 
 @Component({
   selector: 'app-dashboard',
@@ -7,6 +8,7 @@ import { ReportsService } from 'src/app/services/reports/reports.service';
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent {
+  legendPosition: LegendPosition = LegendPosition.Right;
 
   countries = [
     { name: 'All Countries', code: 'un' },
@@ -22,14 +24,19 @@ export class DashboardComponent {
   selectedCountryCode = 'un';
 
   custCount: number = 0;
+  busiCount: number = 0;
   suppCount: number = 0;
   cntyCount: number = 0;
   indsCount: number = 0;
   orgnCount: number = 0;
+  topBusiList: any[] = [];
   topCustList: any[] = [];
   topSuppList: any[] = [];
+  topProdList: any[] = [];
+  topLocaList: any[] = [];
   countrywiseYearwiseChartData: any[] = []
   monthwiseSalesdata: any[] = []
+  monthlySales: any[] = []
   
   updateFlag(countryName: string) {
     const selected = this.countries.find(c => c.name === countryName);
@@ -65,29 +72,6 @@ export class DashboardComponent {
     'OMR': 'om',
   };
 
-  barData = [
-    { "name": "Apples", "value": 30 },
-    { "name": "Oranges", "value": 50 },
-    { "name": "Bananas", "value": 20 }
-  ]; 
-
-  lineData = [
-    {
-      name: "Sales",
-      series: [
-        { name: "Jan", value: 50 },
-        { name: "Feb", value: 80 },
-        { name: "Mar", value: 45 }
-      ]
-    }
-  ];
-
-  pieData = [
-    { name: "Download Sales", value: 40 },
-    { name: "In-Store Sales", value: 25 },
-    { name: "Mail Sales", value: 35 }
-  ];
-  
   getCountryCode(name: string, currency: string): string {
     const countryCode = this.countryMap[name]?.code;
     if (countryCode) return countryCode;
@@ -103,16 +87,32 @@ export class DashboardComponent {
   }
 
   getARData(country: string){
-    this.reportService.getCustomerCount(country,'C').subscribe((res: any) => {
+    this.reportService.getCustomerCount().subscribe((res: any) => {
       this.custCount = res.recordset[0].CUSTCOUNT
+    })    
+    this.reportService.getBusinessCount(country,'C').subscribe((res: any) => {
+      this.busiCount = res.recordset[0].CUSTCOUNT
     })
-    this.reportService.getCustomerList(country,'C').subscribe((res: any) => {
+    this.reportService.getBusinessList(country,'C').subscribe((res: any) => {
+      this.topBusiList = res.recordset
+    })
+    this.reportService.getCustomerList().subscribe((res: any) => {
       this.topCustList = res.recordset
     })
-    this.reportService.getCustomerCount(country,'S').subscribe((res: any) => {
+    this.reportService.getProductList().subscribe((res: any) => {
+      this.topProdList = res.recordset
+    })    
+    this.reportService.getLocationList().subscribe((res: any) => {
+      const raw = res.recordset;
+      this.topLocaList = raw.map((r: any) => ({
+        name: r.LOCATIONNAME + ' (' + r.PercentageShare + '%)',
+        value: r.TotalValue_KWD
+      }));
+    });
+    this.reportService.getBusinessCount(country,'S').subscribe((res: any) => {
       this.suppCount = res.recordset[0].CUSTCOUNT
     })
-    this.reportService.getCustomerList(country,'S').subscribe((res: any) => {
+    this.reportService.getBusinessList(country,'S').subscribe((res: any) => {
       this.topSuppList = res.recordset
     })
     this.reportService.getIndustry().subscribe((res: any) => {
@@ -147,6 +147,36 @@ export class DashboardComponent {
         }
       ];
     })
+    this.reportService.getMonthlySales().subscribe((res: any) => {
+      const raw = res.recordset;
+      const monthNames = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      const formatMonth = (monthYear: string) => {
+        // monthYear is "2025-09"
+        const [year, month] = monthYear.split('-');
+        const monthIndex = parseInt(month, 10) - 1;
+        return `${monthNames[monthIndex]} ${year.slice(-2)}`; // e.g. "Sep 25"
+      };
+      const b2bSeries = raw.map((r: any) => ({
+        name: formatMonth(r.MonthYear),
+        value: r.B2B_Revenue_KWD
+      }));
+      const b2cSeries = raw.map((r: any) => ({
+        name: formatMonth(r.MonthYear),
+        value: r.B2C_Revenue_KWD
+      }));
+      const totalSeries = raw.map((r: any) => ({
+        name: formatMonth(r.MonthYear),
+        value: r.B2B_Revenue_KWD + r.B2C_Revenue_KWD
+      }));
+      this.monthlySales = [
+        { name: 'B2B', series: b2bSeries },
+        { name: 'B2C', series: b2cSeries },
+        { name: 'Total', series: totalSeries }
+      ];
+    });
   }
   
 }
