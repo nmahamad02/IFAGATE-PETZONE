@@ -39,7 +39,6 @@ export class ReportsComponent {
   @ViewChild('ppwsoaLookupDialog', { static: false }) ppwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('pwoutLookupDialog', { static: false }) pwoutLookupDialog!: TemplateRef<any>;
   @ViewChild('catovrLookupDialog', { static: false }) catovrLookupDialog!: TemplateRef<any>;
-  @ViewChild('locmosLookupDialog', { static: false }) locmosLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
@@ -55,10 +54,6 @@ export class ReportsComponent {
   ppwsoaData: any[] = []
   pwoutData: any[] = []
   catovrData: any[] = []
-  locmosData: any[] = []
-
-  groupedData: { location: string, rows: any[], subtotal: number }[] = [];
-  grandTotal: number = 0;
 
   industryList: any[] = [];
   organisationList: any[] = [];
@@ -3360,150 +3355,6 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     const workbook: XLSX.WorkBook = {
       Sheets: {
         'Statement': catovrSheet,
-      },
-      SheetNames: ['Statement']
-    };
-
-    // 4. Generate buffer
-    const excelBuffer: any = XLSX.write(workbook, {
-      bookType: 'xlsx',
-      type: 'array'
-    });
-
-    // 5. Save to file
-    const blob = new Blob([excelBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
-    });
-
-    FileSaver.saveAs(blob, fileName);
-  }
-
-  openLOCMOS() {
-    let dialogRef = this.dialog.open(this.locmosLookupDialog);
-    this.locmosData = []
-  }
-
-  getLOCMOS(location: any) {
-    console.log(location);
-    this.selectedLocation = location;
-    this.reportService.getLocationwiseMonthlySales(location).subscribe((res: any) => {
-      const raw = res.recordset;
-      console.log(raw)
-      // Reset
-      this.groupedData = [];
-      this.grandTotal = 0;
-      // Group by location
-      const tempGroup: { [loc: string]: any[] } = {};
-      raw.forEach((row: any) => {
-        const loc = row.LOCATIONNAME;
-        if (!tempGroup[loc]) tempGroup[loc] = [];
-        tempGroup[loc].push(row);
-      });
-      // Convert to array with subtotal
-      for (const loc of Object.keys(tempGroup)) {
-        const rows = tempGroup[loc];
-        const subtotal = rows.reduce((sum, r) => sum + Number(r.Sales_KWD || 0), 0);
-        this.groupedData.push({ location: loc, rows, subtotal });
-        this.grandTotal += subtotal;
-      }
-
-      // Optional: sort by location name
-      this.groupedData.sort((a, b) => a.location.localeCompare(b.location));
-    });
-  }
-
-  printLOCMOS() {
-    var doc = new jsPDF("portrait", "px", "a4");
-    doc.setFontSize(16);
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Location-wise Monthly Sales', 150, 20);
-    doc.roundedRect(5, 32.5, 436, 55, 5, 5);
-    doc.setFontSize(10);
-    let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
-    doc.text(`${locationLabel}`, 10, 42);    
-    doc.setFont('Helvetica', 'normal');
-    doc.text(`Date: ${this.mCurDate}`,330,42);
-    let firstPageStartY = 55; // Start Y position for first page
-    let nextPagesStartY = 35; // Start Y position for subsequent pages
-    let firstPage = true;      // Flag to check if it's the first page
-
-    autoTable(doc, {
-      html: '#locMosTable',
-      tableWidth: 435,
-      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'left',
-        valign: 'middle'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255], // White background
-        textColor: [0, 0, 0],       // Black text
-        fontStyle: 'bold',
-        halign: 'left'
-      },
-      footStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        halign: 'right'
-      },
-      columnStyles: {
-        4: { halign: 'right' }
-      },
-      margin: { 
-        top: firstPage ? firstPageStartY : nextPagesStartY,
-        left: 5
-      },
-      didDrawPage: function () {
-        firstPage = false;
-      }
-    });
-
-    let finalY1 = doc.lastAutoTable?.finalY || 0
-  
-    // Bilingual footer text
-    doc.setFontSize(8);
-    // Now the font is already registered thanks to the JS file!
-    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
-    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
-    // Manually reverse Arabic for basic rendering
-    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
-    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
-    const pageWidth = doc.internal.pageSize.getWidth();
-    // Calculate X to center
-    const centerX = pageWidth / 2;
-    doc.setFontSize(10)
-    doc.text(engText, 10, finalY1+15);//, { align: 'center' });
-    doc.setFont('Amiri-Regular', 'normal')
-    doc.text(araText, 435, finalY1+15, { align: 'right' });
-
-    // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
-    // Save the PDF
-    doc.save(`${locationLabel}-monthly-sales-${this.mCurDate}.pdf`);
-  }
-
-  exportLOCMOS(): void {
-    let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
-    const fileName = `${locationLabel}-monthly-sales-${this.mCurDate}.xlsx`;
-
-    // 1. Create worksheet from cwsoaData
-    const locmosSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.locmosData.map(row => ({
-      'Month': row.MonthYear,
-      'Location ID': row.SALESUNITID,
-      'Location Name': row.LOCATIONNAME,
-      'Sales (KWD)': row.Sales_KWD,
-    })));
-
-    // 3. Create a workbook and add the sheets
-    const workbook: XLSX.WorkBook = {
-      Sheets: {
-        'Statement': locmosSheet,
       },
       SheetNames: ['Statement']
     };

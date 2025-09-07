@@ -90,11 +90,19 @@ private url = 'https://api.ifagate-petzone.theworkpc.com/api'
     return this.http.get(this.url + '/report/get-location')
   }
 
+  searchCustomer(search: string) {
+    return this.http.get(this.url + '/report/search-customer/' + search)
+  }
+
   getMonthlySales() {
     return this.http.get(this.url + '/report/get-monthly-sales')
   }
 
   getLocationwiseMonthlySales(loc: string) {
     return this.http.get(this.url + '/report/get-locationwise-monthly-sales/' + loc)
+  }
+
+  getItemwisePeriodSales(startDate: string, endDate: string, location: string, customer: string) {
+    return this.http.get(this.url + '/report/get-itemwise-period-sales/'  + startDate + '/' + endDate + '/' + location + '/' + customer)
   }
 }
