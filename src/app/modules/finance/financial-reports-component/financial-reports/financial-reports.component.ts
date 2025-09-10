@@ -21,6 +21,7 @@ export class FinancialReportsComponent {
   userRight = localStorage.getItem('userright')!
 
   @ViewChild('locmosLookupDialog', { static: false }) locmosLookupDialog!: TemplateRef<any>;
+  @ViewChild('mossumLookupDialog', { static: false }) mossumLookupDialog!: TemplateRef<any>;
   @ViewChild('iwpdslLookupDialog', { static: false }) iwpdslLookupDialog!: TemplateRef<any>;
   @ViewChild('vwpdslLookupDialog', { static: false }) vwpdslLookupDialog!: TemplateRef<any>;
   @ViewChild('iwpdcsLookupDialog', { static: false }) iwpdcsLookupDialog!: TemplateRef<any>;
@@ -33,6 +34,7 @@ export class FinancialReportsComponent {
 
   locmosData: any[] = []
   locGroupedData: { location: string, rows: any[], subtotal: number }[] = [];
+  mossumData: any[] = []
   iwpdslData: any[] = []
   vwpdslData: any[] = []
   iwpdcsData: any[] = []
@@ -65,20 +67,21 @@ export class FinancialReportsComponent {
   openLOCMOS() {
     let dialogRef = this.dialog.open(this.locmosLookupDialog);
     this.locmosData = []
+    this.locGroupedData = []
   }
 
   getLOCMOS(location: any) {
     console.log(location);
     this.selectedLocation = location;
     this.reportService.getLocationwiseMonthlySales(location).subscribe((res: any) => {
-      const raw = res.recordset;
-      console.log(raw)
+      this.locmosData = res.recordset;
+      console.log(this.locmosData)
       // Reset
       this.locGroupedData = [];
       this.grandTotal = 0;
       // Group by location
       const tempGroup: { [loc: string]: any[] } = {};
-      raw.forEach((row: any) => {
+      this.locmosData.forEach((row: any) => {
         const loc = row.LOCATIONNAME;
         if (!tempGroup[loc]) tempGroup[loc] = [];
         tempGroup[loc].push(row);
@@ -137,7 +140,18 @@ export class FinancialReportsComponent {
         halign: 'right'
       },
       columnStyles: {
-        3: { halign: 'right' }
+        1: { halign: 'right' },
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' },
+        8: { halign: 'right' },
+        9: { halign: 'right' },
+        10: { halign: 'right' },
+        11: { halign: 'right' },
+        12: { halign: 'right' }
       },
       margin: { 
         top: firstPage ? firstPageStartY : nextPagesStartY,
@@ -167,12 +181,13 @@ export class FinancialReportsComponent {
     //doc.text(araText, 435, finalY1+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'p');
     // Save the PDF
     doc.save(`${locationLabel}-monthly-sales-${this.mCurDate}.pdf`);
   }
 
   exportLOCMOS(): void {
+    console.log(this.locmosData)
     let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
     const fileName = `${locationLabel}-monthly-sales-${this.mCurDate}.xlsx`;
 
@@ -206,11 +221,141 @@ export class FinancialReportsComponent {
     FileSaver.saveAs(blob, fileName);
   }
 
+  openMOSSUM() {
+    let dialogRef = this.dialog.open(this.mossumLookupDialog);
+    this.mossumData = []
+    this.getMOSSUM()
+  }
+
+  getMOSSUM() {
+    this.reportService.getMonthwiseSalesSummary().subscribe((res: any) => {
+      this.mossumData = res.recordset;
+      console.log(this.mossumData)
+    });
+  }
+
+  printMOSSUM() {
+    var doc = new jsPDF("landscape", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Month-wise Sales Summary Preview', 200, 20);
+    doc.setFontSize(10);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,550,20);
+    let firstPageStartY = 35; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#mosSumTable',
+      tableWidth: 620,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      columnStyles: {
+        3: { halign: 'right' }
+      },
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+  
+    // Bilingual footer text
+    doc.setFontSize(8);
+    // Now the font is already registered thanks to the JS file!
+    //doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    //doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    //const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    //const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    //doc.text(engText, 10, finalY1+15);//, { align: 'center' });
+    //doc.setFont('Amiri-Regular', 'normal')
+    //doc.text(araText, 435, finalY1+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc,'l');
+    // Save the PDF
+    doc.save(`monthwise-sales-summary-${this.mCurDate}.pdf`);
+  }
+
+  exportMOSSUM(): void {
+    const fileName = `monthwise-sales-summary-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const mossumSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.mossumData.map(row => ({
+      'Location': row.LOCATIONNAME,
+      'January': row.January,
+      'February': row.February,
+      'March': row.March,
+      'April': row.April,
+      'May': row.May,
+      'June': row.June,
+      'July': row.July,
+      'August': row.August,
+      'September': row.September,
+      'October': row.October,
+      'November': row.November,
+      'December': row.December,
+    })));
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': mossumSheet,
+      },
+      SheetNames: ['Statement']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
   openIWPDSL() {
     let dialogRef = this.dialog.open(this.iwpdslLookupDialog);
     this.iwpdslData = []
+    this.groupedData = []
     //this.searchText = ''
     this.selectedCustomer = 'NULL'
+    this.selectedLocation = 'NULL'
   }
 
   getIWPDSL() {
@@ -223,14 +368,14 @@ export class FinancialReportsComponent {
     const end = new Date(this.endDate);
     end.setHours(23, 59, 59, 999);  
     this.reportService.getItemwisePeriodSales(this.formatDate(start),this.formatDate(end),this.selectedLocation,this.selectedCustomer).subscribe((res: any) => {
-      const raw = res.recordset;
-      console.log(raw);
+      this.iwpdslData = res.recordset;
+      console.log(this.iwpdslData);
       // Reset
       this.groupedData = [];
       this.grandTotal = 0;
       // Group by DocNumber + CustomerID + CustomerName (and add Transaction if exists)
       const tempGroup: { [key: string]: any[] } = {};
-      raw.forEach((row: any) => {
+      this.iwpdslData.forEach((row: any) => {
         const key = `${row.DOCNUMBER}|${row.CUSTOMERID}|${row.CUSTOMERNAME}`;
         if (!tempGroup[key]) tempGroup[key] = [];
         tempGroup[key].push(row);
@@ -257,26 +402,26 @@ export class FinancialReportsComponent {
   }
 
   printIWPDSL() {
-    var doc = new jsPDF("portrait", "px", "a4");
+    var doc = new jsPDF("landscape", "px", "a4");
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Item-wise Period Sales Preview', 150, 20);
-    doc.roundedRect(5, 32.5, 436, 55, 5, 5);
+    doc.text('Item-wise Period Sales Preview', 200, 20);
+    doc.roundedRect(5, 32.5, 620, 55, 5, 5);
     doc.setFontSize(10);
     let customerLabel = this.selectedCustomer === 'NULL' ? 'All Customers' : this.selectedCustomer;
     doc.text(`${customerLabel}`, 10, 42);
     let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
     doc.text(`${locationLabel}`, 10, 52);    
     doc.setFont('Helvetica', 'normal');
-    doc.text(`Date: ${this.mCurDate}`,330,42);
+    doc.text(`Date: ${this.mCurDate}`,550,42);
     let firstPageStartY = 60; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
 
     autoTable(doc, {
       html: '#iwpdslTable',
-      tableWidth: 435,
+      tableWidth: 620,
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
         fontSize: 8,
@@ -299,9 +444,9 @@ export class FinancialReportsComponent {
         halign: 'right'
       },
       columnStyles: {
-        6: { halign: 'right' },
-        7: { halign: 'right' },
-        8: { halign: 'right' }
+        10: { halign: 'right' },
+        11: { halign: 'right' },
+        12: { halign: 'right' }
       },
       margin: { 
         top: firstPage ? firstPageStartY : nextPagesStartY,
@@ -331,7 +476,7 @@ export class FinancialReportsComponent {
     //doc.text(araText, 435, finalY1+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'l');
     // Save the PDF
     doc.save(`${customerLabel}-${locationLabel}-sales-${this.startDate}-${this.endDate}-${this.mCurDate}.pdf`);
   }
@@ -340,19 +485,27 @@ export class FinancialReportsComponent {
     let customerLabel = this.selectedCustomer === 'NULL' ? 'All Customers' : this.selectedCustomer;
     let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
     const fileName = `${customerLabel}-${locationLabel}-sales-${this.startDate}-${this.endDate}-${this.mCurDate}.xlsx`;
-
     // 1. Create worksheet from cwsoaData
-    const locmosSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.locmosData.map(row => ({
-      'Month': row.MonthYear,
-      'Location ID': row.SALESUNITID,
-      'Location Name': row.LOCATIONNAME,
-      'Sales (KWD)': row.Sales_KWD,
+    const iwpdslSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.iwpdslData.map(row => ({
+      'Voucher Number': row.DOCNUMBER,
+      'Date': row.DOCDATE,
+      'Customer ID': row.CUSTOMERID,
+      'Customer Name': row.CUSTOMERNAME,
+      'Location': row.LOCATIONNAME,
+      'Product ID': row.PRODUCTID,
+      'Product Name': row.material_name,
+      'Brand': row.brand,
+      'Supplier': row.supplier,
+      'Unit': 'ZPC',
+      'Unit Price': row.UnitPrice,
+      'Quantity': row.UNITQTY,
+      'Gross Amount': row.GROSSAMOUNT,
     })));
 
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': locmosSheet,
+        'Statement': iwpdslSheet,
       },
       SheetNames: ['Statement']
     };
@@ -374,15 +527,19 @@ export class FinancialReportsComponent {
   openVWPDSL() {
     let dialogRef = this.dialog.open(this.vwpdslLookupDialog);
     this.vwpdslData = []
+    this.groupedData = []
     //this.searchText = ''
     this.selectedCustomer = 'NULL'
+    this.selectedLocation = 'NULL'
   }
 
   openIWPDCS() {
     let dialogRef = this.dialog.open(this.iwpdcsLookupDialog);
     this.iwpdcsData = []
+    this.groupedData = []
     //this.searchText = ''
     this.selectedCustomer = 'NULL'
+    this.selectedLocation = 'NULL'
   }
 
   getIWPDCS() {
@@ -395,14 +552,14 @@ export class FinancialReportsComponent {
     const end = new Date(this.endDate);
     end.setHours(23, 59, 59, 999);  
     this.reportService.getItemwisePeriodSales(this.formatDate(start),this.formatDate(end),this.selectedLocation,this.selectedCustomer).subscribe((res: any) => {
-      const raw = res.recordset;
-      console.log(raw);
+      this.iwpdcsData = res.recordset;
+      console.log(this.iwpdcsData);
       // Reset
       this.groupedData = [];
       this.grandTotal = 0;
       // Group by DocNumber + CustomerID + CustomerName (and add Transaction if exists)
       const tempGroup: { [key: string]: any[] } = {};
-      raw.forEach((row: any) => {
+      this.iwpdcsData.forEach((row: any) => {
         const key = `${row.DOCNUMBER}|${row.CUSTOMERID}|${row.CUSTOMERNAME}`;
         if (!tempGroup[key]) tempGroup[key] = [];
         tempGroup[key].push(row);
@@ -429,26 +586,26 @@ export class FinancialReportsComponent {
   }
 
   printIWPDCS() {
-    var doc = new jsPDF("portrait", "px", "a4");
+    var doc = new jsPDF("landscape", "px", "a4");
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Item-wise Period Cost of Sales Preview', 150, 20);
-    doc.roundedRect(5, 32.5, 436, 55, 5, 5);
+    doc.text('Item-wise Period Cost of Sales Preview', 200, 20);
+    doc.roundedRect(5, 32.5, 620, 55, 5, 5);
     doc.setFontSize(10);
     let customerLabel = this.selectedCustomer === 'NULL' ? 'All Customers' : this.selectedCustomer;
     doc.text(`${customerLabel}`, 10, 42);
     let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
     doc.text(`${locationLabel}`, 10, 52);    
     doc.setFont('Helvetica', 'normal');
-    doc.text(`Date: ${this.mCurDate}`,330,42);
+    doc.text(`Date: ${this.mCurDate}`,550,42);
     let firstPageStartY = 60; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
 
     autoTable(doc, {
       html: '#iwpdcsTable',
-      tableWidth: 435,
+      tableWidth: 620,
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
         fontSize: 8,
@@ -471,9 +628,9 @@ export class FinancialReportsComponent {
         halign: 'right'
       },
       columnStyles: {
-        6: { halign: 'right' },
-        7: { halign: 'right' },
-        8: { halign: 'right' }
+        10: { halign: 'right' },
+        11: { halign: 'right' },
+        12: { halign: 'right' }
       },
       margin: { 
         top: firstPage ? firstPageStartY : nextPagesStartY,
@@ -503,7 +660,7 @@ export class FinancialReportsComponent {
     //doc.text(araText, 435, finalY1+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'l');
     // Save the PDF
     doc.save(`${customerLabel}-${locationLabel}-cost-of-sales-${this.startDate}-${this.endDate}-${this.mCurDate}.pdf`);
   }
@@ -514,17 +671,26 @@ export class FinancialReportsComponent {
     const fileName = `${customerLabel}-${locationLabel}-cost-of-sales-${this.startDate}-${this.endDate}-${this.mCurDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const locmosSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.locmosData.map(row => ({
-      'Month': row.MonthYear,
-      'Location ID': row.SALESUNITID,
-      'Location Name': row.LOCATIONNAME,
-      'Sales (KWD)': row.Sales_KWD,
+    const iwpdcsSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.iwpdcsData.map(row => ({
+      'Voucher Number': row.DOCNUMBER,
+      'Date': row.DOCDATE,
+      'Customer ID': row.CUSTOMERID,
+      'Customer Name': row.CUSTOMERNAME,
+      'Location': row.LOCATIONNAME,
+      'Product ID': row.PRODUCTID,
+      'Product Name': row.material_name,
+      'Brand': row.brand,
+      'Supplier': row.supplier,
+      'Unit': 'ZPC',
+      'Unit Cost': row.COSTAMOUNT,
+      'Quantity': row.UNITQTY,
+      'Cost of Sale': row.CostOfSale,
     })));
 
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': locmosSheet,
+        'Statement': iwpdcsSheet,
       },
       SheetNames: ['Statement']
     };
@@ -546,15 +712,19 @@ export class FinancialReportsComponent {
   openVWPDCS() {
     let dialogRef = this.dialog.open(this.vwpdcsLookupDialog);
     this.vwpdcsData = []
+    this.groupedData = []
     //this.searchText = ''
     this.selectedCustomer = 'NULL'
+    this.selectedLocation = 'NULL'
   }
 
   openIWPDPF() {
     let dialogRef = this.dialog.open(this.iwpdpfLookupDialog);
     this.iwpdslData = []
-    ///this.searchText = ''
+    this.groupedData = []
+    //this.searchText = ''
     this.selectedCustomer = 'NULL'
+    this.selectedLocation = 'NULL'
   }
 
   getIWPDPF() {
@@ -567,14 +737,14 @@ export class FinancialReportsComponent {
     const end = new Date(this.endDate);
     end.setHours(23, 59, 59, 999);  
     this.reportService.getItemwisePeriodSales(this.formatDate(start),this.formatDate(end),this.selectedLocation,this.selectedCustomer).subscribe((res: any) => {
-      const raw = res.recordset;
-      console.log(raw);
+      this.iwpdpfData = res.recordset;
+      console.log(this.iwpdpfData);
       // Reset
       this.groupedData = [];
       this.grandTotal = 0;
       // Group by DocNumber + CustomerID + CustomerName (and add Transaction if exists)
       const tempGroup: { [key: string]: any[] } = {};
-      raw.forEach((row: any) => {
+      this.iwpdpfData.forEach((row: any) => {
         const key = `${row.DOCNUMBER}|${row.CUSTOMERID}|${row.CUSTOMERNAME}`;
         if (!tempGroup[key]) tempGroup[key] = [];
         tempGroup[key].push(row);
@@ -601,26 +771,26 @@ export class FinancialReportsComponent {
   }
 
   printIWPDPF() {
-    var doc = new jsPDF("portrait", "px", "a4");
+    var doc = new jsPDF("landscape", "px", "a4");
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Item-wise Period Profit Preview', 150, 20);
-    doc.roundedRect(5, 32.5, 436, 55, 5, 5);
+    doc.text('Item-wise Period Profit Preview', 200, 20);
+    doc.roundedRect(5, 32.5, 620, 55, 5, 5);
     doc.setFontSize(10);
     let customerLabel = this.selectedCustomer === 'NULL' ? 'All Customers' : this.selectedCustomer;
     doc.text(`${customerLabel}`, 10, 42);
     let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
     doc.text(`${locationLabel}`, 10, 52);    
     doc.setFont('Helvetica', 'normal');
-    doc.text(`Date: ${this.mCurDate}`,330,42);
+    doc.text(`Date: ${this.mCurDate}`,550,42);
     let firstPageStartY = 60; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
 
     autoTable(doc, {
       html: '#iwpdpfTable',
-      tableWidth: 435,
+      tableWidth: 620,
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
         fontSize: 8,
@@ -643,14 +813,13 @@ export class FinancialReportsComponent {
         halign: 'right'
       },
       columnStyles: {
-        6: { halign: 'right' },
-        7: { halign: 'right' },
-        8: { halign: 'right' },
-        9: { halign: 'right' },
         10: { halign: 'right' },
         11: { halign: 'right' },
         12: { halign: 'right' },
         13: { halign: 'right' },
+        14: { halign: 'right' },
+        15: { halign: 'right' },
+        16: { halign: 'right' },
       },
       margin: { 
         top: firstPage ? firstPageStartY : nextPagesStartY,
@@ -680,7 +849,7 @@ export class FinancialReportsComponent {
     //doc.text(araText, 435, finalY1+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'l');
     // Save the PDF
     doc.save(`${customerLabel}-${locationLabel}-profit-${this.startDate}-${this.endDate}-${this.mCurDate}.pdf`);
   }
@@ -691,17 +860,30 @@ export class FinancialReportsComponent {
     const fileName = `${customerLabel}-${locationLabel}-profit-${this.startDate}-${this.endDate}-${this.mCurDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const locmosSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.locmosData.map(row => ({
-      'Month': row.MonthYear,
-      'Location ID': row.SALESUNITID,
-      'Location Name': row.LOCATIONNAME,
-      'Sales (KWD)': row.Sales_KWD,
+    const iwpdpfSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.iwpdpfData.map(row => ({
+      'Voucher Number': row.DOCNUMBER,
+      'Date': row.DOCDATE,
+      'Customer ID': row.CUSTOMERID,
+      'Customer Name': row.CUSTOMERNAME,
+      'Location': row.LOCATIONNAME,
+      'Product ID': row.PRODUCTID,
+      'Product Name': row.material_name,
+      'Brand': row.brand,
+      'Supplier': row.supplier,
+      'Unit': 'ZPC',
+      'Quantity': row.UNITQTY,
+      'Unit Cost': row.COSTAMOUNT,
+      'Unit Price': row.UnitPrice,
+      'Cost of Sale': row.CostOfSale,
+      'Gross Amount': row.GROSSAMOUNT,
+      'Gross Profit': row.GrossProfit,
+      'Profit Margin': row.ProfitPercent,
     })));
 
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': locmosSheet,
+        'Statement': iwpdpfSheet,
       },
       SheetNames: ['Statement']
     };
@@ -723,8 +905,10 @@ export class FinancialReportsComponent {
   openVWPDPF() {
     let dialogRef = this.dialog.open(this.vwpdpfLookupDialog);
     this.vwpdpfData = []
+    this.groupedData = []
     //this.searchText = ''
     this.selectedCustomer = 'NULL'
+    this.selectedLocation = 'NULL'
   }
 
   searchCustomer(search: string) {
@@ -767,30 +951,56 @@ calculateAgeing(data: any[]): any {
   return ageing;
 }
 
-  addWaterMark(doc: any) {
-    var totalPages = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setLineWidth(0.25)
-      var img1 = new Image()
-      img1.src = 'assets/pics/Logo-removebg-preview.png'
-      doc.addImage(img1, 'png', 5, 0, 75, 30);
-      doc.setTextColor(0,0,0);
-      doc.setFontSize(13)
-      doc.line(5, 27, 441, 27); 
-      doc.setTextColor(0,0,0);
-      doc.setFontSize(10)
-      doc.setFont('Helvetica','bold');
-      var img2 = new Image()
-      img2.src = 'assets/pics/favicon.png';
-      doc.addImage(img2, 'png', 2, 615, 10, 10);
-      doc.text('IFAGATE',12.5,622.5);
-      doc.setFont('Helvetica','normal');
-      doc.setFontSize(8);
-      doc.setFont('Helvetica','normal');
-      doc.text(`Page ${i} of ${totalPages}`,400,620);
+  addWaterMark(doc: any,type: string) {
+    if (type === 'l') {
+      var totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setLineWidth(0.25)
+        var img1 = new Image()
+        img1.src = 'assets/pics/Logo-removebg-preview.png'
+        doc.addImage(img1, 'png', 5, 0, 75, 30);
+        doc.setTextColor(0,0,0);
+        doc.setFontSize(13)
+        doc.line(5, 27, 625, 27); 
+        doc.setTextColor(0,0,0);
+        doc.setFontSize(10)
+        doc.setFont('Helvetica','bold');
+        var img2 = new Image()
+        img2.src = 'assets/pics/favicon.png';
+        doc.addImage(img2, 'png', 2, 575, 10, 10);
+        doc.text('IFAGATE',12.5, 582.5);
+        doc.setFont('Helvetica','normal');
+        doc.setFontSize(8);
+        doc.setFont('Helvetica','normal');
+        doc.text(`Page ${i} of ${totalPages}`,550,580);
+      }
+      return doc;
+    } else if (type === 'p') {
+      var totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setLineWidth(0.25)
+        var img1 = new Image()
+        img1.src = 'assets/pics/Logo-removebg-preview.png'
+        doc.addImage(img1, 'png', 5, 0, 75, 30);
+        doc.setTextColor(0,0,0);
+        doc.setFontSize(13)
+        doc.line(5, 27, 441, 27); 
+        doc.setTextColor(0,0,0);
+        doc.setFontSize(10)
+        doc.setFont('Helvetica','bold');
+        var img2 = new Image()
+        img2.src = 'assets/pics/favicon.png';
+        doc.addImage(img2, 'png', 2, 400, 10, 10);
+        doc.text('IFAGATE',12.5,407.5);
+        doc.setFont('Helvetica','normal');
+        doc.setFontSize(8);
+        doc.setFont('Helvetica','normal');
+        doc.text(`Page ${i} of ${totalPages}`,400,405);
+      }
+      return doc;
     }
-    return doc;
   }
 
   formatDate(date: any) {

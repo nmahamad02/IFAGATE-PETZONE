@@ -98,6 +98,10 @@ private url = 'https://api.ifagate-petzone.theworkpc.com/api'
     return this.http.get(this.url + '/report/get-monthly-sales')
   }
 
+  getMonthwiseSalesSummary() {
+    return this.http.get(this.url + '/report/get-monthwise-sales-summary')
+  }
+
   getLocationwiseMonthlySales(loc: string) {
     return this.http.get(this.url + '/report/get-locationwise-monthly-sales/' + loc)
   }
