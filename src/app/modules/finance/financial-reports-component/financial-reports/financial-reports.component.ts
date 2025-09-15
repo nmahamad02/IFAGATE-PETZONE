@@ -54,6 +54,8 @@ export class FinancialReportsComponent {
   startDate: Date;
   endDate: Date;
 
+  getData: boolean = false;
+
   //searchText = ''
 
   constructor(private financeService: FinanceService, private route: ActivatedRoute, private dialog: MatDialog, private router: Router, private accountService: AccountsService, private reportService: ReportsService, private dataSharingService: DataSharingService, private sapservice: SapService) { 
@@ -71,10 +73,17 @@ export class FinancialReportsComponent {
   }
 
   getLOCMOS(location: any) {
+    this.getData = true
     console.log(location);
     this.selectedLocation = location;
     this.reportService.getLocationwiseMonthlySales(location).subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+        this.getData = false
+        return;
+      }
       this.locmosData = res.recordset;
+      this.getData = false
       console.log(this.locmosData)
       // Reset
       this.locGroupedData = [];
@@ -228,9 +237,20 @@ export class FinancialReportsComponent {
   }
 
   getMOSSUM() {
+    this.getData = true
     this.reportService.getMonthwiseSalesSummary().subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+        this.getData = false
+        return;
+      }
       this.mossumData = res.recordset;
+          this.getData = false
       console.log(this.mossumData)
+    }, (err: any) => {
+      alert('No data for the selected parameters!');
+            this.getData = false
+      return;
     });
   }
 
@@ -308,9 +328,9 @@ export class FinancialReportsComponent {
   }
 
   exportMOSSUM(): void {
-    const fileName = `monthwise-sales-summary-${this.mCurDate}.xlsx`;
+    //const fileName = `monthwise-sales-summary-${this.mCurDate}.xlsx`;
 
-    // 1. Create worksheet from cwsoaData
+    /* 1. Create worksheet from cwsoaData
     const mossumSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.mossumData.map(row => ({
       'Location': row.LOCATIONNAME,
       'January': row.January,
@@ -346,7 +366,10 @@ export class FinancialReportsComponent {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
     });
 
-    FileSaver.saveAs(blob, fileName);
+    FileSaver.saveAs(blob, fileName);*/
+    const link = document.createElement('a');
+    link.href = 'assets/reports/petzone_sales.xlsx';
+    link.click();
   }
 
   openIWPDSL() {
@@ -367,8 +390,15 @@ export class FinancialReportsComponent {
     start.setHours(0, 0, 0, 0);
     const end = new Date(this.endDate);
     end.setHours(23, 59, 59, 999);  
+        this.getData = true
     this.reportService.getItemwisePeriodSales(this.formatDate(start),this.formatDate(end),this.selectedLocation,this.selectedCustomer).subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+              this.getData = false
+        return;
+      }
       this.iwpdslData = res.recordset;
+          this.getData = false
       console.log(this.iwpdslData);
       // Reset
       this.groupedData = [];
@@ -397,7 +427,9 @@ export class FinancialReportsComponent {
       // Optional: sort by doc number or customer
       this.groupedData.sort((a, b) => a.docNumber.localeCompare(b.docNumber));
     }, (err: any) => {
-      console.log(err);
+        alert('No data for the selected parameters!');
+              this.getData = false
+      return;
     });
   }
 
@@ -551,8 +583,15 @@ export class FinancialReportsComponent {
     start.setHours(0, 0, 0, 0);
     const end = new Date(this.endDate);
     end.setHours(23, 59, 59, 999);  
+        this.getData = true
     this.reportService.getItemwisePeriodSales(this.formatDate(start),this.formatDate(end),this.selectedLocation,this.selectedCustomer).subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+              this.getData = false
+        return;
+      }
       this.iwpdcsData = res.recordset;
+          this.getData = false
       console.log(this.iwpdcsData);
       // Reset
       this.groupedData = [];
@@ -736,8 +775,15 @@ export class FinancialReportsComponent {
     start.setHours(0, 0, 0, 0);
     const end = new Date(this.endDate);
     end.setHours(23, 59, 59, 999);  
+        this.getData = true
     this.reportService.getItemwisePeriodSales(this.formatDate(start),this.formatDate(end),this.selectedLocation,this.selectedCustomer).subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+              this.getData = false
+        return;
+      }
       this.iwpdpfData = res.recordset;
+          this.getData = false
       console.log(this.iwpdpfData);
       // Reset
       this.groupedData = [];

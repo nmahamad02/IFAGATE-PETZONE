@@ -84,6 +84,13 @@
                 </div>
             </div>
             <br>
+            <div class="row" *ngIf="locGroupedData.length === 0 && getData === true">
+                <div class="col-4"></div>
+                <div class="col-4">
+                    <mat-spinner></mat-spinner>
+                </div>
+                <div class="col-4"></div>
+            </div>
             <table class="table table-striped table-sm table-bordered" id="locMosTable">
                 <thead class="table-dark">
                     <tr>
@@ -140,6 +147,13 @@
     </h3>
     <hr>
     <div mat-dialog-content style="font-size: small;">
+        <div class="row" *ngIf="mossumData.length === 0 && getData === true">
+            <div class="col-4"></div>
+            <div class="col-4">
+                <mat-spinner></mat-spinner>
+            </div>
+            <div class="col-4"></div>
+        </div>
         <div class="col-12">
             <table class="table table-striped table-sm table-bordered" id="mosSumTable">
                 <thead class="table-dark">
@@ -245,6 +259,13 @@
                         </div>
                     </div>
                     <br>
+                    <div class="row" *ngIf="groupedData.length === 0 && getData === true">
+                        <div class="col-4"></div>
+                        <div class="col-4">
+                            <mat-spinner></mat-spinner>
+                        </div>
+                        <div class="col-4"></div>
+                    </div>
                     <table class="table table-striped table-sm table-bordered" id="iwpdslTable">
                         <thead class="table-dark">
                             <tr>
@@ -366,6 +387,13 @@
                         </div>
                     </div>
                     <br>
+                    <div class="row" *ngIf="groupedData.length === 0 && getData === true">
+                        <div class="col-4"></div>
+                        <div class="col-4">
+                            <mat-spinner></mat-spinner>
+                        </div>
+                        <div class="col-4"></div>
+                    </div>
                     <table class="table table-striped table-sm table-bordered" id="iwpdcsTable">
                         <thead class="table-dark">
                             <tr>
@@ -487,6 +515,13 @@
                         </div>
                     </div>
                     <br>
+                    <div class="row" *ngIf="groupedData.length === 0 && getData === true">
+                        <div class="col-4"></div>
+                        <div class="col-4">
+                            <mat-spinner></mat-spinner>
+                        </div>
+                        <div class="col-4"></div>
+                    </div>
                     <table class="table table-striped table-sm table-bordered" id="iwpdpfTable">
                         <thead class="table-dark">
                             <tr>
@@ -524,8 +559,8 @@
                                     <td>ZPC</td>
                                     <td class="text-end">{{ row.UnitPrice | number:'1.3-3' }}</td>
                                     <td class="text-end">{{ row.COSTAMOUNT | number:'1.0' }}</td>
-                                    <td class="text-end">{{ row.CostOfSale | number:'1.3-3' }}</td>
                                     <td class="text-end">{{ row.UNITQTY | number:'1.3-3' }}</td>
+                                    <td class="text-end">{{ row.CostOfSale | number:'1.3-3' }}</td>
                                     <td class="text-end">{{ row.GROSSAMOUNT | number:'1.0' }}</td>
                                     <td class="text-end">{{ row.GrossProfit | number:'1.3-3' }}</td>
                                     <td class="text-end">{{ row.ProfitPercent | number:'1.0' }}%</td>

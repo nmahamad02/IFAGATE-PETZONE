@@ -16,6 +16,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTreeModule } from '@angular/material/tree';
@@ -65,6 +66,7 @@ export const financeRoutes = [
     MatFormFieldModule,
     MatExpansionModule,
     MatInputModule,
+    MatProgressSpinnerModule,
     MatDatepickerModule,
     MatDialogModule,
     MatTableModule,

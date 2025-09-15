@@ -101,6 +101,8 @@ export class ReportsComponent {
 
   searchText = ''
 
+  getData: boolean = false;
+
   isSyncing = false;
   financeData = false;
   customerData = false;
@@ -316,9 +318,16 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     };
     this.cwsoaData = []
     this.selectedCustomer = customer
+        this.getData = true
     this.reportService.getCustomerSoa('C', customer.PCODE).subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+              this.getData = false
+        return;
+      }
       console.log(res.recordset);
       this.cwsoaData = res.recordset;
+          this.getData = false
       let runningBalance = 0;
 
       this.cwsoaData = this.cwsoaData.map(row => {
@@ -369,6 +378,10 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
           this.ageingSummary['ABOVE_120_DAYS'] += amt;
         }
       })
+    }, (err: any) => {
+      alert('No data for the selected parameters!');
+            this.getData = false
+      return;
     });
   }
 
@@ -578,9 +591,16 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     };
     this.pwsoaData = []
     this.selectedParent = parent
+        this.getData = true
     this.reportService.getParentSoa(parent.PARENTNAME).subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+              this.getData = false
+        return;
+      }
       console.log(res.recordset);
       this.pwsoaData = res.recordset;
+          this.getData = false
       let runningBalance = 0;
 
       this.pwsoaData = this.pwsoaData.map(row => {
@@ -631,6 +651,10 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
           this.ageingSummary['ABOVE_120_DAYS'] += amt;
         }
       })
+    }, (err: any) => {
+      alert('No data for the selected parameters!');
+            this.getData = false
+      return;
     });
   }
 
@@ -1299,8 +1323,15 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     };
     this.parentWiseCustomerAgeingList = []
     this.selectedParent = parent
+        this.getData = true
     this.reportService.getParentSoa(parent.PARENTNAME).subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+              this.getData = false
+        return;
+      }
         const data = res.recordsets[0]; // assuming the actual data is in recordsets[0]
+            this.getData = false
         const groupedByCustomer = new Map<string, any[]>();
 
         data.forEach((entry: any) => {
@@ -1561,9 +1592,17 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     };
     this.cosoaData = []
     this.selectedCustomer = customer
+        this.getData = true
+
     this.reportService.getCustomerOpenSoa('C', customer.PCODE).subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+              this.getData = false
+        return;
+      }
       console.log(res.recordset);
       this.cosoaData = res.recordset;
+          this.getData = false
       let runningBalance = 0;
 
       this.cosoaData = this.cosoaData.map(row => {
@@ -1614,6 +1653,10 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
           this.ageingSummary['ABOVE_120_DAYS'] += amt;
         }
       })
+    }, (err: any) => {
+      alert('No data for the selected parameters!');
+            this.getData = false
+      return;
     });
   }
 
@@ -1822,10 +1865,17 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       'CURRENT': 0
     };
     this.posoaData = []
+        this.getData = true
     this.selectedParent = parent
     this.reportService.getParentOpenSoa(parent.PARENTNAME).subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+              this.getData = false
+        return;
+      }
       console.log(res.recordset);
       this.posoaData = res.recordset;
+          this.getData = false
       let runningBalance = 0;
 
       this.posoaData = this.posoaData.map(row => {
@@ -1876,6 +1926,10 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
           this.ageingSummary['ABOVE_120_DAYS'] += amt;
         }
       })
+    }, (err: any) => {
+      alert('No data for the selected parameters!');
+            this.getData = false
+      return;
     });
   }
 
@@ -2109,9 +2163,15 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     alert('Please select both start and end dates.');
     return;
   }
-
+    this.getData = true
   this.reportService.getCustomerSoa('C', this.selectedCustomer.PCODE).subscribe((res: any) => {
+    if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+              this.getData = false
+        return;
+    }
     const data = res.recordset;
+        this.getData = false
     console.log("Raw SOA Data:", data);
 
     let runningBalance = 0;
@@ -2498,9 +2558,16 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     alert('Please select both start and end dates.');
     return;
   }
+    this.getData = true
 
   this.reportService.getParentSoa(this.selectedParent.PARENTNAME).subscribe((res: any) => {
+    if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+              this.getData = false
+        return;
+    }
     const data = res.recordset;
+        this.getData = false
     console.log("Raw SOA Data:", data);
 
     let runningBalance = 0;
@@ -2863,12 +2930,18 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
       'CURRENT': 0
     };
     this.pwoutData = []
+        this.getData = true
     this.selectedParent = parent
     this.reportService.getParentSoa(parent.PARENTNAME).subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+              this.getData = false
+        return;
+      }
       console.log(res.recordset);
 
       const rawData = res.recordset;
-
+    this.getData = false
       const debitList: any[] = [];
       const creditList: any[] = [];
 
@@ -3163,9 +3236,16 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     start.setHours(0, 0, 0, 0);
     const end = new Date(this.endDate);
     end.setHours(23, 59, 59, 999);
+    this.getData = true
 
     this.reportService.getParentFromOrg(this.selectedCategory).subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+              this.getData = false
+        return;
+      }
       this.catovrData = res.recordset
+          this.getData = false
       console.log(this.catovrData)
       this.catovrData.forEach((parent, index) => {
         console.log(parent.PARENTNAMEID)
@@ -3239,6 +3319,10 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
           };
         })
       })
+    }, (err: any) => {
+      alert('No data for the selected parameters!');
+            this.getData = false
+      return;
     })
   }
 
