@@ -23,9 +23,7 @@ export class FinancialReportsComponent {
   @ViewChild('locmosLookupDialog', { static: false }) locmosLookupDialog!: TemplateRef<any>;
   @ViewChild('mossumLookupDialog', { static: false }) mossumLookupDialog!: TemplateRef<any>;
   @ViewChild('iwpdslLookupDialog', { static: false }) iwpdslLookupDialog!: TemplateRef<any>;
-  @ViewChild('vwpdslLookupDialog', { static: false }) vwpdslLookupDialog!: TemplateRef<any>;
   @ViewChild('iwpdcsLookupDialog', { static: false }) iwpdcsLookupDialog!: TemplateRef<any>;
-  @ViewChild('vwpdcsLookupDialog', { static: false }) vwpdcsLookupDialog!: TemplateRef<any>;
   @ViewChild('iwpdpfLookupDialog', { static: false }) iwpdpfLookupDialog!: TemplateRef<any>;
   @ViewChild('vwpdpfLookupDialog', { static: false }) vwpdpfLookupDialog!: TemplateRef<any>;
 
@@ -36,9 +34,7 @@ export class FinancialReportsComponent {
   locGroupedData: { location: string, rows: any[], subtotal: number }[] = [];
   mossumData: any[] = []
   iwpdslData: any[] = []
-  vwpdslData: any[] = []
   iwpdcsData: any[] = []
-  vwpdcsData: any[] = []
   iwpdpfData: any[] = []
   vwpdpfData: any[] = []
 
@@ -113,7 +109,7 @@ export class FinancialReportsComponent {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Location-wise Monthly Sales', 150, 20);
+    doc.text('Location-wise Monthly Sales Statement', 150, 20);
     doc.roundedRect(5, 32.5, 436, 55, 5, 5);
     doc.setFontSize(10);
     let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
@@ -259,7 +255,7 @@ export class FinancialReportsComponent {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Month-wise Sales Summary Preview', 200, 20);
+    doc.text('Month-wise Sales Statement', 200, 20);
     doc.setFontSize(10);
     doc.setFont('Helvetica', 'normal');
     doc.text(`Date: ${this.mCurDate}`,550,20);
@@ -438,7 +434,7 @@ export class FinancialReportsComponent {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Item-wise Period Sales Preview', 200, 20);
+    doc.text('Item-wise Period Sales Statement', 200, 20);
     doc.roundedRect(5, 32.5, 620, 55, 5, 5);
     doc.setFontSize(10);
     let customerLabel = this.selectedCustomer === 'NULL' ? 'All Customers' : this.selectedCustomer;
@@ -556,15 +552,6 @@ export class FinancialReportsComponent {
     FileSaver.saveAs(blob, fileName);
   }
 
-  openVWPDSL() {
-    let dialogRef = this.dialog.open(this.vwpdslLookupDialog);
-    this.vwpdslData = []
-    this.groupedData = []
-    //this.searchText = ''
-    this.selectedCustomer = 'NULL'
-    this.selectedLocation = 'NULL'
-  }
-
   openIWPDCS() {
     let dialogRef = this.dialog.open(this.iwpdcsLookupDialog);
     this.iwpdcsData = []
@@ -629,7 +616,7 @@ export class FinancialReportsComponent {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Item-wise Period Cost of Sales Preview', 200, 20);
+    doc.text('Item-wise Period Cost of Sales Statement', 200, 20);
     doc.roundedRect(5, 32.5, 620, 55, 5, 5);
     doc.setFontSize(10);
     let customerLabel = this.selectedCustomer === 'NULL' ? 'All Customers' : this.selectedCustomer;
@@ -748,15 +735,6 @@ export class FinancialReportsComponent {
     FileSaver.saveAs(blob, fileName);
   }
 
-  openVWPDCS() {
-    let dialogRef = this.dialog.open(this.vwpdcsLookupDialog);
-    this.vwpdcsData = []
-    this.groupedData = []
-    //this.searchText = ''
-    this.selectedCustomer = 'NULL'
-    this.selectedLocation = 'NULL'
-  }
-
   openIWPDPF() {
     let dialogRef = this.dialog.open(this.iwpdpfLookupDialog);
     this.iwpdslData = []
@@ -798,16 +776,18 @@ export class FinancialReportsComponent {
       // Convert to array with subtotal
       for (const key of Object.keys(tempGroup)) {
         const rows = tempGroup[key];
-        const subtotal = rows.reduce((sum, r) => sum + Number(r.GROSSAMOUNT || 0), 0);
+        const totalSale = rows.reduce((sum, r) => sum + Number(r.GROSSAMOUNT || 0), 0);
+        const totalCost = rows.reduce((sum, r) => sum + Number(r.CostOfSale || 0), 0);
         const [doc, custId, custName] = key.split("|");
         this.groupedData.push({
           docNumber: doc,
           customerId: custId,
           customerName: custName,
           rows,
-          subtotal
+          totalSale,
+          totalCost,
         });
-        this.grandTotal += subtotal;
+        this.grandTotal += totalSale;
       }
       // Optional: sort by doc number or customer
       this.groupedData.sort((a, b) => a.docNumber.localeCompare(b.docNumber));
@@ -821,7 +801,7 @@ export class FinancialReportsComponent {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Item-wise Period Profit Preview', 200, 20);
+    doc.text('Item-wise Period Profit Statement', 200, 20);
     doc.roundedRect(5, 32.5, 620, 55, 5, 5);
     doc.setFontSize(10);
     let customerLabel = this.selectedCustomer === 'NULL' ? 'All Customers' : this.selectedCustomer;
@@ -955,6 +935,157 @@ export class FinancialReportsComponent {
     //this.searchText = ''
     this.selectedCustomer = 'NULL'
     this.selectedLocation = 'NULL'
+  }
+
+  getVWPDPF() {
+    if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    }
+    const start = new Date(this.startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(this.endDate);
+    end.setHours(23, 59, 59, 999);  
+    this.getData = true
+    this.grandTotal = 0;
+    this.reportService.getVoucherwisePeriodSales(this.formatDate(start),this.formatDate(end),this.selectedLocation,this.selectedCustomer).subscribe((res: any) => {
+      if (res.recordset.length === 0) {
+        alert('No data for the selected parameters!');
+          this.getData = false
+        return;
+      }
+      this.vwpdpfData = res.recordset;
+      for(let i=0;i<res.recordset.length;i++){
+        this.grandTotal += res.recordset[i].TotalGrossAmount
+      }
+      this.getData = false
+      console.log(this.vwpdpfData);
+    }, (err: any) => {
+      console.log(err);
+    });
+  }
+
+  printVWPDPF() {
+    var doc = new jsPDF("landscape", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Voucher-wise Period Profit Statement', 200, 20);
+    doc.roundedRect(5, 32.5, 620, 55, 5, 5);
+    doc.setFontSize(10);
+    let customerLabel = this.selectedCustomer === 'NULL' ? 'All Customers' : this.selectedCustomer;
+    doc.text(`${customerLabel}`, 10, 42);
+    let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
+    doc.text(`${locationLabel}`, 10, 52);    
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,550,42);
+    let firstPageStartY = 60; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#vwpdpfTable',
+      tableWidth: 620,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' },
+        8: { halign: 'right' },
+        9: { halign: 'right' },
+      },
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+  
+    // Bilingual footer text
+    doc.setFontSize(8);
+    // Now the font is already registered thanks to the JS file!
+    //doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    //doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    //const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    //const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    //doc.text(engText, 10, finalY1+15);//, { align: 'center' });
+    //doc.setFont('Amiri-Regular', 'normal')
+    //doc.text(araText, 435, finalY1+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc,'l');
+    // Save the PDF
+    doc.save(`${customerLabel}-${locationLabel}-profit-${this.startDate}-${this.endDate}-${this.mCurDate}.pdf`);
+  }
+
+  exportVWPDPF(): void {
+    let customerLabel = this.selectedCustomer === 'NULL' ? 'All Customers' : this.selectedCustomer;
+    let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
+    const fileName = `${customerLabel}-${locationLabel}-profit-${this.startDate}-${this.endDate}-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const vwpdpfSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.iwpdpfData.map(row => ({
+      'Voucher Number': row.DOCNUMBER,
+      'Date': row.DOCDATE,
+      'Customer ID': row.CUSTOMERID,
+      'Customer Name': row.CUSTOMERNAME,
+      'Location': row.LOCATIONNAME,
+      'Quantity': row.UNITQTY,
+      'Cost of Sale': row.CostOfSale,
+      'Gross Amount': row.GROSSAMOUNT,
+      'Gross Profit': row.GrossProfit,
+      'Profit Margin': row.ProfitPercent,
+    })));
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': vwpdpfSheet,
+      },
+      SheetNames: ['Statement']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
   }
 
   searchCustomer(search: string) {

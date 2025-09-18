@@ -108,5 +108,9 @@ private url = 'https://api.ifagate-petzone.theworkpc.com/api'
 
   getItemwisePeriodSales(startDate: string, endDate: string, location: string, customer: string) {
     return this.http.get(this.url + '/report/get-itemwise-period-sales/'  + startDate + '/' + endDate + '/' + location + '/' + customer)
+  }  
+  
+  getVoucherwisePeriodSales(startDate: string, endDate: string, location: string, customer: string) {
+    return this.http.get(this.url + '/report/get-voucherwise-period-sales/'  + startDate + '/' + endDate + '/' + location + '/' + customer)
   }
 }
