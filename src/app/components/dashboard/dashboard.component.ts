@@ -37,6 +37,13 @@ export class DashboardComponent {
   countrywiseYearwiseChartData: any[] = []
   monthwiseSalesdata: any[] = []
   monthlySales: any[] = []
+  topFastBrands: { [key: number]: any[] } = {}; // keyed by months
+  topSlowBrands: { [key: number]: any[] } = {};
+  displayFastBrands: any[] = [];
+  displaySlowBrands: any[] = [];
+
+  periods = [1, 3, 6, 12];
+
   
   updateFlag(countryName: string) {
     const selected = this.countries.find(c => c.name === countryName);
@@ -177,8 +184,32 @@ export class DashboardComponent {
         { name: 'Total', series: totalSeries }
       ];
     });
+    for (let months of this.periods) {
+      // Fast brands
+      this.reportService.getFastMovingBrand(months.toString()).subscribe((res: any) => {
+        this.topFastBrands[months] = res.recordset;  
+        //this.displayFastBrands = this.topFastBrands[1]
+        if (months === 1) this.displayFastBrands = res.recordset; // default tab
+      });
+
+      // Slow brands
+      this.reportService.getSlowMovingBrand(months.toString()).subscribe((res: any) => {
+        this.topSlowBrands[months] = res.recordset;
+        //this.displaySlowBrands = this.topSlowBrands[1]
+        if (months === 1) this.displaySlowBrands = res.recordset; // default tab
+      });
+    }
   }
-  
+
+
+  onTabChange(event: any, type: 'fast' | 'slow') {
+    const months = this.periods[event.index];
+    if (type === 'fast') {
+      this.displayFastBrands = this.topFastBrands[months] || [];
+    } else {
+      this.displaySlowBrands = this.topSlowBrands[months] || [];
+    }
+  }
 }
 
 

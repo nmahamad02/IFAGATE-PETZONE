@@ -113,4 +113,12 @@ private url = 'https://api.ifagate-petzone.theworkpc.com/api'
   getVoucherwisePeriodSales(startDate: string, endDate: string, location: string, customer: string) {
     return this.http.get(this.url + '/report/get-voucherwise-period-sales/'  + startDate + '/' + endDate + '/' + location + '/' + customer)
   }
+
+  getFastMovingBrand(period: string) {
+    return this.http.get(this.url + '/report/get-fast-moving-brand/'  + period)
+  }  
+  
+  getSlowMovingBrand(period: string) {
+    return this.http.get(this.url + '/report/get-slow-moving-brand/'  + period)
+  }  
 }

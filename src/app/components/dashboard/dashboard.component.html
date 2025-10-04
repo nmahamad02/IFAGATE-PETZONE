@@ -143,6 +143,80 @@
     </div>-->
     <br>
     <div class="row">
+        <!-- FAST MOVERS -->
+        <div class="col-6">
+            <mat-card appearance="outlined">
+                <mat-card-header>
+                    <mat-card-subtitle>Top 10 Fast-Moving Brands</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                    <mat-tab-group (selectedTabChange)="onTabChange($event, 'fast')">
+                        <mat-tab label="1 Month"></mat-tab>
+                        <mat-tab label="3 Months"></mat-tab>
+                        <mat-tab label="6 Months"></mat-tab>
+                        <mat-tab label="12 Months"></mat-tab>
+                    </mat-tab-group>
+                    
+                    <table class="table table-sm mt-2">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Brand</th>
+                                <th>Quantity Sold</th>
+                                <th class="text-end">Sales</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let brand of displayFastBrands; let i = index">
+                                <td>{{ i + 1 }}</td>
+                                <td>{{ brand.BRAND }}</td>
+                                <td>{{ brand.QTY }}</td>
+                                <td class="text-end">{{ brand.SALE | number:'1.0-3' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </mat-card-content>
+            </mat-card>
+        </div>
+
+        <!-- SLOW MOVERS -->
+        <div class="col-6">
+            <mat-card appearance="outlined">
+                <mat-card-header>
+                    <mat-card-subtitle>Top 10 Slow-Moving Brands</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                    <mat-tab-group (selectedTabChange)="onTabChange($event, 'slow')">
+                        <mat-tab label="1 Month"></mat-tab>
+                        <mat-tab label="3 Months"></mat-tab>
+                        <mat-tab label="6 Months"></mat-tab>
+                        <mat-tab label="12 Months"></mat-tab>
+                    </mat-tab-group>
+                    
+                    <table class="table table-sm mt-2">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Brand</th>
+                                <th>Quantity Sold</th>
+                                <th class="text-end">Sales</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let brand of displaySlowBrands; let i = index">
+                                <td>{{ i + 1 }}</td>
+                                <td>{{ brand.BRAND }}</td>
+                                <td>{{ brand.QTY }}</td>
+                                <td class="text-end">{{ brand.SALE | number:'1.0-3' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </mat-card-content>
+            </mat-card>
+        </div>
+    </div>
+    <br>
+    <div class="row">
         <div class="col-4">
             <mat-card appearance="outlined">
                 <mat-card-header>

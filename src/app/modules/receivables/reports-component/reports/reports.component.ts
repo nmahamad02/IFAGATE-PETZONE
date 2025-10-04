@@ -448,7 +448,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     });
 
     let finalY1 = doc.lastAutoTable?.finalY || 0
-  
+    if(this.selectedCustomer?.Orgnisation != 'MM-COOP') {
     autoTable(doc, {
       html: '#cwsoaAgeingSummaryTable',
       startY: finalY1 + 5,
@@ -477,6 +477,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         6: { halign: 'center' }
       }
     });
+    }
 
     let finalY2 = doc.lastAutoTable?.finalY || 0
 
@@ -720,7 +721,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     });
 
     let finalY1 = doc.lastAutoTable?.finalY || 0
-  
+    if(this.selectedParent?.orgnisation != 'MM-COOP') {
     autoTable(doc, {
       html: '#pwsoaAgeingSummaryTable',
       startY: finalY1 + 5,
@@ -749,7 +750,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         6: { halign: 'center' }
       }
     });
-
+  }
     let finalY2 = doc.lastAutoTable?.finalY || 0
 
     // Bilingual footer text
@@ -1723,7 +1724,8 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     });
 
     let finalY1 = doc.lastAutoTable?.finalY || 0
-  
+      if(this.selectedCustomer?.Orgnisation != 'MM-COOP') {
+
     autoTable(doc, {
       html: '#cosoaAgeingSummaryTable',
       startY: finalY1 + 5,
@@ -1752,7 +1754,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         6: { halign: 'center' }
       }
     });
-
+  }
     let finalY2 = doc.lastAutoTable?.finalY || 0
 
     // Bilingual footer text
@@ -1995,7 +1997,8 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     });
 
     let finalY1 = doc.lastAutoTable?.finalY || 0
-  
+      if(this.selectedParent?.orgnisation != 'MM-COOP') {
+
     autoTable(doc, {
       html: '#posoaAgeingSummaryTable',
       startY: finalY1 + 5,
@@ -2024,7 +2027,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         6: { halign: 'center' }
       }
     });
-
+  }
     let finalY2 = doc.lastAutoTable?.finalY || 0
 
     // Bilingual footer text
@@ -2375,7 +2378,8 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     });
 
     let finalY1 = doc.lastAutoTable?.finalY || 0
-  
+        if(this.selectedCustomer?.Orgnisation != 'MM-COOP') {
+
     autoTable(doc, {
       html: '#cpwsoaAgeingSummaryTable',
       startY: finalY1 + 5,
@@ -2404,7 +2408,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
         6: { halign: 'center' }
       }
     });
-
+  }
     // Bilingual footer text
     doc.setFontSize(9);
     let finalY2 = doc.lastAutoTable?.finalY || 0
@@ -2771,7 +2775,8 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     });
 
     let finalY1 = doc.lastAutoTable?.finalY || 0
-  
+        if(this.selectedParent?.orgnisation != 'MM-COOP') {
+
     autoTable(doc, {
       html: '#ppwsoaAgeingSummaryTable',
       startY: finalY1 + 5,
@@ -2800,7 +2805,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
         6: { halign: 'center' }
       }
     });
-
+  }
     // Bilingual footer text
     doc.setFontSize(9);
     let finalY2 = doc.lastAutoTable?.finalY || 0
@@ -3079,7 +3084,8 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     });
 
     let finalY1 = doc.lastAutoTable?.finalY || 0
-  
+        if(this.selectedParent?.orgnisation != 'MM-COOP') {
+
     autoTable(doc, {
       html: '#pwoutAgeingSummaryTable',
       startY: finalY1 + 5,
@@ -3108,7 +3114,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
         6: { halign: 'center' }
       }
     });
-
+  }
     let finalY2 = doc.lastAutoTable?.finalY || 0
 
     // Bilingual footer text

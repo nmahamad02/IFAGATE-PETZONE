@@ -18,6 +18,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { AbsPipe } from './pipes/abs.pipe';
+import { MatTabsModule } from '@angular/material/tabs';
 
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 
@@ -49,6 +50,7 @@ export function HttpLoaderFactory(http: HttpClient) {
     MatIconModule,
     MatFormFieldModule,
     MatSelectModule,
+    MatTabsModule,
     NgxChartsModule,
     TranslateModule.forRoot({
       loader: {

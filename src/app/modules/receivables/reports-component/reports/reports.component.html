@@ -125,7 +125,7 @@
                     <input type="text" class="form-control form-control-sm" [value]="selectedCustomer?.CUST_NAME" placeholder="Customer Name" disabled>
                 </div>
                 <br>              
-                <table id="cwsoaAgeingSummaryTable" class="table table-sm table-bordered">
+                <table id="cwsoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedCustomer?.Orgnisation != 'MM-COOP'">
                     <thead>
                         <tr>
                             <th colspan="6" class="text-start">Ageing Summary</th>
@@ -259,7 +259,7 @@
                     <input type="text" class="form-control form-control-sm" [value]="selectedParent?.PARENTNAME" placeholder="Parent Name" disabled>
                 </div>
                 <br>            
-                <table id="pwsoaAgeingSummaryTable" class="table table-sm table-bordered">
+                <table id="pwsoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedParent?.orgnisation != 'MM-COOP'">
                     <thead>
                         <tr class="table-primary">
                             <th colspan="6" class="text-start">Ageing Summary</th>
@@ -375,7 +375,7 @@
     <hr>
     <div mat-dialog-content style="font-size: small;">
         <div class="col-12">
-            <table id="cwaslAgeingSummaryTable" class="table table-sm table-bordered">
+            <table id="cwaslAgeingSummaryTable" class="table table-sm table-bordered" >
                 <thead>
                     <tr class="table-primary">
                         <th colspan="7" class="text-start">Ageing Summary</th>
@@ -671,7 +671,7 @@
                     <input type="text" class="form-control form-control-sm" [value]="selectedCustomer?.CUST_NAME" placeholder="Customer Name" disabled>
                 </div>
                 <br>
-                <table id="cosoaAgeingSummaryTable" class="table table-sm table-bordered">
+                <table id="cosoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedCustomer?.Orgnisation != 'MM-COOP'">
                     <thead>
                         <tr>
                             <th colspan="7" class="text-start">Open Ageing Summary</th>
@@ -805,7 +805,7 @@
                     <input type="text" class="form-control form-control-sm" [value]="selectedParent?.PARENTNAME" placeholder="Parent Name" disabled>
                 </div>
                 <br>            
-                <table id="posoaAgeingSummaryTable" class="table table-sm table-bordered">
+                <table id="posoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedParent?.orgnisation != 'MM-COOP'">
                     <thead>
                         <tr class="table-primary">
                             <th colspan="7" class="text-start">Open Ageing Summary</th>
@@ -954,7 +954,7 @@
                     </div>
                 </div>
                 <br>
-                <table id="cpwsoaAgeingSummaryTable" class="table table-sm table-bordered">
+                <table id="cpwsoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedCustomer?.Orgnisation != 'MM-COOP'">
                     <thead>
                         <tr>
                             <th colspan="7" class="text-start">Period-wise Ageing Summary</th>
@@ -1103,7 +1103,7 @@
                     </div>
                 </div>
                 <br>
-                <table id="ppwsoaAgeingSummaryTable" class="table table-sm table-bordered">
+                <table id="ppwsoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedParent?.orgnisation != 'MM-COOP'">
                     <thead>
                         <tr>
                             <th colspan="7" class="text-start">Period-wise Ageing Summary</th>
@@ -1243,7 +1243,7 @@
                     <input type="text" class="form-control form-control-sm" [value]="selectedParent?.PARENTNAME" placeholder="Parent Name" disabled>
                 </div>
                 <br>            
-                <table id="pwoutAgeingSummaryTable" class="table table-sm table-bordered">
+                <table id="pwoutAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedParent?.orgnisation != 'MM-COOP'">
                     <thead>
                         <tr class="table-primary">
                             <th colspan="6" class="text-start">Ageing Summary</th>
