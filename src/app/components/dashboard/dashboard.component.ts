@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { ReportsService } from 'src/app/services/reports/reports.service';
 import { LegendPosition } from '@swimlane/ngx-charts';
 
@@ -41,9 +41,14 @@ export class DashboardComponent {
   topSlowBrands: { [key: number]: any[] } = {};
   displayFastBrands: any[] = [];
   displaySlowBrands: any[] = [];
+  chartFastBrands: any[] = [];
+  chartSlowBrands: any[] = [];
+  colorScheme = { domain: ['#5AA454', '#A10A28', '#C7B42C', '#AAAAAA'] }; // optional colors
 
   periods = [1, 3, 6, 12];
 
+  chartWidth: number;
+  chartHeight: number;
   
   updateFlag(countryName: string) {
     const selected = this.countries.find(c => c.name === countryName);
@@ -189,14 +194,19 @@ export class DashboardComponent {
       this.reportService.getFastMovingBrand(months.toString()).subscribe((res: any) => {
         this.topFastBrands[months] = res.recordset;  
         //this.displayFastBrands = this.topFastBrands[1]
-        if (months === 1) this.displayFastBrands = res.recordset; // default tab
+        if (months === 1) {
+          this.displayFastBrands = res.recordset;
+          this.updateChart('fast');   // <-- add this
+        }      
       });
-
       // Slow brands
       this.reportService.getSlowMovingBrand(months.toString()).subscribe((res: any) => {
         this.topSlowBrands[months] = res.recordset;
         //this.displaySlowBrands = this.topSlowBrands[1]
-        if (months === 1) this.displaySlowBrands = res.recordset; // default tab
+        if (months === 1) {
+          this.displaySlowBrands = res.recordset;
+          this.updateChart('slow');   // <-- add this
+        }
       });
     }
   }
@@ -204,12 +214,53 @@ export class DashboardComponent {
 
   onTabChange(event: any, type: 'fast' | 'slow') {
     const months = this.periods[event.index];
+
     if (type === 'fast') {
       this.displayFastBrands = this.topFastBrands[months] || [];
+      this.updateChart('fast');
     } else {
       this.displaySlowBrands = this.topSlowBrands[months] || [];
+      this.updateChart('slow');
     }
   }
+  
+  updateChart(type: 'fast' | 'slow') {
+    if (type === 'fast') {
+      this.chartFastBrands = this.displayFastBrands.map(b => ({
+        name: b.BRAND,
+        value: b.SALE
+      }));
+    } else {
+      this.chartSlowBrands = this.displaySlowBrands.map(b => ({
+        name: b.BRAND,
+        value: b.SALE
+      }));
+    }
+  }
+
+  formatFastTicks(value: number): string {
+    // Round to nearest 50k
+    const rounded = Math.round(value / 100000) * 100000;
+    return rounded >= 100000 ? (rounded / 10000) + 'k' : '';
+  }
+
+  formatSlowTicks(value: number): string {
+    // Show integers 1–5
+    return value % 1 === 0 ? value.toString() : '';
+  }
+
+  setChartSize() {
+    // For example, width = 40% of viewport width, height = 30% of viewport height
+    this.chartWidth = window.innerWidth * 0.4;
+    this.chartHeight = window.innerHeight * 0.3;
+  }
+
+  // Optional: recalc chart size on window resize
+  @HostListener('window:resize', ['$event'])
+  onResize(event: any) {
+    this.setChartSize();
+  }
+
 }
 
 

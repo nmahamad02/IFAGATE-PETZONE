@@ -156,7 +156,18 @@
                         <mat-tab label="6 Months"></mat-tab>
                         <mat-tab label="12 Months"></mat-tab>
                     </mat-tab-group>
-                    
+                    <ngx-charts-bar-vertical
+                        [results]="chartFastBrands"
+                        [xAxis]="true"
+                        [yAxis]="true"
+                        [view]="[chartWidth, chartHeight]"
+                        [legend]="false"
+                        [showXAxisLabel]="true"
+                        [showYAxisLabel]="true"
+                        [xAxisLabel]="'Brand'"
+                        [yAxisLabel]="'Sales (KWD)'"
+                        [animations]="true">
+                    </ngx-charts-bar-vertical>
                     <table class="table table-sm mt-2">
                         <thead>
                             <tr>
@@ -192,7 +203,18 @@
                         <mat-tab label="6 Months"></mat-tab>
                         <mat-tab label="12 Months"></mat-tab>
                     </mat-tab-group>
-                    
+                    <ngx-charts-bar-vertical
+                        [results]="chartSlowBrands"
+                        [view]="[chartWidth, chartHeight]"
+                        [xAxis]="true"
+                        [yAxis]="true"
+                        [legend]="false"
+                        [showXAxisLabel]="true"
+                        [showYAxisLabel]="true"
+                        [xAxisLabel]="'Brand'"
+                        [yAxisLabel]="'Sales (KWD)'"
+                        [animations]="true">
+                    </ngx-charts-bar-vertical>
                     <table class="table table-sm mt-2">
                         <thead>
                             <tr>
