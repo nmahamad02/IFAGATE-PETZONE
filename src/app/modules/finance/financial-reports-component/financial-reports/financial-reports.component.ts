@@ -162,6 +162,7 @@ export class FinancialReportsComponent {
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -294,6 +295,7 @@ export class FinancialReportsComponent {
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -480,6 +482,7 @@ export class FinancialReportsComponent {
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -662,6 +665,7 @@ export class FinancialReportsComponent {
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -851,6 +855,7 @@ export class FinancialReportsComponent {
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -1018,6 +1023,7 @@ export class FinancialReportsComponent {
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }

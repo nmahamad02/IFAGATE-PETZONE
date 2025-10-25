@@ -84,7 +84,7 @@ export class ReportsComponent {
 
   selectedCustomer: any
   selectedParent: any
-  selectedCategory: string = ''
+  selectedCategories: string[] = []
   selectedLocation: string = 'NULL'
 
   startDate: Date;
@@ -442,6 +442,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -715,6 +716,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -1440,6 +1442,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -1718,6 +1721,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -1991,6 +1995,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -2372,6 +2377,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -2769,6 +2775,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -3078,6 +3085,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -3225,111 +3233,95 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     this.catovrData = []
   }
 
-  getCATOVR(category: any) {
-    console.log(category)
-    this.selectedCategory = category
-  }
-  
-  setCATOVR() {
-    console.log(this.selectedCategory)
 
+  getCATOVR(categories: any[]) {
+    console.log('Selected categories:', categories);
+    this.selectedCategories = categories;
+  }
+
+  setCATOVR() {
+    console.log(this.selectedCategories);
     if (!this.startDate || !this.endDate) {
       alert('Please select both start and end dates.');
       return;
     }
-
+    if (this.selectedCategories.length === 0) {
+      alert('Please select at least one category.');
+      return;
+    }
     const start = new Date(this.startDate);
     start.setHours(0, 0, 0, 0);
     const end = new Date(this.endDate);
     end.setHours(23, 59, 59, 999);
-    this.getData = true
+    this.getData = true;
+    this.catovrData = [];
+    // Loop through all selected categories
+    this.selectedCategories.forEach((category) => {
+      this.reportService.getParentFromOrg(category).subscribe((res: any) => {
+        if (res.recordset.length === 0) {
+          console.warn(`No data found for category: ${category}`);
+          return;
+        }
+        res.recordset.forEach((parent: any) => {
+          this.reportService.getParentSoa(parent.PARENTNAMEID).subscribe((resp: any) => {
+            const data = resp.recordset;
+            let runningBalance = 0;
+            let localAgeing = {      
+              CURRENT: 0,
+              '30_DAYS': 0,
+              '60_DAYS': 0,
+              '90_DAYS': 0,
+              '120_DAYS': 0,
+              'ABOVE_120_DAYS': 0
+            };
+            let totalCollection = 0;
 
-    this.reportService.getParentFromOrg(this.selectedCategory).subscribe((res: any) => {
-      if (res.recordset.length === 0) {
-        alert('No data for the selected parameters!');
-              this.getData = false
-        return;
-      }
-      this.catovrData = res.recordset
-          this.getData = false
-      console.log(this.catovrData)
-      this.catovrData.forEach((parent, index) => {
-        console.log(parent.PARENTNAMEID)
-        this.reportService.getParentSoa(parent.PARENTNAMEID).subscribe((resp: any) => {
-          const data = resp.recordset;
-    
-          console.log("Raw SOA Data:", data);
+            data.forEach((row: any) => {
+              const debit = Number(row.DEBIT) || 0;
+              const credit = Number(row.CREDIT) || 0;
+              runningBalance += debit - credit;
 
-          let runningBalance = 0;
-          let localAgeing = {
-            CURRENT: 0,
-            '30_DAYS': 0,
-            '60_DAYS': 0,
-            '90_DAYS': 0,
-            '120_DAYS': 0,
-            'ABOVE_120_DAYS': 0
-          };
-          let totalCollection = 0;
+              const dueDate = new Date(row.DUEDATE);
+              let daysDiff: number | null = null;
 
-          data.forEach((row: any) => {
-            const debit = Number(row.DEBIT) || 0;
-            const credit = Number(row.CREDIT) || 0;
-            runningBalance += debit - credit;
-
-            const dueDate = new Date(row.DUEDATE)
-            // Collection (credit) within date range
-
-            let daysDiff: number | null = null;
-            if ((debit - credit) > 0 && row.DUEDATE) {
-              const today = new Date();
-              dueDate.setHours(0, 0, 0, 0);
-              today.setHours(0, 0, 0, 0);
-              const diffTime = today.getTime() - dueDate.getTime();
-              daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            }
-
-            const amt = debit - credit
-            if (daysDiff !== null) {
-              if (daysDiff < 0) {
-                localAgeing.CURRENT += amt;
-              } else if (daysDiff <= 30) {
-                localAgeing['30_DAYS'] += amt;
-              } else if (daysDiff <= 60) {
-                localAgeing['60_DAYS'] += amt;
-              } else if (daysDiff <= 90) {
-                localAgeing['90_DAYS'] += amt;
-              } else if (daysDiff <= 120) {
-                localAgeing['120_DAYS'] += amt;
-              } else {
-                localAgeing['ABOVE_120_DAYS'] += amt;
+              if ((debit - credit) > 0 && row.DUEDATE) {
+                const today = new Date();
+                dueDate.setHours(0, 0, 0, 0);
+                today.setHours(0, 0, 0, 0);
+                const diffTime = today.getTime() - dueDate.getTime();
+                daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
               }
-            }
+              const amt = debit - credit;
+              if (daysDiff !== null) {
+                if (daysDiff < 0) localAgeing.CURRENT += amt;
+                else if (daysDiff <= 30) localAgeing['30_DAYS'] += amt;
+                else if (daysDiff <= 60) localAgeing['60_DAYS'] += amt;
+                else if (daysDiff <= 90) localAgeing['90_DAYS'] += amt;
+                else if (daysDiff <= 120) localAgeing['120_DAYS'] += amt;
+                else localAgeing['ABOVE_120_DAYS'] += amt;
+              }
+              const trnDate = new Date(row.INV_DATE);
+              if ((trnDate >= start && trnDate <= end) && row.DESCRIPTION === 'Payment') {
+                totalCollection += credit;
+              }
+            });
+            const overdue = runningBalance - localAgeing.CURRENT;
+            this.catovrData.push({
+              ...parent,
+              BALANCE: runningBalance,
+              CURRENT: localAgeing.CURRENT,
+              OVERDUE: overdue,
+              COLLECTED: totalCollection,
+              ORGNISATION: category
+            });
 
-            const trnDate = new Date(row.INV_DATE)
-
-            if ((trnDate >= start && trnDate <= end) && (row.DESCRIPTION === 'Payment')) {
-              totalCollection += credit;
-            }
+            this.getData = false;
           });
-
-          // Step 3: Calculate overdue
-          const overdue = runningBalance - localAgeing.CURRENT;
-
-          // Step 4: Inject into the catovrData row
-          this.catovrData[index] = {
-            ...parent,
-            BALANCE: runningBalance,
-            CURRENT: localAgeing.CURRENT,
-            OVERDUE: overdue,
-            COLLECTED: totalCollection
-          };
-        })
-      })
-    }, (err: any) => {
-      alert('No data for the selected parameters!');
-            this.getData = false
-      return;
-    })
+        });
+      }, (err: any) => {
+        console.error(`Error fetching data for category: ${category}`, err);
+      });
+    });
   }
 
   getCATOVRTotal(field: 'BALANCE' | 'OVERDUE' | 'COLLECTED'): number {
@@ -3344,6 +3336,27 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     }, 0);
   }
 
+  getGroupedCATOVRData() {
+    const grouped: { [key: string]: any[] } = {};
+
+    this.catovrData.forEach(row => {
+      const category = row.ORGNISATION || 'Uncategorised';
+      if (!grouped[category]) grouped[category] = [];
+      grouped[category].push(row);  
+    });
+
+    return Object.entries(grouped).map(([category, rows]) => ({
+      category,
+      rows,
+      totals: {
+        BALANCE: rows.reduce((a, b) => a + (Number(b.BALANCE) || 0), 0),
+        OVERDUE: rows.reduce((a, b) => a + (Number(b.OVERDUE) > 0 ? Number(b.OVERDUE) : 0), 0),
+        COLLECTED: rows.reduce((a, b) => a + (Number(b.COLLECTED) || 0), 0)
+      }
+    }));
+  }
+
+
   printCATOVR() {
     if (!this.startDate || !this.endDate) {
       alert('Please select both start and end dates.');
@@ -3357,7 +3370,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     doc.text('Category-wise Customer Overdue Statement', 130, 20);
     doc.roundedRect(5, 32.5, 436, 25, 5, 5);
     doc.setFontSize(10);
-    doc.text(`${this.selectedCategory}`,10,42);
+    doc.text(`${this.selectedCategories}`,10,42);
     doc.setFont('Helvetica', 'normal');
     doc.text(`Date: ${this.mCurDate}`,330,42);
     doc.text('Period',10,52);
@@ -3391,14 +3404,15 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
         halign: 'right'
       },
       columnStyles: {
-        5: { halign: 'right' },
-        6: { halign: 'right' },
-        7: { halign: 'right' }
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' }
       },
       margin: { 
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
       },
+      showFoot: 'lastPage', 
       didDrawPage: function () {
         firstPage = false;
       }
@@ -3425,12 +3439,12 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     // Add watermark (if necessary)
     doc = this.addWaterMark(doc);
     // Save the PDF
-    doc.save(`${this.selectedCategory}-overdue-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
+    doc.save(`overdue-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
     }
   }
 
   exportCATOVR(): void {
-    const fileName = `${this.selectedCategory}-overdue-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
+    const fileName = `overdue-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
     const catovrSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.catovrData.map(row => ({

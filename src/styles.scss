@@ -1,10 +1,16 @@
 /* You can add global styles to this file, and also import other style files */
 @import "bootstrap/scss/bootstrap";
+@import "~@ng-select/ng-select/themes/default.theme.css";
 
+/*
 $primary: #444444;
 $secondary: #181818bd;
 $warning: #C5F7C9;
+*/
 
+$primary: #27395c ;
+$secondary: #111827;
+$warning: #6B7280;
 .bg-primary {
 
   background-color: $primary !important;

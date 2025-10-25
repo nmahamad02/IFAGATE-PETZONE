@@ -5,6 +5,7 @@ import { CustomerDetailComponent } from './customer-component/customer-detail/cu
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
@@ -65,6 +66,7 @@ export const receivablesRoutes = [
   ],
   imports: [
     MatIconModule,
+    NgSelectModule,
     CommonModule,
     SharedModule,
     MatTabsModule,
@@ -83,7 +85,7 @@ export const receivablesRoutes = [
     MatTreeModule,
     MatSortModule,
     FormsModule,
-    PdfViewerModule,
+    //PdfViewerModule,
     ReactiveFormsModule,
     RouterModule.forChild(receivablesRoutes)  
   ]

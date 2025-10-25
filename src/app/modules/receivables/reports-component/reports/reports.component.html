@@ -6,7 +6,7 @@
                     <div class="col-8">
                         <h2 class="heading-title">Financial Reports</h2>
                     </div>
-                    <div class="col-2" *ngIf="userRight==='true'">
+                    <!--<div class="col-2" *ngIf="userRight==='true'">
                         <button mat-raised-button class="bg-primary text-white btn btn-block" (click)="startFinanceSync()" title="Update Transaction Data" style="float: right">
                             <mat-icon>refresh</mat-icon> Finance Data
                         </button>
@@ -15,7 +15,7 @@
                         <button mat-raised-button class="bg-secondary text-white btn btn-block" (click)="startCustomerSync()" title="Update Customer Data" style="float: right">
                             <mat-icon>refresh</mat-icon> Customer Data
                         </button>
-                    </div>
+                    </div>-->
                 </div>
             </div>
             <hr>
@@ -1357,16 +1357,18 @@
         <b>Category-wise Overdue Statement Preview</b>
     </h3>
     <hr>
-    <div mat-dialog-content style="font-size: small;">
+    <div mat-dialog-content style="font-size: small;">      
         <div class="col-12">
             <div class="row">
                 <div class="col-4">
-                    <select [(ngModel)]="selectedCategory" class="form-control form-control-sm" (change)="getCATOVR(selectedCategory)">
-                        <option value="">--- Select Category ---</option>
-                        <option *ngFor="let org of organisationList" [value]="org.ORGANISATION">
-                            {{ org.ORGANISATION }}
-                        </option>
-                    </select>                    
+                    <ng-select 
+                    [items]="organisationList"
+                    bindLabel="ORGANISATION"
+                    bindValue="ORGANISATION"
+                    [multiple]="true"
+                    placeholder="Select Categories"
+                    [(ngModel)]="selectedCategories">
+                    </ng-select>
                 </div>
                 <div class="col-3">
                     <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" placeholder="Start Date">
@@ -1396,23 +1398,39 @@
                         <th>Period Collection</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr *ngFor="let row of catovrData">
+                <tbody *ngFor="let group of getGroupedCATOVRData()">
+                    <!-- Category Header -->
+                    <tr class="table-secondary fw-bold">
+                        <td colspan="5">{{ group.category }}</td>
+                    </tr>
+
+                    <!-- Category Rows -->
+                    <tr *ngFor="let row of group.rows">
                         <td>{{ row.PARENTNAMEID }}</td>
                         <td>{{ row.ORGNISATION }}</td>
                         <td class="text-end">{{ row.BALANCE | number:'1.3-3' }}</td>
                         <td class="text-end">{{ (row.OVERDUE > 0 ? row.OVERDUE : 0) | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.COLLECTED | number:'1.3-3' }}</td>                        
+                        <td class="text-end">{{ row.COLLECTED | number:'1.3-3' }}</td>
+                    </tr>
+
+                    <!-- Subtotal Row -->
+                    <tr class="fw-bold text-end table-light">
+                        <td colspan="2" class="text-end">Subtotal ({{ group.category }})</td>
+                        <td class="text-end">{{ group.totals.BALANCE | number:'1.3-3' }}</td>
+                        <td class="text-end">{{ group.totals.OVERDUE | number:'1.3-3' }}</td>
+                        <td class="text-end">{{ group.totals.COLLECTED | number:'1.3-3' }}</td>
                     </tr>
                 </tbody>
+
+                <!-- Grand Total -->
                 <tfoot>
-                        <tr class="fw-bold text-end" >
-                            <th colspan="2" class="text-end">Total</th>
-                            <th class="text-end">{{ getCATOVRTotal('BALANCE') | number:'1.3-3' }}</th>
-                            <th class="text-end">{{ getCATOVRTotal('OVERDUE') | number:'1.3-3' }}</th>
-                            <th class="text-end">{{ getCATOVRTotal('COLLECTED') | number:'1.3-3' }}</th>
-                        </tr>
-                    </tfoot>
+                    <tr class="fw-bold text-end table-dark">
+                        <th colspan="2" class="text-end">Grand Total</th>
+                        <th class="text-end">{{ getCATOVRTotal('BALANCE') | number:'1.3-3' }}</th>
+                        <th class="text-end">{{ getCATOVRTotal('OVERDUE') | number:'1.3-3' }}</th>
+                        <th class="text-end">{{ getCATOVRTotal('COLLECTED') | number:'1.3-3' }}</th>
+                    </tr>
+                </tfoot>
             </table>
         </div>
         <br>
