@@ -341,7 +341,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         let daysDiff: number | null = null;
 
         // Only calculate overdue if there's a debit and it's not fully offset
-        if ((debit - credit) > 0) {
+        //if ((debit - credit) > 0) {
           const dueDate = new Date(row.DUEDATE);
           const today = new Date();
 
@@ -350,7 +350,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
           const diffTime = today.getTime() - dueDate.getTime()
           daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));    
-        }
+        //}
         
         return {
           ...row,
@@ -616,7 +616,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         let daysDiff: number | null = null;
 
         // Only calculate overdue if there's a debit and it's not fully offset
-        if ((debit - credit) > 0) {
+    //    if ((debit - credit) > 0) {
           const dueDate = new Date(row.DUEDATE);
           const today = new Date();
 
@@ -625,7 +625,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
           const diffTime = today.getTime() - dueDate.getTime()
           daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));    
-        }
+     //   }
         
         return {
           ...row,
@@ -1128,13 +1128,13 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
           runningBalance += debit - credit;
           const dueDate = new Date(row.DUEDATE);          
           let daysDiff: number | null = null;
-          if ((debit - credit) > 0 && row.DUEDATE) {
+       //   if ((debit - credit) > 0 && row.DUEDATE) {
             const today = new Date(AsOnDate);
             dueDate.setHours(0, 0, 0, 0);
             today.setHours(0, 0, 0, 0);
             const diffTime = today.getTime() - dueDate.getTime();
             daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-          }
+        //  }
           const amt = debit - credit;
           if (daysDiff !== null) {
             if (daysDiff < 0) localAgeing.CURRENT += amt;
@@ -1656,7 +1656,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         let daysDiff: number | null = null;
 
         // Only calculate overdue if there's a debit and it's not fully offset
-        if ((debit - credit) > 0) {
+    //    if ((debit - credit) > 0) {
           const dueDate = new Date(row.DUEDATE);
           const today = new Date();
 
@@ -1665,7 +1665,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
           const diffTime = today.getTime() - dueDate.getTime()
           daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));    
-        }
+      //  }
         
         return {
           ...row,
@@ -1931,7 +1931,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         let daysDiff: number | null = null;
 
         // Only calculate overdue if there's a debit and it's not fully offset
-        if ((debit - credit) > 0) {
+     //   if ((debit - credit) > 0) {
           const dueDate = new Date(row.DUEDATE);
           const today = new Date();
 
@@ -1940,7 +1940,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
           const diffTime = today.getTime() - dueDate.getTime()
           daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));    
-        }
+       // }
         
         return {
           ...row,
@@ -2238,7 +2238,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       runningBalance += debit - credit;
 
       let daysDiff: number | null = null;
-      if ((debit - credit) > 0 && row.DUEDATE) {
+   //   if ((debit - credit) > 0 && row.DUEDATE) {
         const dueDate = new Date(row.DUEDATE);
         const today = new Date();
         dueDate.setHours(0, 0, 0, 0);
@@ -2246,7 +2246,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
         const diffTime = today.getTime() - dueDate.getTime();
         daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      }
+   //   }
 
       const amt = debit - credit;
       if (daysDiff !== null) {
@@ -2562,7 +2562,6 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
       'ABOVE_120_DAYS': 0,
       'CURRENT': 0
     };
-    this.pwsoaData = []
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -2579,6 +2578,29 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
 
   getPPWSOA(parent: any) {
     console.log(parent)
+this.periodTotalDebit = 0;
+    this.periodTotalCredit = 0;
+    this.periodClosingBalance = 0;
+    this.periodAgeingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.pwsoaData = []
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
     this.ppwsoaData = []
     this.selectedParent = parent
   }
@@ -2587,8 +2609,27 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
   // Reset period totals
   this.periodTotalCredit = 0;
   this.periodTotalDebit = 0;
-  this.totalCredit = 0;
-  this.totalDebit = 0;
+    this.periodClosingBalance = 0;
+    this.periodAgeingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.ppwsoaData = []
 
   // Start and end of the day to ensure inclusive date range
   const start = new Date(this.startDate);
@@ -2636,7 +2677,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
       runningBalance += debit - credit;
 
       let daysDiff: number | null = null;
-      if ((debit - credit) > 0 && row.DUEDATE) {
+      //if ((debit - credit) > 0 && row.DUEDATE) {
         const dueDate = new Date(row.DUEDATE);
         const today = new Date();
         dueDate.setHours(0, 0, 0, 0);
@@ -2644,7 +2685,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
 
         const diffTime = today.getTime() - dueDate.getTime();
         daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      }
+    //  }
 
       const amt = debit - credit;
       if (daysDiff !== null) {
@@ -2982,6 +3023,18 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
   }
 
   getPWOUT(AsOnDate: string){
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.pwoutData = []
     this.getData = true
     this.reportService.getParentSoa(this.selectedParent.PARENTNAME).subscribe((res: any) => {
       if (res.recordset.length === 0) {
@@ -3275,9 +3328,55 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
   getCATOVR(categories: any[]) {
     console.log('Selected categories:', categories);
     this.selectedCategories = categories;
+    this.periodTotalDebit = 0;
+    this.periodTotalCredit = 0;
+    this.periodClosingBalance = 0;
+    this.periodAgeingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.catovrData = []
   }
 
   setCATOVR() {
+    this.periodTotalDebit = 0;
+    this.periodTotalCredit = 0;
+    this.periodClosingBalance = 0;
+    this.periodAgeingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.catovrData = []
     console.log(this.selectedCategories);
     if (!this.startDate || !this.endDate) {
       alert('Please select both start and end dates.');
@@ -3296,12 +3395,13 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     // Loop through all selected categories
     this.selectedCategories.forEach((category) => {
       this.reportService.getParentFromOrg(category).subscribe((res: any) => {
+        console.log(res)
         if (res.recordset.length === 0) {
           console.warn(`No data found for category: ${category}`);
           return;
         }
         res.recordset.forEach((parent: any) => {
-          this.reportService.getParentSoa(parent.PARENTNAMEID).subscribe((resp: any) => {
+          this.reportService.getParentOpenSoa(parent.PARENTNAMEID).subscribe((resp: any) => {
             const data = resp.recordset;
             let runningBalance = 0;
             let localAgeing = {      
@@ -3314,26 +3414,24 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
             };
             let totalCollection = 0;
             let maxDaysDiff: number = 0; // 👈 new tracker for highest overdue days
+            var custStatus = ''
 
             data.forEach((row: any) => {
               const debit = Number(row.DEBIT) || 0;
               const credit = Number(row.CREDIT) || 0;
               runningBalance += debit - credit;
-
+              
               const dueDate = new Date(row.DUEDATE);
               let daysDiff: number | null = null;
 
-              if ((debit - credit) > 0 && row.DUEDATE) {
+             // if ((debit - credit) > 0 && row.DUEDATE) {
                 const today = new Date(this.endDate);
                 dueDate.setHours(0, 0, 0, 0);
                 today.setHours(0, 0, 0, 0);
                 const diffTime = today.getTime() - dueDate.getTime();
                 daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                // 👇 Track the largest daysDiff
-                if (daysDiff > maxDaysDiff) {
-                  maxDaysDiff = daysDiff;
-                }
-              }
+
+             // }
               const amt = debit - credit;
               if (daysDiff !== null) {
                 if (daysDiff < 0) localAgeing.CURRENT += amt;
@@ -3347,9 +3445,18 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
               if ((trnDate >= start && trnDate <= end) && row.DESCRIPTION === 'Payment') {
                 totalCollection += credit;
               }
+              // 👇 Track the largest daysDiff
+              if(((runningBalance - localAgeing.CURRENT) === 0) && (runningBalance !== 0)) {
+                custStatus = 'Current'
+              } else if(((runningBalance - localAgeing.CURRENT) != 0) || (runningBalance !== 0)) {
+                custStatus = 'Overdue'
+              } else {
+                custStatus = 'Consignment'
+              }
             });
             const overdue = runningBalance - localAgeing.CURRENT;
-            this.catovrData.push({
+            if(runningBalance > 0) {
+              this.catovrData.push({
               ...parent,
               BALANCE: runningBalance,
               OVERDUE: overdue,
@@ -3361,8 +3468,9 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
               Ninety_DAYS: localAgeing['90_DAYS'],
               OneTwenty_DAYS: localAgeing['120_DAYS'],
               ABOVE_120_DAYS: localAgeing['ABOVE_120_DAYS'],
-              MAX_DAYS_OVERDUE: maxDaysDiff // 👈 New field
+              STATUS: custStatus
             });
+            }
 
             this.getData = false;
           });
@@ -3470,7 +3578,13 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
       columnStyles: {
         2: { halign: 'right' },
         3: { halign: 'right' },
-        4: { halign: 'right' }
+        6: { halign: 'right' },
+        7: { halign: 'right' },
+        8: { halign: 'right' },
+        9: { halign: 'right' },
+        10: { halign: 'right' },
+        11: { halign: 'right' },
+        12: { halign: 'right' },
       },
       margin: { 
         top: firstPage ? firstPageStartY : nextPagesStartY,
@@ -3586,7 +3700,7 @@ calculateAgeing(data: any[]): any {
         doc.setFont('Helvetica','bold');
         var img2 = new Image()
         img2.src = 'assets/pics/favicon.png';
-        doc.addImage(img2, 'png', 2, 435, 10, 10);
+        doc.addImage(img2, 'png', 2, 430, 10, 10);
         doc.text('IFAGATE',12.5, 440);
         doc.setFont('Helvetica','normal');
         doc.setFontSize(9);

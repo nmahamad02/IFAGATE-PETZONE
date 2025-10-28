@@ -1415,7 +1415,7 @@
                         <th>Category</th>
                         <th>Outstanding Balance</th>
                         <th>Overdue Amount</th>
-                        <th>Max Ageing</th>
+                        <th>Payment Terms</th>
                         <th>Status</th>
                         <th>Period Collection</th>
                         <th>Current</th>
@@ -1438,8 +1438,9 @@
                         <td>{{ row.ORGNISATION }}</td>
                         <td class="text-end">{{ row.BALANCE | number:'1.3-3' }}</td>
                         <td class="text-end">{{ (row.OVERDUE > 0 ? row.OVERDUE : 0) | number:'1.3-3' }}</td>
-                        <td>{{ row.MAX_DAYS_OVERDUE }}</td>
-                        <td>{{ row.MAX_DAYS_OVERDUE > 0 ? 'Overdue' : row.MAX_DAYS_OVERDUE < 0 ? 'Current' : 'Consignment' }}</td>                   <td class="text-end">{{ row.COLLECTED | number:'1.3-3' }}</td>
+                        <td>{{ row.REMARKS }}</td>
+                        <td>{{ row.STATUS }}</td>                   
+                        <td class="text-end">{{ row.COLLECTED | number:'1.3-3' }}</td>
                         <td class="text-end">{{ row.CURRENT | number:'1.3-3' }}</td>
                         <td class="text-end">{{ row.Thirty_DAYS | number:'1.3-3' }}</td>
                         <td class="text-end">{{ row.Sixty_DAYS | number:'1.3-3' }}</td>
