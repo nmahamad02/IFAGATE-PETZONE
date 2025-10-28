@@ -499,7 +499,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.text(araText, 435, finalY2+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'p');
     // Save the PDF
     doc.save(`${this.selectedCustomer.PCODE}-statement-of-accounts-${this.mCurDate}.pdf`);
   }
@@ -772,7 +772,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.text(araText, 435, finalY2+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'p');
     // Save the PDF
     doc.save(`${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}.pdf`);
   }
@@ -1001,7 +1001,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.text(araText, 435, finalY2+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'p');
     // Save the PDF
     doc.save(`customer-ageing-statement-${this.mCurDate}.pdf`);
   }
@@ -1068,6 +1068,17 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
 
   openPWASL() {
     let dialogRef = this.dialog.open(this.pwaslLookupDialog);
+    this.periodTotalDebit = 0;
+    this.periodTotalCredit = 0;
+    this.periodClosingBalance = 0;
+    this.periodAgeingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -1080,10 +1091,9 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       'CURRENT': 0
     };
     this.parentAgeingSummaryList = []
-    this.getPWASL()
   }
 
-  getPWASL() {
+  getPWASL(AsOnDate: string) {
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -1096,39 +1106,65 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       'CURRENT': 0
     };
     this.parentAgeingSummaryList = []
+    let daysDiff: number | null = null;
     this.parentList.forEach(parent => {
-      this.reportService.getParentSoa(parent.PARENTNAME).subscribe(
-        (response: any) => {
-          console.log(response)
-          const soaList = response.recordset.map((item: any) => {
-            const btdDate = new Date(item.DUEDATE);
-            const today = new Date();
-            const daysDiff = Math.ceil((today.getTime() - btdDate.getTime()) / (1000 * 3600 * 24));
-            return { ...item, DAYS_DIFF: daysDiff };
-          });
-
-          const ageingSummary = this.calculateAgeing(soaList);
-          const total = (Object.values(ageingSummary) as number[]).reduce(
-            (acc, val) => acc + val, 
-            0
-          );
-          this.parentAgeingSummaryList.push({
-            pcode: parent.pcode,
-            parentName: parent.PARENTNAME,
-            ageingSummary,
-            total
-          });
-          this.ageingSummary.CURRENT += ageingSummary['CURRENT']
-          this.ageingSummary['30_DAYS'] += ageingSummary['30_DAYS']
-          this.ageingSummary['60_DAYS'] += ageingSummary['60_DAYS']
-          this.ageingSummary['90_DAYS'] += ageingSummary['90_DAYS']
-          this.ageingSummary['120_DAYS'] += ageingSummary['120_DAYS']
-          this.ageingSummary.ABOVE_120_DAYS += ageingSummary['ABOVE_120_DAYS']
-        },
-        (error) => {
-          console.error(`Failed to fetch SOA for ${parent.PARENTNAME}`, error);
-        }
-      );
+      console.log(parent)
+      this.reportService.getParentSoa(parent.PARENTNAME).subscribe((resp: any) => {
+        console.log(resp)
+        const data = resp.recordset;
+        let runningBalance = 0;
+        let localAgeing = {      
+          CURRENT: 0,
+          '30_DAYS': 0,
+          '60_DAYS': 0,
+          '90_DAYS': 0,
+          '120_DAYS': 0,
+          'ABOVE_120_DAYS': 0
+        };
+  
+        data.forEach((row: any) => {
+          const debit = Number(row.DEBIT) || 0;
+          const credit = Number(row.CREDIT) || 0;
+          runningBalance += debit - credit;
+          const dueDate = new Date(row.DUEDATE);          
+          let daysDiff: number | null = null;
+          if ((debit - credit) > 0 && row.DUEDATE) {
+            const today = new Date(AsOnDate);
+            dueDate.setHours(0, 0, 0, 0);
+            today.setHours(0, 0, 0, 0);
+            const diffTime = today.getTime() - dueDate.getTime();
+            daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+          }
+          const amt = debit - credit;
+          if (daysDiff !== null) {
+            if (daysDiff < 0) localAgeing.CURRENT += amt;
+            else if (daysDiff <= 30) localAgeing['30_DAYS'] += amt;
+            else if (daysDiff <= 60) localAgeing['60_DAYS'] += amt;
+            else if (daysDiff <= 90) localAgeing['90_DAYS'] += amt;
+            else if (daysDiff <= 120) localAgeing['120_DAYS'] += amt;
+            else localAgeing['ABOVE_120_DAYS'] += amt;
+          }
+        });
+        /*this.parentAgeingSummaryList.push({
+          ...parent,
+          Thirty_DAYS: localAgeing['30_DAYS'],
+          Sixty_DAYS: localAgeing['60_DAYS'],
+          Ninety_DAYS: localAgeing['90_DAYS'],
+          OneTwenty_DAYS: localAgeing['120_DAYS'],
+          ABOVE_120_DAYS: localAgeing['ABOVE_120_DAYS'],
+        });*/
+        const total = (Object.values(localAgeing) as number[]).reduce((acc, val) => acc + val, 
+          0
+        );
+        this.parentAgeingSummaryList.push({
+          pcode: parent.pcode,
+          parentName: parent.PARENTNAME,
+          ageingSummary: localAgeing,
+          total
+        });
+        this.getData = false;
+        console.log(this.parentAgeingSummaryList)
+      });
     });
   }
 
@@ -1230,7 +1266,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.text(araText, 435, finalY2+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'p');
     // Save the PDF
     doc.save(`parent-ageing-statement-${this.mCurDate}.pdf`);
   }
@@ -1499,7 +1535,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.text(araText, 435, finalY2+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'p');
     // Save the PDF
     doc.save(`${this.selectedParent.pcode}-parent-ageing-statement-${this.mCurDate}.pdf`);
 
@@ -1778,7 +1814,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.text(araText, 435, finalY2+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'p');
     // Save the PDF
     doc.save(`${this.selectedCustomer.PCODE}-open-statement-of-accounts-${this.mCurDate}.pdf`);
   }
@@ -2052,7 +2088,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.text(araText, 435, finalY2+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'p');
     // Save the PDF
     doc.save(`${this.selectedParent.pcode}-open-statement-of-accounts-${this.mCurDate}.pdf`);
   }
@@ -2449,7 +2485,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     doc.text(araText, 435, finalY2+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'p');
     // Save the PDF
     doc.save(`${this.selectedCustomer.PCODE}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
     }
@@ -2847,7 +2883,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     doc.text(araText, 435, finalY2+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'p');
     // Save the PDF
     doc.save(`${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
     }
@@ -2928,7 +2964,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     this.pwoutData = []
   }
 
-  getPWOUT(parent: any) {
+  setPWOUT(parent: any) {
     console.log(parent)
     this.totalDebit = 0;
     this.totalCredit = 0;
@@ -2942,18 +2978,21 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
       'CURRENT': 0
     };
     this.pwoutData = []
-        this.getData = true
     this.selectedParent = parent
-    this.reportService.getParentSoa(parent.PARENTNAME).subscribe((res: any) => {
+  }
+
+  getPWOUT(AsOnDate: string){
+    this.getData = true
+    this.reportService.getParentSoa(this.selectedParent.PARENTNAME).subscribe((res: any) => {
       if (res.recordset.length === 0) {
         alert('No data for the selected parameters!');
-              this.getData = false
+        this.getData = false
         return;
       }
       console.log(res.recordset);
 
       const rawData = res.recordset;
-    this.getData = false
+      this.getData = false
       const debitList: any[] = [];
       const creditList: any[] = [];
 
@@ -2991,7 +3030,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
         }
       }
       // Step 4: Compute DAYS_DIFF and ageing
-      const today = new Date();
+      const today = new Date(AsOnDate);
       today.setHours(0, 0, 0, 0);
       this.pwoutData = this.pwoutData.map(row => {
         const debit = Number(row.DEBIT) || 0;
@@ -3142,7 +3181,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     doc.text(araText, 435, finalY2+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'p');
     // Save the PDF
     doc.save(`${this.selectedParent.pcode}-outstanding-${this.mCurDate}.pdf`);
   }
@@ -3233,7 +3272,6 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     this.catovrData = []
   }
 
-
   getCATOVR(categories: any[]) {
     console.log('Selected categories:', categories);
     this.selectedCategories = categories;
@@ -3275,6 +3313,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
               'ABOVE_120_DAYS': 0
             };
             let totalCollection = 0;
+            let maxDaysDiff: number = 0; // 👈 new tracker for highest overdue days
 
             data.forEach((row: any) => {
               const debit = Number(row.DEBIT) || 0;
@@ -3285,11 +3324,15 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
               let daysDiff: number | null = null;
 
               if ((debit - credit) > 0 && row.DUEDATE) {
-                const today = new Date();
+                const today = new Date(this.endDate);
                 dueDate.setHours(0, 0, 0, 0);
                 today.setHours(0, 0, 0, 0);
                 const diffTime = today.getTime() - dueDate.getTime();
                 daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                // 👇 Track the largest daysDiff
+                if (daysDiff > maxDaysDiff) {
+                  maxDaysDiff = daysDiff;
+                }
               }
               const amt = debit - credit;
               if (daysDiff !== null) {
@@ -3309,10 +3352,16 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
             this.catovrData.push({
               ...parent,
               BALANCE: runningBalance,
-              CURRENT: localAgeing.CURRENT,
               OVERDUE: overdue,
               COLLECTED: totalCollection,
-              ORGNISATION: category
+              ORGNISATION: category,
+              CURRENT: localAgeing.CURRENT,
+              Thirty_DAYS: localAgeing['30_DAYS'],
+              Sixty_DAYS: localAgeing['60_DAYS'],
+              Ninety_DAYS: localAgeing['90_DAYS'],
+              OneTwenty_DAYS: localAgeing['120_DAYS'],
+              ABOVE_120_DAYS: localAgeing['ABOVE_120_DAYS'],
+              MAX_DAYS_OVERDUE: maxDaysDiff // 👈 New field
             });
 
             this.getData = false;
@@ -3324,7 +3373,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     });
   }
 
-  getCATOVRTotal(field: 'BALANCE' | 'OVERDUE' | 'COLLECTED'): number {
+  getCATOVRTotal(field: 'BALANCE' | 'OVERDUE' | 'COLLECTED' | 'CURRENT' | 'Thirty_DAYS'| 'Sixty_DAYS'| 'Ninety_DAYS'| 'OneTwenty_DAYS'| 'ABOVE_120_DAYS'): number {
     if (!this.catovrData || this.catovrData.length === 0) return 0;
 
     return this.catovrData.reduce((total, row) => {
@@ -3351,11 +3400,16 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
       totals: {
         BALANCE: rows.reduce((a, b) => a + (Number(b.BALANCE) || 0), 0),
         OVERDUE: rows.reduce((a, b) => a + (Number(b.OVERDUE) > 0 ? Number(b.OVERDUE) : 0), 0),
-        COLLECTED: rows.reduce((a, b) => a + (Number(b.COLLECTED) || 0), 0)
+        COLLECTED: rows.reduce((a, b) => a + (Number(b.COLLECTED) || 0), 0),
+        CURRENT: rows.reduce((a, b) => a + (Number(b.CURRENT) || 0), 0),
+        Thirty_DAYS: rows.reduce((a, b) => a + (Number(b.Thirty_DAYS) || 0), 0),
+        Sixty_DAYS: rows.reduce((a, b) => a + (Number(b.Sixty_DAYS) || 0), 0),
+        Ninety_DAYS: rows.reduce((a, b) => a + (Number(b.Ninety_DAYS) || 0), 0),
+        OneTwenty_DAYS: rows.reduce((a, b) => a + (Number(b.OneTwenty_DAYS) || 0), 0),
+        ABOVE_120_DAYS: rows.reduce((a, b) => a + (Number(b.ABOVE_120_DAYS) || 0), 0)
       }
     }));
   }
-
 
   printCATOVR() {
     if (!this.startDate || !this.endDate) {
@@ -3363,7 +3417,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
       return;
     } else {
       console.log(this.selectedParent)
-    var doc = new jsPDF("portrait", "px", "a4");
+    /*var doc = new jsPDF("portrait", "px", "a4");
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
@@ -3372,7 +3426,17 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     doc.setFontSize(10);
     doc.text(`${this.selectedCategories}`,10,42);
     doc.setFont('Helvetica', 'normal');
-    doc.text(`Date: ${this.mCurDate}`,330,42);
+    doc.text(`Date: ${this.mCurDate}`,330,42);*/
+    var doc = new jsPDF("landscape", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Category-wise Customer Overdue Statement', 200, 20);
+    doc.roundedRect(5, 32.5, 620, 25, 5, 5);
+    doc.setFontSize(10);
+    doc.text(`${this.selectedCategories}`,10,42);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,550,20);
     doc.text('Period',10,52);
     doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 52)
     let firstPageStartY = 60; // Start Y position for first page
@@ -3381,7 +3445,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
 
     autoTable(doc, {
       html: '#catOvrTable',
-      tableWidth: 435,
+      tableWidth: 620,
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
         fontSize: 8,
@@ -3434,10 +3498,10 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     doc.setFontSize(10)
     doc.text(engText, 10, finalY1+15);//, { align: 'center' });
     doc.setFont('Amiri-Regular', 'normal')
-    doc.text(araText, 435, finalY1+15, { align: 'right' });
+    doc.text(araText, 620, finalY1+15, { align: 'right' });
 
     // Add watermark (if necessary)
-    doc = this.addWaterMark(doc);
+    doc = this.addWaterMark(doc,'l');
     // Save the PDF
     doc.save(`overdue-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
     }
@@ -3505,31 +3569,56 @@ calculateAgeing(data: any[]): any {
   return ageing;
 }
 
-
-  addWaterMark(doc: any) {
-    var totalPages = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setLineWidth(0.25)
-      var img1 = new Image()
-      img1.src = 'assets/pics/Logo-removebg-preview.png'
-      doc.addImage(img1, 'png', 5, 0, 75, 30);
-      doc.setTextColor(0,0,0);
-      doc.setFontSize(13)
-      doc.line(5, 27, 441, 27); 
-      doc.setTextColor(0,0,0);
-      doc.setFontSize(10)
-      doc.setFont('Helvetica','bold');
-      var img2 = new Image()
-      img2.src = 'assets/pics/favicon.png';
-      doc.addImage(img2, 'png', 2, 615, 10, 10);
-      doc.text('IFAGATE',12.5,622.5);
-      doc.setFont('Helvetica','normal');
-      doc.setFontSize(8);
-      doc.setFont('Helvetica','normal');
-      doc.text(`Page ${i} of ${totalPages}`,400,620);
+  addWaterMark(doc: any,type: string) {
+    if (type === 'l') {
+      var totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setLineWidth(0.25)
+        var img1 = new Image()
+        img1.src = 'assets/pics/Logo-removebg-preview.png'
+        doc.addImage(img1, 'png', 5, 0, 75, 30);
+        doc.setTextColor(0,0,0);
+        doc.setFontSize(13)
+        doc.line(5, 27, 625, 27); 
+        doc.setTextColor(0,0,0);
+        doc.setFontSize(10)
+        doc.setFont('Helvetica','bold');
+        var img2 = new Image()
+        img2.src = 'assets/pics/favicon.png';
+        doc.addImage(img2, 'png', 2, 435, 10, 10);
+        doc.text('IFAGATE',12.5, 440);
+        doc.setFont('Helvetica','normal');
+        doc.setFontSize(9);
+        doc.setFont('Helvetica','normal');
+        doc.text(`Page ${i} of ${totalPages}`,575,440);
+      }
+      return doc;
+    } else if (type === 'p') {
+      var totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setLineWidth(0.25)
+        var img1 = new Image()
+        img1.src = 'assets/pics/Logo-removebg-preview.png'
+        doc.addImage(img1, 'png', 5, 0, 75, 30);
+        doc.setTextColor(0,0,0);
+        doc.setFontSize(13)
+        doc.line(5, 27, 441, 27); 
+        doc.setTextColor(0,0,0);
+        doc.setFontSize(10)
+        doc.setFont('Helvetica','bold');
+        var img2 = new Image()
+        img2.src = 'assets/pics/favicon.png';
+        doc.addImage(img2, 'png', 2, 400, 10, 10);
+        doc.text('IFAGATE',12.5,407.5);
+        doc.setFont('Helvetica','normal');
+        doc.setFontSize(8);
+        doc.setFont('Helvetica','normal');
+        doc.text(`Page ${i} of ${totalPages}`,400,405);
+      }
+      return doc;
     }
-    return doc;
   }
 
   formatDate(date: any) {
