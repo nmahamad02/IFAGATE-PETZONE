@@ -3353,7 +3353,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     this.catovrData = []
   }
 
-  setCATOVR() {
+  /*setCATOVR() {
     this.periodTotalDebit = 0;
     this.periodTotalCredit = 0;
     this.periodClosingBalance = 0;
@@ -3424,15 +3424,16 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
               const dueDate = new Date(row.DUEDATE);
               let daysDiff: number | null = null;
 
-             // if ((debit - credit) > 0 && row.DUEDATE) {
+              if ((debit - credit) > 0 && row.DUEDATE) {
                 const today = new Date(this.endDate);
                 dueDate.setHours(0, 0, 0, 0);
                 today.setHours(0, 0, 0, 0);
                 const diffTime = today.getTime() - dueDate.getTime();
                 daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-             // }
+             }
               const amt = debit - credit;
+              ///const amt = runningBalance
               if (daysDiff !== null) {
                 if (daysDiff < 0) localAgeing.CURRENT += amt;
                 else if (daysDiff <= 30) localAgeing['30_DAYS'] += amt;
@@ -3479,7 +3480,154 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
         console.error(`Error fetching data for category: ${category}`, err);
       });
     });
-  }
+  }*/
+
+  setCATOVR() {
+    this.catovrData = [];
+
+    if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    }
+    if (!this.selectedCategories || this.selectedCategories.length === 0) {
+      alert('Please select at least one category.');
+      return;
+    }
+      this.getData = true;
+
+
+    const start = new Date(this.startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(this.endDate);
+    end.setHours(23, 59, 59, 999);
+
+    let allRequests: any[] = [];
+
+    this.selectedCategories.forEach(category => {
+      const orgRequest = this.reportService.getParentFromOrg(category).toPromise();
+
+      allRequests.push(
+        orgRequest.then((res: any) => {
+          if (!res.recordset.length) {
+            console.warn(`No data found for category: ${category}`);
+            return;
+          }
+
+          let parentRequests = res.recordset.map((parent: any) => {
+            return this.reportService.getParentOpenSoa(parent.PARENTNAMEID).toPromise().then((resp: any) => {
+              const data = resp.recordset || [];
+              if (!data.length) return;
+
+              // 🔹 Separate DEBIT and CREDIT lines
+              const debits = data
+                .filter((r: any) => r.DEBIT > 0)
+                .map((r: any) => ({ ...r, remaining: Number(r.DEBIT), applied: 0 }))
+                .sort((a: any, b: any) => new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime());
+ 
+              const credits = data
+                .filter((r: any) => r.CREDIT > 0)
+                .map((r: any) => ({ ...r, remaining: Number(r.CREDIT) }))
+                .sort((a: any, b: any) => new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime());
+
+              // 🔹 Apply FIFO logic: credits reduce earliest debits
+              credits.forEach((credit: any) => {
+                let remainingCredit = credit.remaining;
+                for (const debit of debits) {
+                  if (remainingCredit <= 0) break;
+                  if (debit.remaining <= 0) continue;
+
+                  const applied = Math.min(debit.remaining, remainingCredit);
+                  debit.remaining -= applied;
+                  debit.applied += applied;
+                  remainingCredit -= applied;
+                }
+              });
+
+              // 🔹 Now calculate runningBalance, ageing, etc. based on *remaining* debit amounts
+              let runningBalance = 0;
+              let totalCollection = 0;
+              let localAgeing = {
+                CURRENT: 0,
+                '30_DAYS': 0,
+                '60_DAYS': 0,
+                '90_DAYS': 0,
+                '120_DAYS': 0,
+                'ABOVE_120_DAYS': 0
+              };
+
+              const today = new Date(this.endDate);
+              today.setHours(0, 0, 0, 0);
+
+              debits.forEach((row: any) => {
+                const amt = row.remaining || 0;
+                runningBalance += amt;
+
+                const dueDate = row.DUEDATE ? new Date(row.DUEDATE) : null;
+                if (dueDate) {
+                  dueDate.setHours(0, 0, 0, 0);
+                  const diffDays = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+
+                  if (diffDays < 0) localAgeing.CURRENT += amt;
+                  else if (diffDays <= 30) localAgeing['30_DAYS'] += amt;
+                  else if (diffDays <= 60) localAgeing['60_DAYS'] += amt;
+                  else if (diffDays <= 90) localAgeing['90_DAYS'] += amt;
+                  else if (diffDays <= 120) localAgeing['120_DAYS'] += amt;
+                  else localAgeing['ABOVE_120_DAYS'] += amt;
+                }
+              });
+
+              // 🔹 Sum payments (credits) within selected period
+              data.forEach((row: any) => {
+                const trnDate = new Date(row.INV_DATE);
+                if (trnDate >= start && trnDate <= end && row.DESCRIPTION === 'Payment') {
+                  totalCollection += Number(row.CREDIT) || 0;
+                }
+              });
+
+              // 🔹 Calculate overdue & determine status
+              const overdue = runningBalance - localAgeing.CURRENT;
+              let custStatus = '';
+
+              if (runningBalance === 0) custStatus = 'Consignment';
+              else if (overdue > 0) custStatus = 'Overdue';
+              else custStatus = 'Current';
+
+              if (runningBalance > 0) {
+                this.catovrData.push({
+                  ...parent,
+                  ORGNISATION: category,
+                  BALANCE: runningBalance,
+                  OVERDUE: overdue > 0 ? overdue : 0,
+                  COLLECTED: totalCollection,
+                  CURRENT: localAgeing.CURRENT,
+                  Thirty_DAYS: localAgeing['30_DAYS'],
+                  Sixty_DAYS: localAgeing['60_DAYS'],
+                  Ninety_DAYS: localAgeing['90_DAYS'],
+                  OneTwenty_DAYS: localAgeing['120_DAYS'],
+                  ABOVE_120_DAYS: localAgeing['ABOVE_120_DAYS'],
+                  STATUS: custStatus
+                });
+              }
+            });
+          });
+
+          return Promise.all(parentRequests);
+        })
+      );
+    });
+
+    // ✅ Wait for all async data before ending spinner
+    Promise.all(allRequests)
+      .then(() => {
+        this.getData = false;
+        console.log('All overdue data loaded:', this.catovrData);
+      })
+      .catch(err => {
+        console.error('Error generating overdue report:', err);
+        this.getData = false;
+      });
+    }
+
 
   getCATOVRTotal(field: 'BALANCE' | 'OVERDUE' | 'COLLECTED' | 'CURRENT' | 'Thirty_DAYS'| 'Sixty_DAYS'| 'Ninety_DAYS'| 'OneTwenty_DAYS'| 'ABOVE_120_DAYS'): number {
     if (!this.catovrData || this.catovrData.length === 0) return 0;
