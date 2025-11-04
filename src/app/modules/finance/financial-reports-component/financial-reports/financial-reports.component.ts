@@ -1175,12 +1175,12 @@ calculateAgeing(data: any[]): any {
         doc.setFont('Helvetica','bold');
         var img2 = new Image()
         img2.src = 'assets/pics/favicon.png';
-        doc.addImage(img2, 'png', 2, 400, 10, 10);
-        doc.text('IFAGATE',12.5,407.5);
+        doc.addImage(img2, 'png', 2, 615, 10, 10);
+        doc.text('IFAGATE',12.5,622.5);
         doc.setFont('Helvetica','normal');
         doc.setFontSize(8);
         doc.setFont('Helvetica','normal');
-        doc.text(`Page ${i} of ${totalPages}`,400,405);
+        doc.text(`Page ${i} of ${totalPages}`,400,620);
       }
       return doc;
     }
