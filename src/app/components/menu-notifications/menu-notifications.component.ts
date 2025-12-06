@@ -24,7 +24,7 @@ export class MenuNotificationsComponent implements OnInit  {
   showNotificationsContainer = false;
 
   notificationsMockup: Notification[] = [
-    {
+   /* {
       title: 'You have a new friend request',
       createdAt: '2023-02-21',
       description:
@@ -47,7 +47,7 @@ export class MenuNotificationsComponent implements OnInit  {
       createdAt: '2023-02-21',
       description:
           'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
-    },
+    },*/
   ];
 
   ngOnInit(): void {

@@ -6,23 +6,23 @@
                     <div class="col-8">
                         <h2 class="heading-title">Financial Reports</h2>
                     </div>
-                    <!--<div class="col-2" *ngIf="userRight==='true'">
-                        <button mat-raised-button class="bg-primary text-white btn btn-block" (click)="startFinanceSync()" title="Update Transaction Data" style="float: right">
+                    <div class="col-2" *ngIf="userRight==='true'">
+                        <button mat-raised-button class="bg-primary text-white btn btn-block" (click)="startFinanceSync()" [disabled]="isSyncing" title="Update Transaction Data" style="float: right">
                             <mat-icon>refresh</mat-icon> Finance Data
                         </button>
                     </div>
                     <div class="col-2" *ngIf="userRight==='true'">
-                        <button mat-raised-button class="bg-secondary text-white btn btn-block" (click)="startCustomerSync()" title="Update Customer Data" style="float: right">
+                        <button mat-raised-button class="bg-secondary text-white btn btn-block" (click)="startCustomerSync()" [disabled]="isSyncing" title="Update Customer Data" style="float: right">
                             <mat-icon>refresh</mat-icon> Customer Data
                         </button>
-                    </div>-->
+                    </div>
                 </div>
             </div>
             <hr>
             <div class="col-12" *ngIf="isSyncing">
                 <p style="color: white;" class="mt-2 text-white">Syncing... {{ getProgressTotal() }}% Complete. Please make sure not to leave this page to avoid any changes being loat.</p>
                 <div *ngIf="financeData" class="progress progress-bar-striped progress-bar-animated fixed-top" style="height: 25px; z-index: 1050;">
-                    <div class="progress-bar bg-primary" [style.width.%]="progress[0]">Invoices</div>
+                   <!--- <div class="progress-bar bg-primary" [style.width.%]="progress[0]">Invoices</div>-->
                     <div class="progress-bar bg-success" [style.width.%]="progress[1]">Payables</div>
                     <div class="progress-bar bg-info" [style.width.%]="progress[2]">Payments</div>
                 </div>
@@ -80,6 +80,10 @@
                                             <a class="nav-link" (click)="openPCASL()">Parent-wise Customer Ageing Statement</a>
                                         </li>
                                         <li class="nav-item active">
+                                            <br>                                        
+                                            <br>                                        
+                                        </li>
+                                        <li class="nav-item active">
                                             <a class="nav-link" (click)="openCPWSOA()">Period-wise Customer Statement of Account</a>
                                         </li>
                                         <li class="nav-item active">
@@ -100,22 +104,21 @@
     <h3 matDialogTitle>
         <b>Customer Statement of Account Preview</b>
     </h3>
-    <hr>
     <div mat-dialog-content style="font-size: small;">
         <div class="row">
             <div class="col-3">
                 <div class="mb-3">
-                    <input type="text" [(ngModel)]="searchText" class="form-control" placeholder="Search customers..." />
+                    <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search customers..." />
                 </div>
                 <table class="table table-hover table-sm table-bordered">
-                    <thead class="table-dark">
+                     <thead class="table-dark">
                         <tr class="table-reflow">
-                            <th>CUSTOMER NAME</th>
+                            <th><small>CUSTOMER NAME</small></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let cust of (customerList | filterTable:searchText| slice:0:10); let i = index;">
-                            <td (click)="getCWSOA(cust)">{{ cust.CUST_NAME }}</td>
+                            <td (click)="getCWSOA(cust)"><small>{{ cust.CUST_NAME }}</small></td>
                         </tr>
                     </tbody>
                 </table>
@@ -124,35 +127,7 @@
                 <div class="col-12">
                     <input type="text" class="form-control form-control-sm" [value]="selectedCustomer?.CUST_NAME" placeholder="Customer Name" disabled>
                 </div>
-                <br>              
-                <table id="cwsoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedCustomer?.Orgnisation != 'MM-COOP'">
-                    <thead>
-                        <tr>
-                            <th colspan="6" class="text-start">Ageing Summary</th>
-                        </tr>
-                        <tr class="text-end">
-                            <th>Current</th>
-                            <th>0 - 30 days</th>
-                            <th>31 - 60 days</th>
-                            <th>61 - 90 days</th>
-                            <th>91 - 120 days</th>
-                            <th>Above 120 days</th>
-                            <th>Total Outstanding</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="text-end">
-                            <td>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <br>
+                <br>            
                 <div class="row" *ngIf="cwsoaData.length === 0 && getData === true">
                     <div class="col-4"></div>
                     <div class="col-4">
@@ -160,54 +135,83 @@
                     </div>
                     <div class="col-4"></div>
                 </div>
-                <table class="table table-striped table-sm table-bordered" id="cwSoaTable">
-                    <thead class="table-dark">
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="cwSoaTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
                         <tr>
-                            <th>Invoice Date</th>
-                            <th>Invoice No</th>
-                            <th>Reference</th>
-                            <th>Description</th>
-                            <th>Due Date</th>
-                            <!--<th>Amount</th>-->
-                            <th>Debit</th>
-                            <th>Credit</th>
-                            <th>Balance</th>
-                            <!--<th>Overdue days</th>-->
+                            <th><small>Invoice Date</small></th>
+                            <th><small>Invoice No</small></th>
+                            <th><small>Reference</small></th>
+                            <th><small>Description</small></th>
+                            <th><small>Due Date</small></th>
+                            <!--<th><small>Amount</small></th>-->
+                            <th><small>Debit</small></th>
+                            <th><small>Credit</small></th>
+                            <th><small>Balance</small></th>
+                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let row of cwsoaData">
-                            <td>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</td>
-                            <td>{{ row.INV_NO }}</td>
-                            <td>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</td>
-                            <td>{{ row.DESCRIPTION }}</td>
-                            <td>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</td>
-                            <!--<td class="text-end">{{ row.AMOUNT | number:'1.3-3' }}</td>-->
-                            <td class="text-end">{{ row.DEBIT == 0 ? '' : row.DEBIT | number:'1.3-3' }}</td>
-                            <td class="text-end">{{ row.CREDIT  == 0 ? '' : row.CREDIT | number:'1.3-3' }}</td>
-                            <!-- <td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td> -->
-                            <td class="text-end">
+                            <td><small>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</small></td>
+                            <td><small>{{ row.INV_NO }}</small></td>
+                            <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
+                            <td><small>{{ row.DESCRIPTION }}</small></td>
+                            <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
+                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
+                            <td   ><small>{{ row.DEBIT == 0 ? '' : row.DEBIT | number:'1.3-3' }}</small></td>
+                            <td   ><small>{{ row.CREDIT  == 0 ? '' : row.CREDIT | number:'1.3-3' }}</small></td>
+                            <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
+                            <td   ><small>
                                 {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
-                            </td>
-                            <!--<td class="text-end">{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</td>   -->                 
+                            </small></td>
+                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
                         </tr>
                     </tbody>
                     <tfoot>
-                        <tr class="fw-bold text-end">
-                            <td colspan="5" class="text-start">Total</td>
-                            <td>{{ totalDebit | number:'1.3-3' }}</td>
-                            <td>{{ totalCredit | number:'1.3-3' }}</td>
-                            <td>
+                        <tr class="fw-bold   ">
+                            <td colspan="5" class="text-start"><small>Total</small></td>
+                            <td><small>{{ totalDebit | number:'1.3-3' }}</small></td>
+                            <td><small>{{ totalCredit | number:'1.3-3' }}</small></td>
+                            <td><small>
                                 {{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')' : ((totalDebit - totalCredit) | number:'1.3-3') }}
-                            </td>
-                            <!--<td>
+                            </small></td>
+                            <!--<td><small>
                                 {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
                                 {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
                                 {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </td>-->
+                            </small></td>-->
                         </tr>
                     </tfoot>
                 </table>
+                </div>
+                <table id="cwsoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedCustomer?.Orgnisation != 'MM-COOP'">
+                    <thead>
+                        <tr class="table-primary">
+                            <th colspan="7" class="text-start"><small>Ageing Summary</small></th>
+                        </tr>
+                        <tr class="table-secondary">
+                            <th><small>Current</small></th>
+                            <th><small>0 - 30 days</small></th>
+                            <th><small>31 - 60 days</small></th>
+                            <th><small>61 - 90 days</small></th>
+                            <th><small>91 - 120 days</small></th>
+                            <th><small>Above 120 days</small></th>
+                            <th><small>Total Outstanding</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr   >
+                            <td><small>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
+                        </tr>
+                    </tbody>
+                </table>  
             </div>
         </div>
         <br>
@@ -234,22 +238,22 @@
     <h3 matDialogTitle>
         <b>Parent-wise Statement of Account Preview</b>
     </h3>
-    <hr>
+     
     <div mat-dialog-content style="font-size: small;">
         <div class="row">
             <div class="col-3">
                 <div class="mb-3">
-                    <input type="text" [(ngModel)]="searchText" class="form-control" placeholder="Search parents..." />
+                    <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search parents..." />
                 </div>
                 <table class="table table-hover table-sm table-bordered">
                     <thead class="table-dark">
                         <tr class="table-reflow">
-                            <th>PARENT NAME</th>
+                            <th><small>PARENT NAME</small></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let cust of (parentList | filterTable:searchText| slice:0:10); let i = index;">
-                            <td (click)="getPWSOA(cust)">{{ cust.PARENTNAME }}</td>
+                            <td (click)="getPWSOA(cust)"><small>{{ cust.PARENTNAME }}</small></td>
                         </tr>
                     </tbody>
                 </table>
@@ -258,34 +262,6 @@
                 <div class="col-12">
                     <input type="text" class="form-control form-control-sm" [value]="selectedParent?.PARENTNAME" placeholder="Parent Name" disabled>
                 </div>
-                <br>            
-                <table id="pwsoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedParent?.orgnisation != 'MM-COOP'">
-                    <thead>
-                        <tr class="table-primary">
-                            <th colspan="6" class="text-start">Ageing Summary</th>
-                        </tr>
-                        <tr class="text-end table-secondary">
-                            <th>Current</th>
-                            <th>0 - 30 days</th>
-                            <th>31 - 60 days</th>
-                            <th>61 - 90 days</th>
-                            <th>91 - 120 days</th>
-                            <th>Above 120 days</th>
-                            <th>Total Outstanding</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="text-end">
-                            <td>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
                 <br>
                 <div class="row" *ngIf="pwsoaData.length === 0 && getData === true">
                     <div class="col-4"></div>
@@ -293,58 +269,90 @@
                         <mat-spinner></mat-spinner>
                     </div>
                     <div class="col-4"></div>
-                </div>
-                <table class="table table-striped table-sm table-bordered" id="pwSoaTable">
-                    <thead class="table-dark">
+                </div>                
+
+                
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="pwSoaTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
                         <tr>
-                            <!--<th>Company Code</th>-->
-                            <th>Branch Name</th>
-                            <th>Invoice Date</th>
-                            <th>Invoice No</th>
-                            <th>Reference</th>
-                            <th>Description</th>
-                            <th>Due Date</th>
-                            <!--<th>Amount</th>-->
-                            <th>Debit</th>
-                            <th>Credit</th>
-                            <th>Balance</th>
-                            <!--<th>Overdue days</th>-->
+                            <!--<th><small>Company Code</small></th>-->
+                            <th><small>Branch Name</small></th>
+                            <th><small>Invoice Date</small></th>
+                            <th><small>Invoice No</small></th>
+                            <th><small>Reference</small></th>
+                            <th><small>Description</small></th>
+                            <th><small>Due Date</small></th>
+                            <!--<th><small>Amount</small></th>-->
+                            <th><small>Debit</small></th>
+                            <th><small>Credit</small></th>
+                            <th><small>Balance</small></th>
+                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let row of pwsoaData">
-                            <!--<td>{{ row.CUST_CODE }}</td>-->
-                            <td>{{ row.CUST_NAME }}</td>
-                            <td>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</td>
-                            <td>{{ row.INV_NO }}</td>
-                            <td>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</td>
-                            <td>{{ row.DESCRIPTION }}</td>
-                            <td>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</td>
-                            <!--<td class="text-end">{{ row.AMOUNT | number:'1.3-3' }}</td>-->
-                            <td class="text-end">{{ row.DEBIT  == 0 ? '' : row.DEBIT | number:'1.3-3' }}</td>
-                            <td class="text-end">{{ row.CREDIT  == 0 ? '' : row.CREDIT | number:'1.3-3' }}</td>
-                            <td class="text-end">
+                            <!--<td><small>{{ row.CUST_CODE }}</small></td>-->
+                            <td><small>{{ row.CUST_NAME }}</small></td>
+                            <td><small>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</small></td>
+                            <td><small>{{ row.INV_NO }}</small></td>
+                            <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
+                            <td><small>{{ row.DESCRIPTION }}</small></td>
+                            <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
+                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
+                            <td   ><small>{{ row.DEBIT  == 0 ? '' : row.DEBIT | number:'1.3-3' }}</small></td>
+                            <td   ><small>{{ row.CREDIT  == 0 ? '' : row.CREDIT | number:'1.3-3' }}</small></td>
+                            <td   ><small>
                                 {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
-                            </td>
-                            <!--<td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td> -->
-                            <!--<td class="text-end">{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</td>   -->                 
+                            </small></td>
+                            <!--<td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
+                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
                         </tr>
                     </tbody>
                     <tfoot>
-                        <tr class="fw-bold text-end" >
-                            <td colspan="6" class="text-start">Total</td>
-                            <td>{{ totalDebit | number:'1.3-3' }}</td>
-                            <td>{{ totalCredit | number:'1.3-3' }}</td>
-                            <td>
+                        <tr class="fw-bold   " >
+                            <td colspan="6" class="text-start"><small>Total</small></td>
+                            <td><small>{{ totalDebit | number:'1.3-3' }}</small></td>
+                            <td><small>{{ totalCredit | number:'1.3-3' }}</small></td>
+                            <td><small>
                                 {{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')' : ((totalDebit - totalCredit) | number:'1.3-3') }}
-                            </td>
-                            <!--<td>
+                            </small></td>
+                            <!--<td><small>
                                 {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
                                 {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
                                 {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </td>-->
+                            </small></td>-->
                         </tr>
                     </tfoot>
+                </table>
+                </div>
+                                
+                <table id="pwsoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedParent?.orgnisation != 'MM-COOP'">
+                    <thead>
+                        <tr class="table-primary">
+                            <th colspan="7" class="text-start"><small>Ageing Summary</small></th>
+                        </tr>
+                        <tr class="table-secondary">
+                            <th><small>Current</small></th>
+                            <th><small>0 - 30 days</small></th>
+                            <th><small>31 - 60 days</small></th>
+                            <th><small>61 - 90 days</small></th>
+                            <th><small>91 - 120 days</small></th>
+                            <th><small>Above 120 days</small></th>
+                            <th><small>Total Outstanding</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><small>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -372,66 +380,66 @@
     <h3 matDialogTitle>
         <b>Customer Ageing Statement Preview</b>
     </h3>
-    <hr>
+     
     <div mat-dialog-content style="font-size: small;">
         <div class="col-12">
             <table id="cwaslAgeingSummaryTable" class="table table-sm table-bordered" >
                 <thead>
                     <tr class="table-primary">
-                        <th colspan="7" class="text-start">Ageing Summary</th>
+                        <th colspan="7" class="text-start"><small>Ageing Summary</small></th>
                     </tr>
-                    <tr class="text-end table-secondary">
-                        <th>Current</th>
-                        <th>0 - 30 days</th>
-                        <th>31 - 60 days</th>
-                        <th>61 - 90 days</th>
-                        <th>91 - 120 days</th>
-                        <th>Above 120 days</th>
-                        <th>Total Outstanding</th>
+                    <tr class="table-secondary">
+                        <th><small>Current</small></th>
+                        <th><small>0 - 30 days</small></th>
+                        <th><small>31 - 60 days</small></th>
+                        <th><small>61 - 90 days</small></th>
+                        <th><small>91 - 120 days</small></th>
+                        <th><small>Above 120 days</small></th>
+                        <th><small>Total Outstanding</small></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="text-end">
-                        <td>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</td>
-                        <td>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</td>
-                        <td>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</td>
-                        <td>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</td>
-                        <td>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</td>
-                        <td>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
-                        <td>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</td>
+                    <tr>
+                        <td><small>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
+                        <td><small>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
+                        <td><small>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
+                        <td><small>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
+                        <td><small>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
+                        <td><small>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
+                        <td><small>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
                     </tr>
                 </tbody>
             </table>
-            <br>
-            <table class="table table-hover table-sm table-bordered" id="cwAslTable">
-                <thead class="table-dark">
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="cwAslTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
                     <tr class="table-reflow">
-                        <th>CUSTOMER CODE</th>
-                        <th>NAME</th>
-                        <th>CURRENT</th>
-                        <th>30 DAYS</th>
-                        <th>60 DAYS</th>
-                        <th>90 DAYS</th>
-                        <th>120 DAYS</th>
-                        <th>ABOVE 120 DAYS</th>
-                        <th>TOTAL</th>
+                        <th><small>CUSTOMER CODE</small></th>
+                        <th><small>NAME</small></th>
+                        <th><small>CURRENT</small></th>
+                        <th><small>30 DAYS</small></th>
+                        <th><small>60 DAYS</small></th>
+                        <th><small>90 DAYS</small></th>
+                        <th><small>120 DAYS</small></th>
+                        <th><small>ABOVE 120 DAYS</small></th>
+                        <th><small>TOTAL</small></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr *ngFor="let cust of customerAgeingSummaryList ; let i = index;">
-                        <td>{{ cust.pcode }}</td>
-                        <td>{{ cust.customerName }}</td>
-                        <td class="text-end">{{ cust.ageingSummary['CURRENT'] | number:'1.3-3'  }}</td>
-                        <td class="text-end">{{ cust.ageingSummary['30_DAYS'] | number:'1.3-3'  }}</td>
-                        <td class="text-end">{{ cust.ageingSummary['60_DAYS'] | number:'1.3-3'  }}</td>
-                        <td class="text-end">{{ cust.ageingSummary['90_DAYS'] | number:'1.3-3'  }}</td>
-                        <td class="text-end">{{ cust.ageingSummary['120_DAYS'] | number:'1.3-3'  }}</td>
-                        <td class="text-end">{{ cust.ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3'  }}</td>
-                        <td class="text-end">{{ cust.total | number:'1.3-3'}}</td>
+                        <td><small>{{ cust.pcode }}</small></td>
+                        <td><small>{{ cust.customerName }}</small></td>
+                        <td   ><small>{{ cust.ageingSummary['CURRENT'] | number:'1.3-3'  }}</small></td>
+                        <td   ><small>{{ cust.ageingSummary['30_DAYS'] | number:'1.3-3'  }}</small></td>
+                        <td   ><small>{{ cust.ageingSummary['60_DAYS'] | number:'1.3-3'  }}</small></td>
+                        <td   ><small>{{ cust.ageingSummary['90_DAYS'] | number:'1.3-3'  }}</small></td>
+                        <td   ><small>{{ cust.ageingSummary['120_DAYS'] | number:'1.3-3'  }}</small></td>
+                        <td   ><small>{{ cust.ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3'  }}</small></td>
+                        <td   ><small>{{ cust.total | number:'1.3-3'}}</small></td>
                     </tr>
                 </tbody>
             </table>
-
+</div>
         </div>  
     </div>
     <hr>
@@ -468,65 +476,66 @@
             <button class="btn btn-sm btn-primary" (click)="getPWASL(endDate.toString())" >Filter</button>
         </div>
     </div>
-    <hr>
+     
     <div mat-dialog-content style="font-size: small;">
         <div class="col-12">
             <table id="pwaslAgeingSummaryTable" class="table table-sm table-bordered">
                 <thead>
                     <tr class="table-primary">
-                        <th colspan="7" class="text-start">Ageing Summary</th>
+                        <th colspan="7" class="text-start"><small>Ageing Summary</small></th>
                     </tr>
-                    <tr class="text-end table-secondary">
-                        <th>Current</th>
-                        <th>0 - 30 days</th>
-                        <th>31 - 60 days</th>
-                        <th>61 - 90 days</th>
-                        <th>91 - 120 days</th>
-                        <th>Above 120 days</th>
-                        <th>Total Outstanding</th>
+                    <tr class="   table-secondary">
+                        <th><small>Current</small></th>
+                        <th><small>0 - 30 days</small></th>
+                        <th><small>31 - 60 days</small></th>
+                        <th><small>61 - 90 days</small></th>
+                        <th><small>91 - 120 days</small></th>
+                        <th><small>Above 120 days</small></th>
+                        <th><small>Total Outstanding</small></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="text-end">
-                        <td>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</td>
-                        <td>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</td>
-                        <td>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</td>
-                        <td>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</td>
-                        <td>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</td>
-                        <td>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
-                        <td>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</td>
+                    <tr   >
+                        <td><small>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
+                        <td><small>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
+                        <td><small>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
+                        <td><small>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
+                        <td><small>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
+                        <td><small>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
+                        <td><small>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
                     </tr>
                 </tbody>
             </table>
-            <br>
-            <table class="table table-hover table-sm table-bordered" id="pwAslTable">
-                <thead class="table-dark">
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="pwAslTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
                     <tr class="table-reflow">
-                        <th>PARENT CODE</th>
-                        <th>NAME</th>
-                        <th>CURRENT</th>
-                        <th>30 DAYS</th>
-                        <th>60 DAYS</th>
-                        <th>90 DAYS</th>
-                        <th>120 DAYS</th>
-                        <th>ABOVE 120 DAYS</th>
-                        <th>TOTAL</th>
+                        <th><small>PARENT CODE</small></th>
+                        <th><small>NAME</small></th>
+                        <th><small>CURRENT</small></th>
+                        <th><small>30 DAYS</small></th>
+                        <th><small>60 DAYS</small></th>
+                        <th><small>90 DAYS</small></th>
+                        <th><small>120 DAYS</small></th>
+                        <th><small>ABOVE 120 DAYS</small></th>
+                        <th><small>TOTAL</small></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr *ngFor="let cust of parentAgeingSummaryList ; let i = index;">
-                        <td>{{ cust.pcode }}</td>
-                        <td>{{ cust.parentName }}</td>
-                        <td class="text-end">{{ cust.ageingSummary['CURRENT'] | number:'1.3-3'  }}</td>
-                        <td class="text-end">{{ cust.ageingSummary['30_DAYS'] | number:'1.3-3'  }}</td>
-                        <td class="text-end">{{ cust.ageingSummary['60_DAYS'] | number:'1.3-3'  }}</td>
-                        <td class="text-end">{{ cust.ageingSummary['90_DAYS'] | number:'1.3-3'  }}</td>
-                        <td class="text-end">{{ cust.ageingSummary['120_DAYS'] | number:'1.3-3'  }}</td>
-                        <td class="text-end">{{ cust.ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3'  }}</td>
-                        <td class="text-end">{{ cust.total | number:'1.3-3' }}</td>
+                        <td><small>{{ cust.pcode }}</small></td>
+                        <td><small>{{ cust.parentName }}</small></td>
+                        <td   ><small>{{ cust.ageingSummary['CURRENT'] | number:'1.3-3'  }}</small></td>
+                        <td   ><small>{{ cust.ageingSummary['30_DAYS'] | number:'1.3-3'  }}</small></td>
+                        <td   ><small>{{ cust.ageingSummary['60_DAYS'] | number:'1.3-3'  }}</small></td>
+                        <td   ><small>{{ cust.ageingSummary['90_DAYS'] | number:'1.3-3'  }}</small></td>
+                        <td   ><small>{{ cust.ageingSummary['120_DAYS'] | number:'1.3-3'  }}</small></td>
+                        <td   ><small>{{ cust.ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3'  }}</small></td>
+                        <td   ><small>{{ cust.total | number:'1.3-3' }}</small></td>
                     </tr>
                 </tbody>
             </table>
+            </div>
         </div>  
     </div>
     <hr>
@@ -551,22 +560,22 @@
     <h3 matDialogTitle>
         <b>Parent-wise Customer Statement Preview</b>
     </h3>
-    <hr>
+     
     <div mat-dialog-content style="font-size: small;">
         <div class="row">
             <div class="col-3">
                 <div class="mb-3">
-                    <input type="text" [(ngModel)]="searchText" class="form-control" placeholder="Search parents..." />
+                    <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search parents..." />
                 </div>
                 <table class="table table-hover table-sm table-bordered">
                     <thead class="table-dark">
                         <tr class="table-reflow">
-                            <th>PARENT NAME</th>
+                            <th><small>PARENT NAME</small></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let cust of (parentList | filterTable:searchText| slice:0:10); let i = index;">
-                            <td (click)="getPCASL(cust)">{{ cust.PARENTNAME }}</td>
+                            <td (click)="getPCASL(cust)"><small>{{ cust.PARENTNAME }}</small></td>
                         </tr>
                     </tbody>
                 </table>
@@ -575,60 +584,62 @@
                 <div class="col-12">
                     <input type="text" class="form-control form-control-sm" [value]="selectedParent?.PARENTNAME" placeholder="Parent Name" disabled>
                 </div>
-                <br>
-                <table id="pcaslAgeingSummaryTable" class="table table-sm table-bordered">
-                    <thead>
-                        <tr class="table-primary">
-                            <th colspan="7" class="text-start">Ageing Summary</th>
-                        </tr>
-                        <tr class="text-end table-secondary">
-                            <th>Current</th>
-                            <th>0 - 30 days</th>
-                            <th>31 - 60 days</th>
-                            <th>61 - 90 days</th>
-                            <th>91 - 120 days</th>
-                            <th>Above 120 days</th>
-                            <th>Total Outstanding</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="text-end">
-                            <td>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <br>
-                <table class="table table-hover table-sm table-bordered" id="pcAslTable">
-                    <thead class="table-dark">
+<br>
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="pcAslTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
                         <tr class="table-reflow">
-                            <th>CUSTOMER CODE</th>
-                            <th>NAME</th>
-                            <th>CURRENT</th>
-                            <th>30 DAYS</th>
-                            <th>60 DAYS</th>
-                            <th>90 DAYS</th>
-                            <th>120 DAYS</th>
-                            <th>ABOVE 120 DAYS</th>
-                            <th>TOTAL</th>
+                            <th><small>CUSTOMER CODE</small></th>
+                            <th><small>NAME</small></th>
+                            <th><small>CURRENT</small></th>
+                            <th><small>30 DAYS</small></th>
+                            <th><small>60 DAYS</small></th>
+                            <th><small>90 DAYS</small></th>
+                            <th><small>120 DAYS</small></th>
+                            <th><small>ABOVE 120 DAYS</small></th>
+                            <th><small>TOTAL</small></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let cust of parentWiseCustomerAgeingList ; let i = index;">
-                            <td>{{ cust.custCode }}</td>
-                            <td>{{ cust.custName }}</td>
-                            <td class="text-end">{{ cust.ageingSummary['CURRENT'] | number:'1.3-3'  }}</td>
-                            <td class="text-end">{{ cust.ageingSummary['30_DAYS'] | number:'1.3-3'  }}</td>
-                            <td class="text-end">{{ cust.ageingSummary['60_DAYS'] | number:'1.3-3'  }}</td>
-                            <td class="text-end">{{ cust.ageingSummary['90_DAYS'] | number:'1.3-3'  }}</td>
-                            <td class="text-end">{{ cust.ageingSummary['120_DAYS'] | number:'1.3-3'  }}</td>
-                            <td class="text-end">{{ cust.ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3'  }}</td>
-                            <td class="text-end">{{ cust.total | number:'1.3-3'}}</td>
+                            <td><small>{{ cust.custCode }}</small></td>
+                            <td><small>{{ cust.custName }}</small></td>
+                            <td   ><small>{{ cust.ageingSummary['CURRENT'] | number:'1.3-3'  }}</small></td>
+                            <td   ><small>{{ cust.ageingSummary['30_DAYS'] | number:'1.3-3'  }}</small></td>
+                            <td   ><small>{{ cust.ageingSummary['60_DAYS'] | number:'1.3-3'  }}</small></td>
+                            <td   ><small>{{ cust.ageingSummary['90_DAYS'] | number:'1.3-3'  }}</small></td>
+                            <td   ><small>{{ cust.ageingSummary['120_DAYS'] | number:'1.3-3'  }}</small></td>
+                            <td   ><small>{{ cust.ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3'  }}</small></td>
+                            <td   ><small>{{ cust.total | number:'1.3-3'}}</small></td>
+                        </tr>
+                    </tbody>
+                </table>
+</div>
+
+                <table id="pcaslAgeingSummaryTable" class="table table-sm table-bordered">
+                    <thead>
+                        <tr class="table-primary">
+                            <th colspan="7" class="text-start"><small>Ageing Summary</small></th>
+                        </tr>
+                        <tr class="   table-secondary">
+                            <th><small>Current</small></th>
+                            <th><small>0 - 30 days</small></th>
+                            <th><small>31 - 60 days</small></th>
+                            <th><small>61 - 90 days</small></th>
+                            <th><small>91 - 120 days</small></th>
+                            <th><small>Above 120 days</small></th>
+                            <th><small>Total Outstanding</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr   >
+                            <td><small>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
                         </tr>
                     </tbody>
                 </table>
@@ -658,22 +669,22 @@
     <h3 matDialogTitle>
         <b>Customer Open Statement of Account Preview</b>
     </h3>
-    <hr>
+     
     <div mat-dialog-content style="font-size: small;">
         <div class="row">
             <div class="col-3">
                 <div class="mb-3">
-                    <input type="text" [(ngModel)]="searchText" class="form-control" placeholder="Search customers..." />
+                    <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search customers..." />
                 </div>
                 <table class="table table-hover table-sm table-bordered">
                     <thead class="table-dark">
                         <tr class="table-reflow">
-                            <th>CUSTOMER NAME</th>
+                            <th><small>CUSTOMER NAME</small></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let cust of (customerList | filterTable:searchText| slice:0:10); let i = index;">
-                            <td (click)="getCOSOA(cust)">{{ cust.CUST_NAME }}</td>
+                            <td (click)="getCOSOA(cust)"><small>{{ cust.CUST_NAME }}</small></td>
                         </tr>
                     </tbody>
                 </table>
@@ -683,34 +694,6 @@
                     <input type="text" class="form-control form-control-sm" [value]="selectedCustomer?.CUST_NAME" placeholder="Customer Name" disabled>
                 </div>
                 <br>
-                <table id="cosoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedCustomer?.Orgnisation != 'MM-COOP'">
-                    <thead>
-                        <tr>
-                            <th colspan="7" class="text-start">Open Ageing Summary</th>
-                        </tr>
-                        <tr class="text-end">
-                            <th>Current</th>
-                            <th>0 - 30 days</th>
-                            <th>31 - 60 days</th>
-                            <th>61 - 90 days</th>
-                            <th>91 - 120 days</th>
-                            <th>Above 120 days</th>
-                            <th>Total Outstanding</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="text-end">
-                            <td>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <br>
                 <div class="row" *ngIf="cosoaData.length === 0 && getData === true">
                     <div class="col-4"></div>
                     <div class="col-4">
@@ -718,53 +701,83 @@
                     </div>
                     <div class="col-4"></div>
                 </div>
-                <table class="table table-striped table-sm table-bordered" id="coSoaTable">
-                    <thead class="table-dark">
+<div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="coSoaTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
                         <tr>
-                            <th>Invoice Date</th>
-                            <th>Invoice No</th>
-                            <th>Reference</th>
-                            <th>Description</th>
-                            <th>Due Date</th>
-                            <!--<th>Amount</th>-->
-                            <th>Debit</th>
-                            <th>Credit</th>
-                            <th>Balance</th>
-                            <!--<th>Overdue days</th>-->
+                            <th><small>Invoice Date</small></th>
+                            <th><small>Invoice No</small></th>
+                            <th><small>Reference</small></th>
+                            <th><small>Description</small></th>
+                            <th><small>Due Date</small></th>
+                            <!--<th><small>Amount</small></th>-->
+                            <th><small>Debit</small></th>
+                            <th><small>Credit</small></th>
+                            <th><small>Balance</small></th>
+                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let row of cosoaData">
-                            <td>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</td>
-                            <td>{{ row.INV_NO }}</td>
-                            <td>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</td>
-                            <td>{{ row.DESCRIPTION }}</td>
-                            <td>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</td>
-                            <!--<td class="text-end">{{ row.AMOUNT | number:'1.3-3' }}</td>-->
-                            <td class="text-end">{{ row.DEBIT  == 0 ? '' : row.DEBIT | number:'1.3-3' }}</td>
-                            <td class="text-end">{{ row.CREDIT == 0 ? '' : row.CREDIT | number:'1.3-3' }}</td>
-                            <!-- <td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td> -->
-                            <td class="text-end">
+                            <td><small>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</small></td>
+                            <td><small>{{ row.INV_NO }}</small></td>
+                            <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
+                            <td><small>{{ row.DESCRIPTION }}</small></td>
+                            <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
+                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
+                            <td   ><small>{{ row.DEBIT  == 0 ? '' : row.DEBIT | number:'1.3-3' }}</small></td>
+                            <td   ><small>{{ row.CREDIT == 0 ? '' : row.CREDIT | number:'1.3-3' }}</small></td>
+                            <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
+                            <td   ><small>
                                 {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
-                            </td>
-                            <!--<td class="text-end">{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</td>   -->                 
+                            </small></td>
+                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
                         </tr>
                     </tbody>
                     <tfoot>
-                        <tr class="fw-bold text-end">
-                            <td colspan="5" class="text-start">Total</td>
-                            <td>{{ totalDebit | number:'1.3-3' }}</td>
-                            <td>{{ totalCredit | number:'1.3-3' }}</td>
-                            <td>
+                        <tr class="fw-bold   ">
+                            <td colspan="5" class="text-start"><small>Total</small></td>
+                            <td><small>{{ totalDebit | number:'1.3-3' }}</small></td>
+                            <td><small>{{ totalCredit | number:'1.3-3' }}</small></td>
+                            <td><small>
                                 {{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')' : ((totalDebit - totalCredit) | number:'1.3-3') }}
-                            </td>
-                            <!--<td>
+                            </small></td>
+                            <!--<td><small>
                                 {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
                                 {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
                                 {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </td>-->
+                            </small></td>-->
                         </tr>
                     </tfoot>
+                </table>
+</div>
+
+                <table id="cosoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedCustomer?.Orgnisation != 'MM-COOP'">
+                    <thead>
+                        <tr class="table-primary">
+                            <th colspan="7" class="text-start"><small>Open Ageing Summary</small></th>
+                        </tr>
+                        <tr  class="table-secondary" >
+                            <th><small>Current</small></th>
+                            <th><small>0 - 30 days</small></th>
+                            <th><small>31 - 60 days</small></th>
+                            <th><small>61 - 90 days</small></th>
+                            <th><small>91 - 120 days</small></th>
+                            <th><small>Above 120 days</small></th>
+                            <th><small>Total Outstanding</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr   >
+                            <td><small>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -792,22 +805,22 @@
     <h3 matDialogTitle>
         <b>Parent-wise Open Statement of Account Preview</b>
     </h3>
-    <hr>
+     
     <div mat-dialog-content style="font-size: small;">
         <div class="row">
             <div class="col-3">
                 <div class="mb-3">
-                    <input type="text" [(ngModel)]="searchText" class="form-control" placeholder="Search parents..." />
+                    <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search parents..." />
                 </div>
                 <table class="table table-hover table-sm table-bordered">
                     <thead class="table-dark">
                         <tr class="table-reflow">
-                            <th>PARENT NAME</th>
+                            <th><small>PARENT NAME</small></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let cust of (parentList | filterTable:searchText| slice:0:10); let i = index;">
-                            <td (click)="getPOSOA(cust)">{{ cust.PARENTNAME }}</td>
+                            <td (click)="getPOSOA(cust)"><small>{{ cust.PARENTNAME }}</small></td>
                         </tr>
                     </tbody>
                 </table>
@@ -816,93 +829,97 @@
                 <div class="col-12">
                     <input type="text" class="form-control form-control-sm" [value]="selectedParent?.PARENTNAME" placeholder="Parent Name" disabled>
                 </div>
-                <br>            
-                <table id="posoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedParent?.orgnisation != 'MM-COOP'">
-                    <thead>
-                        <tr class="table-primary">
-                            <th colspan="7" class="text-start">Open Ageing Summary</th>
-                        </tr>
-                        <tr class="text-end table-secondary">
-                            <th>Current</th>
-                            <th>0 - 30 days</th>
-                            <th>31 - 60 days</th>
-                            <th>61 - 90 days</th>
-                            <th>91 - 120 days</th>
-                            <th>Above 120 days</th>
-                            <th>Total Outstanding</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="text-end">
-                            <td>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <br>
+                <br>  
                 <div class="row" *ngIf="posoaData.length === 0 && getData === true">
                     <div class="col-4"></div>
                     <div class="col-4">
                         <mat-spinner></mat-spinner>
                     </div>
                     <div class="col-4"></div>
-                </div>
-                <table class="table table-striped table-sm table-bordered" id="poSoaTable">
-                    <thead class="table-dark">
+                </div>          
+                
+
+
+<div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="poSoaTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">                  
                         <tr>
-                            <!--<th>Company Code</th>-->
-                            <th>Branch Name</th>
-                            <th>Invoice Date</th>
-                            <th>Invoice No</th>
-                            <th>Reference</th>
-                            <th>Description</th>
-                            <th>Due Date</th>
-                            <!--<th>Amount</th>-->
-                            <th>Debit</th>
-                            <th>Credit</th>
-                            <th>Balance</th>
-                            <!--<th>Overdue days</th>-->
+                            <!--<th><small>Company Code</small></th>-->
+                            <th><small>Branch Name</small></th>
+                            <th><small>Invoice Date</small></th>
+                            <th><small>Invoice No</small></th>
+                            <th><small>Reference</small></th>
+                            <th><small>Description</small></th>
+                            <th><small>Due Date</small></th>
+                            <!--<th><small>Amount</small></th>-->
+                            <th><small>Debit</small></th>
+                            <th><small>Credit</small></th>
+                            <th><small>Balance</small></th>
+                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let row of posoaData">
-                            <!--<td>{{ row.CUST_CODE }}</td>-->
-                            <td>{{ row.CUST_NAME }}</td>
-                            <td>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</td>
-                            <td>{{ row.INV_NO }}</td>
-                            <td>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</td>
-                            <td>{{ row.DESCRIPTION }}</td>
-                            <td>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</td>
-                            <!--<td class="text-end">{{ row.AMOUNT | number:'1.3-3' }}</td>-->
-                            <td class="text-end">{{ row.DEBIT  == 0 ? '' : row.DEBIT | number:'1.3-3' }}</td>
-                            <td class="text-end">{{ row.CREDIT  == 0 ? '' : row.CREDIT | number:'1.3-3' }}</td>
-                            <td class="text-end">
+                            <!--<td><small>{{ row.CUST_CODE }}</small></td>-->
+                            <td><small>{{ row.CUST_NAME }}</small></td>
+                            <td><small>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</small></td>
+                            <td><small>{{ row.INV_NO }}</small></td>
+                            <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
+                            <td><small>{{ row.DESCRIPTION }}</small></td>
+                            <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
+                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
+                            <td   ><small>{{ row.DEBIT  == 0 ? '' : row.DEBIT | number:'1.3-3' }}</small></td>
+                            <td   ><small>{{ row.CREDIT  == 0 ? '' : row.CREDIT | number:'1.3-3' }}</small></td>
+                            <td   ><small>
                                 {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
-                            </td>
-                            <!--<td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td> -->
-                            <!--<td class="text-end">{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</td>   -->                 
+                            </small></td>
+                            <!--<td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
+                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
                         </tr>
                     </tbody>
                     <tfoot>
-                        <tr class="fw-bold text-end" >
-                            <td colspan="6" class="text-start">Total</td>
-                            <td>{{ totalDebit | number:'1.3-3' }}</td>
-                            <td>{{ totalCredit | number:'1.3-3' }}</td>
-                            <td>
+                        <tr class="fw-bold   " >
+                            <td colspan="6" class="text-start"><small>Total</small></td>
+                            <td><small>{{ totalDebit | number:'1.3-3' }}</small></td>
+                            <td><small>{{ totalCredit | number:'1.3-3' }}</small></td>
+                            <td><small>
                                 {{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')' : ((totalDebit - totalCredit) | number:'1.3-3') }}
-                            </td>
-                            <!--<td>
+                            </small></td>
+                            <!--<td><small>
                                 {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
                                 {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
                                 {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </td>-->
+                            </small></td>-->
                         </tr>
                     </tfoot>
+                </table>
+                </div>
+                <table id="posoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedParent?.orgnisation != 'MM-COOP'">
+                    <thead>
+                        <tr class="table-primary">
+                            <th colspan="7" class="text-start"><small>Open Ageing Summary</small></th>
+                        </tr>
+                        <tr class="   table-secondary">
+                            <th><small>Current</small></th>
+                            <th><small>0 - 30 days</small></th>
+                            <th><small>31 - 60 days</small></th>
+                            <th><small>61 - 90 days</small></th>
+                            <th><small>91 - 120 days</small></th>
+                            <th><small>Above 120 days</small></th>
+                            <th><small>Total Outstanding</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr   >
+                            <td><small>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -930,22 +947,22 @@
     <h3 matDialogTitle>
         <b>Period-wise Customer Statement of Account Preview</b>
     </h3>
-    <hr>
+     
     <div mat-dialog-content style="font-size: small;">
         <div class="row">
             <div class="col-3">
                 <div class="mb-3">
-                    <input type="text" [(ngModel)]="searchText" class="form-control" placeholder="Search customers..." />
+                    <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search customers..." />
                 </div>
                 <table class="table table-hover table-sm table-bordered">
                     <thead class="table-dark">
                         <tr class="table-reflow">
-                            <th>CUSTOMER NAME</th>
+                            <th><small>CUSTOMER NAME</small></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let cust of (customerList | filterTable:searchText| slice:0:10); let i = index;">
-                            <td (click)="getCPWSOA(cust)">{{ cust.CUST_NAME }}</td>
+                            <td (click)="getCPWSOA(cust)"><small>{{ cust.CUST_NAME }}</small></td>
                         </tr>
                     </tbody>
                 </table>
@@ -966,34 +983,6 @@
                     </div>
                 </div>
                 <br>
-                <table id="cpwsoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedCustomer?.Orgnisation != 'MM-COOP'">
-                    <thead>
-                        <tr>
-                            <th colspan="7" class="text-start">Period-wise Ageing Summary</th>
-                        </tr>
-                        <tr class="text-end">
-                            <th>Current</th>
-                            <th>0 - 30 days</th>
-                            <th>31 - 60 days</th>
-                            <th>61 - 90 days</th>
-                            <th>91 - 120 days</th>
-                            <th>Above 120 days</th>
-                            <th>Total Outstanding</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="text-end">
-                            <td>{{ periodAgeingSummary['CURRENT'] | number:'1.3-3' }}</td>
-                            <td>{{ periodAgeingSummary['30_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ periodAgeingSummary['60_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ periodAgeingSummary['90_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ periodAgeingSummary['120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ periodAgeingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ (periodAgeingSummary['CURRENT'] + periodAgeingSummary['30_DAYS'] + periodAgeingSummary['60_DAYS'] + periodAgeingSummary['90_DAYS'] + periodAgeingSummary['120_DAYS'] + periodAgeingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <br>
                 <div class="row" *ngIf="cpwsoaData.length === 0 && getData === true">
                     <div class="col-4"></div>
                     <div class="col-4">
@@ -1001,57 +990,88 @@
                     </div>
                     <div class="col-4"></div>
                 </div>
-                <table class="table table-striped table-sm table-bordered" id="cpwSoaTable">
-                    <thead class="table-dark">
+
+
+<div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="cpwSoaTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">     
                         <tr>
-                            <th>Invoice Date</th>
-                            <th>Invoice No</th>
-                            <th>Reference</th>
-                            <th>Description</th>
-                            <th>Due Date</th>
-                            <!--<th>Amount</th>-->
-                            <th>Debit</th>
-                            <th>Credit</th>
-                            <th>Balance</th>
-                            <!--<th>Overdue days</th>-->
+                            <th><small>Invoice Date</small></th>
+                            <th><small>Invoice No</small></th>
+                            <th><small>Reference</small></th>
+                            <th><small>Description</small></th>
+                            <th><small>Due Date</small></th>
+                            <!--<th><small>Amount</small></th>-->
+                            <th><small>Debit</small></th>
+                            <th><small>Credit</small></th>
+                            <th><small>Balance</small></th>
+                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let row of cpwsoaData; let i = index">
-                            <td>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</td>
-                            <td>{{ row.INV_NO }}</td>
-                            <td>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</td>
-                            <td>{{ row.DESCRIPTION }}</td>
-                            <td>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</td>
-                            <!--<td class="text-end">{{ row.AMOUNT | number:'1.3-3' }}</td>-->
-                            <td class="text-end">
+                            <td><small>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</small></td>
+                            <td><small>{{ row.INV_NO }}</small></td>
+                            <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
+                            <td><small>{{ row.DESCRIPTION }}</small></td>
+                            <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
+                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
+                            <td   ><small>
                                 {{ row.INV_NO === 'OPENING BALANCE' || row.DEBIT == 0 ? '' : (row.DEBIT | number:'1.3-3') }}
-                            </td>
-                            <td class="text-end">
+                            </small></td>
+                            <td   ><small>
                                 {{ row.INV_NO === 'OPENING BALANCE' || row.CREDIT == 0 ? '' : (row.CREDIT | number:'1.3-3') }}
-                            </td>
-                            <!-- <td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td> -->
-                            <td class="text-end">
+                            </small></td>
+                            <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
+                            <td   ><small>
                                 {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
-                            </td>
-                            <!--<td class="text-end">{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</td>   -->                 
+                            </small></td>
+                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
                         </tr>
                     </tbody>
                     <tfoot>
-                        <tr class="fw-bold text-end">
-                            <td colspan="5" class="text-start">Total</td>
-                            <td>{{ periodTotalDebit | number:'1.3-3' }}</td>
-                            <td>{{ periodTotalCredit | number:'1.3-3' }}</td>
-                            <td>
+                        <tr class="fw-bold   ">
+                            <td colspan="5" class="text-start"><small>Total</small></td>
+                            <td><small>{{ periodTotalDebit | number:'1.3-3' }}</small></td>
+                            <td><small>{{ periodTotalCredit | number:'1.3-3' }}</small></td>
+                            <td><small>
                                 {{ (periodTotalDebit - periodTotalCredit) < 0 ? '(' + ((periodTotalDebit - periodTotalCredit) | abs | number:'1.3-3') + ')' : ((periodTotalDebit - periodTotalCredit) | number:'1.3-3') }}
-                            </td>
-                            <!--<td>
+                            </small></td>
+                            <!--<td><small>
                                 {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
                                 {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
                                 {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </td>-->
+                            </small></td>-->
                         </tr>
                     </tfoot>
+                </table>
+</div>
+                <table id="cpwsoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedCustomer?.Orgnisation != 'MM-COOP'">
+                    <thead>
+                        <tr class="table-primary">
+                            <th colspan="7" class="text-start"><small>Period-wise Ageing Summary</small></th>
+                        </tr>
+                        <tr class="table-secondary"  >
+                            <th><small>Current</small></th>
+                            <th><small>0 - 30 days</small></th>
+                            <th><small>31 - 60 days</small></th>
+                            <th><small>61 - 90 days</small></th>
+                            <th><small>91 - 120 days</small></th>
+                            <th><small>Above 120 days</small></th>
+                            <th><small>Total Outstanding</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr   >
+                            <td><small>{{ periodAgeingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ periodAgeingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ periodAgeingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ periodAgeingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ periodAgeingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ periodAgeingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ (periodAgeingSummary['CURRENT'] + periodAgeingSummary['30_DAYS'] + periodAgeingSummary['60_DAYS'] + periodAgeingSummary['90_DAYS'] + periodAgeingSummary['120_DAYS'] + periodAgeingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -1079,22 +1099,22 @@
     <h3 matDialogTitle>
         <b>Period-wise Parent Statement of Account Preview</b>
     </h3>
-    <hr>
+     
     <div mat-dialog-content style="font-size: small;">
         <div class="row">
             <div class="col-3">
                 <div class="mb-3">
-                    <input type="text" [(ngModel)]="searchText" class="form-control" placeholder="Search parents..." />
+                    <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search parents..." />
                 </div>
                 <table class="table table-hover table-sm table-bordered">
                     <thead class="table-dark">
                         <tr class="table-reflow">
-                            <th>PARENT NAME</th>
+                            <th><small>PARENT NAME</small></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let cust of (parentList | filterTable:searchText| slice:0:10); let i = index;">
-                            <td (click)="getPPWSOA(cust)">{{ cust.PARENTNAME }}</td>
+                            <td (click)="getPPWSOA(cust)"><small>{{ cust.PARENTNAME }}</small></td>
                         </tr>
                     </tbody>
                 </table>
@@ -1115,34 +1135,6 @@
                     </div>
                 </div>
                 <br>
-                <table id="ppwsoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedParent?.orgnisation != 'MM-COOP'">
-                    <thead>
-                        <tr>
-                            <th colspan="7" class="text-start">Period-wise Ageing Summary</th>
-                        </tr>
-                        <tr class="text-end">
-                            <th>Current</th>
-                            <th>0 - 30 days</th>
-                            <th>31 - 60 days</th>
-                            <th>61 - 90 days</th>
-                            <th>91 - 120 days</th>
-                            <th>Above 120 days</th>
-                            <th>Total Outstanding</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="text-end">
-                            <td>{{ periodAgeingSummary['CURRENT'] | number:'1.3-3' }}</td>
-                            <td>{{ periodAgeingSummary['30_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ periodAgeingSummary['60_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ periodAgeingSummary['90_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ periodAgeingSummary['120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ periodAgeingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ (periodAgeingSummary['CURRENT'] + periodAgeingSummary['30_DAYS'] + periodAgeingSummary['60_DAYS'] + periodAgeingSummary['90_DAYS'] + periodAgeingSummary['120_DAYS'] + periodAgeingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <br>
                 <div class="row" *ngIf="ppwsoaData.length === 0 && getData === true">
                     <div class="col-4"></div>
                     <div class="col-4">
@@ -1150,59 +1142,90 @@
                     </div>
                     <div class="col-4"></div>
                 </div>
-                <table class="table table-striped table-sm table-bordered" id="ppwSoaTable">
-                    <thead class="table-dark">
+                            
+                
+<div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="ppwSoaTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;"> 
                         <tr>
-                            <th>Branch Name</th>
-                            <th>Invoice Date</th>
-                            <th>Invoice No</th>
-                            <th>Reference</th>
-                            <th>Description</th>
-                            <th>Due Date</th>
-                            <!--<th>Amount</th>-->
-                            <th>Debit</th>
-                            <th>Credit</th>
-                            <th>Balance</th>
-                            <!--<th>Overdue days</th>-->
+                            <th><small>Branch Name</small></th>
+                            <th><small>Invoice Date</small></th>
+                            <th><small>Invoice No</small></th>
+                            <th><small>Reference</small></th>
+                            <th><small>Description</small></th>
+                            <th><small>Due Date</small></th>
+                            <!--<th><small>Amount</small></th>-->
+                            <th><small>Debit</small></th>
+                            <th><small>Credit</small></th>
+                            <th><small>Balance</small></th>
+                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let row of ppwsoaData">
-                            <td>{{ row.CUST_NAME }}</td>
-                            <td>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</td>
-                            <td>{{ row.INV_NO }}</td>
-                            <td>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</td>
-                            <td>{{ row.DESCRIPTION }}</td>
-                            <td>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</td>
-                            <!--<td class="text-end">{{ row.AMOUNT | number:'1.3-3' }}</td>-->
-                            <td class="text-end">
+                            <td><small>{{ row.CUST_NAME }}</small></td>
+                            <td><small>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</small></td>
+                            <td><small>{{ row.INV_NO }}</small></td>
+                            <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
+                            <td><small>{{ row.DESCRIPTION }}</small></td>
+                            <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
+                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
+                            <td   ><small>
                                 {{ row.INV_NO === 'OPENING BALANCE' || row.DEBIT == 0 ? '' : (row.DEBIT | number:'1.3-3') }}
-                            </td>
-                            <td class="text-end">
+                            </small></td>
+                            <td   ><small>
                                 {{ row.INV_NO === 'OPENING BALANCE' || row.CREDIT == 0 ? '' : (row.CREDIT | number:'1.3-3') }}
-                            </td>
-                            <!-- <td class="text-end">{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</td> -->
-                            <td class="text-end">
+                            </small></td>
+                            <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
+                            <td   ><small>
                                 {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
-                            </td>
-                            <!--<td class="text-end">{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</td>   -->                 
+                            </small></td>
+                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
                         </tr>
                     </tbody>
                     <tfoot>
-                        <tr class="fw-bold text-end">
-                            <td colspan="6" class="text-start">Total</td>
-                            <td>{{ periodTotalDebit | number:'1.3-3' }}</td>
-                            <td>{{ periodTotalCredit | number:'1.3-3' }}</td>
-                            <td>
+                        <tr class="fw-bold   ">
+                            <td colspan="6" class="text-start"><small>Total</small></td>
+                            <td><small>{{ periodTotalDebit | number:'1.3-3' }}</small></td>
+                            <td><small>{{ periodTotalCredit | number:'1.3-3' }}</small></td>
+                            <td><small>
                                 {{ (periodTotalDebit - periodTotalCredit) < 0 ? '(' + ((periodTotalDebit - periodTotalCredit) | abs | number:'1.3-3') + ')' : ((periodTotalDebit - periodTotalCredit) | number:'1.3-3') }}
-                            </td>
-                            <!--<td>
+                            </small></td>
+                            <!--<td><small>
                                 {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
                                 {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
                                 {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </td>-->
+                            </small></td>-->
                         </tr>
                     </tfoot>
+                </table>
+</div>
+                <table id="ppwsoaAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedParent?.orgnisation != 'MM-COOP'">
+                    <thead>
+                        <tr class="table-primary">
+                            <th colspan="7" class="text-start"><small>Period-wise Ageing Summary</small></th>
+                        </tr>
+                        <tr class="table-secondary"  >
+                            <th><small>Current</small></th>
+                            <th><small>0 - 30 days</small></th>
+                            <th><small>31 - 60 days</small></th>
+                            <th><small>61 - 90 days</small></th>
+                            <th><small>91 - 120 days</small></th>
+                            <th><small>Above 120 days</small></th>
+                            <th><small>Total Outstanding</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr   >
+                            <td><small>{{ periodAgeingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ periodAgeingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ periodAgeingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ periodAgeingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ periodAgeingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ periodAgeingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ (periodAgeingSummary['CURRENT'] + periodAgeingSummary['30_DAYS'] + periodAgeingSummary['60_DAYS'] + periodAgeingSummary['90_DAYS'] + periodAgeingSummary['120_DAYS'] + periodAgeingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -1230,22 +1253,22 @@
     <h3 matDialogTitle>
         <b>Parent-wise Outstanding Review</b>
     </h3>
-    <hr>
+     
     <div mat-dialog-content style="font-size: small;">
         <div class="row">
             <div class="col-3">
                 <div class="mb-3">
-                    <input type="text" [(ngModel)]="searchText" class="form-control" placeholder="Search parents..." />
+                    <input type="text" [(ngModel)]="searchText" class="form-control form-control=sm" placeholder="Search parents..." />
                 </div>
                 <table class="table table-hover table-sm table-bordered">
                     <thead class="table-dark">
                         <tr class="table-reflow">
-                            <th>PARENT NAME</th>
+                            <th><small>PARENT NAME</small></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let cust of (parentList | filterTable:searchText| slice:0:10); let i = index;">
-                            <td (click)="setPWOUT(cust)">{{ cust.PARENTNAME }}</td>
+                            <td (click)="setPWOUT(cust)"><small>{{ cust.PARENTNAME }}</small></td>
                         </tr>
                     </tbody>
                 </table>
@@ -1265,34 +1288,6 @@
                         <button class="btn btn-sm btn-primary" (click)="getPWOUT(endDate.toString())" >Filter</button>
                     </div>
                 </div>  
-                <br>            
-                <table id="pwoutAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedParent?.orgnisation != 'MM-COOP'">
-                    <thead>
-                        <tr class="table-primary">
-                            <th colspan="7" class="text-start">Ageing Summary</th>
-                        </tr>
-                        <tr class="text-end table-secondary">
-                            <th>Current</th>
-                            <th>0 - 30 days</th>
-                            <th>31 - 60 days</th>
-                            <th>61 - 90 days</th>
-                            <th>91 - 120 days</th>
-                            <th>Above 120 days</th>
-                            <th>Total Outstanding</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="text-end">
-                            <td>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</td>
-                            <td>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
                 <br>
                 <div class="row" *ngIf="pwoutData.length === 0 && getData === true">
                     <div class="col-4"></div>
@@ -1300,69 +1295,100 @@
                         <mat-spinner></mat-spinner>
                     </div>
                     <div class="col-4"></div>
-                </div>
-                <table class="table table-striped table-sm table-bordered" id="pwOutTable">
-                    <thead class="table-dark">
+                </div>                
+                
+         
+<div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="pwOutTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;"> 
                         <tr>
-                            <th>Branch Name</th>
-                            <th>Invoice Date</th>
-                            <th>Invoice No</th>
-                            <th>Reference</th>
-                            <th>Description</th>
-                            <th>Due Date</th>
-                            <th>Debit Amount</th>
-                            <th>Balance</th>
+                            <th><small>Branch Name</small></th>
+                            <th><small>Invoice Date</small></th>
+                            <th><small>Invoice No</small></th>
+                            <th><small>Reference</small></th>
+                            <th><small>Description</small></th>
+                            <th><small>Due Date</small></th>
+                            <th><small>Debit Amount</small></th>
+                            <th><small>Balance</small></th>
                         </tr>
                     </thead>
 
                     <tbody>
                         <!-- Opening balance row 
                         <tr class="fw-bold bg-light">
-                            <td colspan="6" class="text-start">Opening Balance (before {{ startDate | date:'dd-MM-yyyy' }})</td>                            <td></td>
-                            <td class="text-end">{{ openingBalance < 0 ? '(' + (openingBalance | abs | number:'1.3-3') + ')' : (openingBalance | number:'1.3-3') }}    </td>
+                            <td colspan="6" class="text-start">Opening Balance (before {{ startDate | date:'dd-MM-yyyy' }})</small></td>                            <td><small></small></td>
+                            <td   >{{ openingBalance < 0 ? '(' + (openingBalance | abs | number:'1.3-3') + ')' : (openingBalance | number:'1.3-3') }}    </small></td>
                         </tr> -->
 
                         <!-- Regular transaction rows -->
                         <tr *ngFor="let row of pwoutData">
-                            <td>{{ row.CUST_NAME }}</td>
-                            <td>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</td>
-                            <td>{{ row.INV_NO }}</td>
-                            <td>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</td>
-                            <td>{{ row.DESCRIPTION }}</td>
-                            <td>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</td>
-                            <td class="text-end">{{ row.DEBIT == 0 ? '' : row.DEBIT | number:'1.3-3' }}</td>
-                            <td class="text-end">{{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
-                            </td>
+                            <td><small>{{ row.CUST_NAME }}</small></td>
+                            <td><small>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</small></td>
+                            <td><small>{{ row.INV_NO }}</small></td>
+                            <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
+                            <td><small>{{ row.DESCRIPTION }}</small></td>
+                            <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
+                            <td   ><small>{{ row.DEBIT == 0 ? '' : row.DEBIT | number:'1.3-3' }}</small></td>
+                            <td   ><small>{{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
+                            </small></td>
                         </tr>
                     </tbody>
 
                     <!--<tfoot>
-                        <tr class="fw-bold text-end">
-                            <td colspan="6" class="text-start">Period Total ({{ startDate | date:'dd-MM-yyyy' }} to {{ endDate | date:'dd-MM-yyyy' }})</td>
-                            <td>{{ totalDebit | number:'1.3-3' }}</td>
-                            <td>{{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')': ((totalDebit - totalCredit) | number:'1.3-3') }}</td>
+                        <tr class="fw-bold   ">
+                            <td colspan="6" class="text-start">Period Total ({{ startDate | date:'dd-MM-yyyy' }} to {{ endDate | date:'dd-MM-yyyy' }})</small></td>
+                            <td><small>{{ totalDebit | number:'1.3-3' }}</small></td>
+                            <td><small>{{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')': ((totalDebit - totalCredit) | number:'1.3-3') }}</small></td>
                         </tr>
-                        <tr class="fw-bold text-end table-secondary">
-                            <td colspan="6" class="text-start">Closing Balance (as on {{ endDate | date:'dd-MM-yyyy' }})</td>
-                            <td></td>
-                            <td>{{ closingBalance < 0 ? '(' + (closingBalance | abs | number:'1.3-3') + ')' : (closingBalance | number:'1.3-3') }}</td>
+                        <tr class="fw-bold    table-secondary">
+                            <td colspan="6" class="text-start">Closing Balance (as on {{ endDate | date:'dd-MM-yyyy' }})</small></td>
+                            <td><small></small></td>
+                            <td><small>{{ closingBalance < 0 ? '(' + (closingBalance | abs | number:'1.3-3') + ')' : (closingBalance | number:'1.3-3') }}</small></td>
                         </tr>
                     </tfoot>-->
                     <tfoot>
-                        <tr class="fw-bold text-end" >
-                            <td colspan="6" class="text-start">Total</td>
-                            <td>{{ totalDebit | number:'1.3-3' }}</td>
-                            <!--<td>{{ totalCredit | number:'1.3-3' }}</td>-->
-                            <td>
+                        <tr class="fw-bold   " >
+                            <td colspan="6" class="text-start"><small>Total</small></td>
+                            <td><small>{{ totalDebit | number:'1.3-3' }}</small></td>
+                            <!--<td><small>{{ totalCredit | number:'1.3-3' }}</small></td>-->
+                            <td><small>
                                 {{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')' : ((totalDebit - totalCredit) | number:'1.3-3') }}
-                            </td>
-                            <!--<td>
+                            </small></td>
+                            <!--<td><small>
                                 {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
                                 {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
                                 {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </td>-->
+                            </small></td>-->
                         </tr>
                     </tfoot>
+                </table>
+</div>
+                <table id="pwoutAgeingSummaryTable" class="table table-sm table-bordered" *ngIf="selectedParent?.orgnisation != 'MM-COOP'">
+                    <thead>
+                        <tr class="table-primary">
+                            <th colspan="7" class="text-start"><small>Ageing Summary</small></th>
+                        </tr>
+                        <tr class="   table-secondary">
+                            <th><small>Current</small></th>
+                            <th><small>0 - 30 days</small></th>
+                            <th><small>31 - 60 days</small></th>
+                            <th><small>61 - 90 days</small></th>
+                            <th><small>91 - 120 days</small></th>
+                            <th><small>Above 120 days</small></th>
+                            <th><small>Total Outstanding</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr   >
+                            <td><small>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <td><small>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -1390,7 +1416,7 @@
     <h3 matDialogTitle>
         <b>Category-wise Overdue Statement Preview</b>
     </h3>
-    <hr>
+     
     <div mat-dialog-content style="font-size: small;">      
         <div class="col-12">
             <div class="row">
@@ -1422,82 +1448,82 @@
                 </div>
                 <div class="col-4"></div>
             </div>
-            <table class="table table-striped table-sm table-bordered" id="catOvrTable">
-                <thead class="table-dark">
+                
+<div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="catOvrTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;"> 
                     <tr>
-                        <th>Customer Name</th>
-                        <th>Category</th>
-                        <th>Outstanding Balance</th>
-                        <th>Overdue Amount</th>
-                        <th>Payment Terms</th>
-                        <th>Status</th>
-                        <th>Period Collection</th>
-                        <th>Current</th>
-                        <th>0 - 30 days</th>
-                        <th>31 - 60 days</th>
-                        <th>61 - 90 days</th>
-                        <th>91 - 120 days</th>
-                        <th>Above 120 days</th>
+                        <th><small>Account Code</small></th>
+                        <th><small>Parent Name</small></th>
+                        <th><small>Category</small></th>
+                        <th><small>0 - 30 Days</small></th>
+                        <th><small>31 - 60 Days</small></th>
+                        <th><small>61 - 90 Days</small></th>
+                        <th><small>91 - 120 Days</small></th>
+                        <th><small>Above 120 Days</small></th>
+                        <th><small>Outstanding Balance</small></th>
+                        <th><small>Overdue Balance</small></th>
+                        <th><small>Period Collection</small></th>
+                        <th><small>Payment Terms</small></th>
                     </tr>
                 </thead>
                 <tbody *ngFor="let group of getGroupedCATOVRData()">
                     <!-- Category Header -->
                     <tr class="table-secondary fw-bold">
-                        <td colspan="12">{{ group.category }}</td>
+                        <td colspan="12"><small>{{ group.category }}</small></td>
                     </tr>
 
                     <!-- Category Rows -->
                     <tr *ngFor="let row of group.rows">
-                        <td>{{ row.PARENTNAMEID }}</td>
-                        <td>{{ row.ORGNISATION }}</td>
-                        <td class="text-end">{{ row.BALANCE | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ (row.OVERDUE > 0 ? row.OVERDUE : 0) | number:'1.3-3' }}</td>
-                        <td>{{ row.REMARKS }}</td>
-                        <td>{{ row.STATUS }}</td>                   
-                        <td class="text-end">{{ row.COLLECTED | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.CURRENT | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.Thirty_DAYS | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.Sixty_DAYS | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.Ninety_DAYS | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.OneTwenty_DAYS | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.ABOVE_120_DAYS | number:'1.3-3' }}</td>
+                        <td><small>{{ row.ParentCode }}</small></td>
+                        <td><small>{{ row.PARENTNAMEID }}</small></td>
+                        <td><small>{{ row.ORGNISATION }}</small></td>
+                        <!--<td><small>{{ row.CURRENT | number:'1.3-3' }}</small></td>-->
+                        <td><small>{{ row.Thirty_DAYS | number:'1.3-3' }}</small></td>
+                        <td><small>{{ row.Sixty_DAYS | number:'1.3-3' }}</small></td>
+                        <td><small>{{ row.Ninety_DAYS | number:'1.3-3' }}</small></td>
+                        <td><small>{{ row.OneTwenty_DAYS | number:'1.3-3' }}</small></td>
+                        <td><small>{{ row.ABOVE_120_DAYS | number:'1.3-3' }}</small></td>
+                        <td><small>{{ row.BALANCE | number:'1.3-3' }}</small></td>
+                        <td><small>{{ row.OVERDUE | number:'1.3-3' }}</small></td>
+                        <td><small>{{ row.COLLECTED | number:'1.3-3' }}</small></td>
+                        <td><small>{{ row.REMARKS }}</small></td>
                     </tr>
 
                     <!-- Subtotal Row -->
-                    <tr class="fw-bold text-end table-light">
-                        <td colspan="2" class="text-end">Subtotal ({{ group.category }})</td>
-                        <td class="text-end">{{ group.totals.BALANCE | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ group.totals.OVERDUE | number:'1.3-3' }}</td>
-                        <td></td>
-                        <td></td>
-                        <td class="text-end">{{ group.totals.COLLECTED | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ group.totals.CURRENT | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ group.totals.Thirty_DAYS | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ group.totals.Sixty_DAYS | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ group.totals.Ninety_DAYS | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ group.totals.OneTwenty_DAYS | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ group.totals.ABOVE_120_DAYS | number:'1.3-3' }}</td>
+                    <tr class="fw-bold    table-light">
+                        <td colspan="3"   ><small>Subtotal ({{ group.category }})</small></td>
+                        <!--<td   ><small>{{ group.totals.CURRENT | number:'1.3-3' }}</small></td>-->
+                        <td   ><small>{{ group.totals.Thirty_DAYS | number:'1.3-3' }}</small></td>
+                        <td   ><small>{{ group.totals.Sixty_DAYS | number:'1.3-3' }}</small></td>
+                        <td   ><small>{{ group.totals.Ninety_DAYS | number:'1.3-3' }}</small></td>
+                        <td   ><small>{{ group.totals.OneTwenty_DAYS | number:'1.3-3' }}</small></td>
+                        <td   ><small>{{ group.totals.ABOVE_120_DAYS | number:'1.3-3' }}</small></td>
+                        <td   ><small>{{ group.totals.BALANCE | number:'1.3-3' }}</small></td>
+                        <td   ><small>{{ group.totals.OVERDUE | number:'1.3-3' }}</small></td>
+                        <td   ><small>{{ group.totals.COLLECTED | number:'1.3-3' }}</small></td>
+                        <td><small></small></td>
                     </tr>
                 </tbody>
 
                 <!-- Grand Total -->
                 <tfoot>
-                    <tr class="fw-bold text-end table-dark">
-                        <th colspan="2" class="text-end">Grand Total</th>
-                        <th class="text-end">{{ getCATOVRTotal('BALANCE') | number:'1.3-3' }}</th>
-                        <th class="text-end">{{ getCATOVRTotal('OVERDUE') | number:'1.3-3' }}</th>
-                        <th></th>
-                        <th></th>
-                        <th class="text-end">{{ getCATOVRTotal('COLLECTED') | number:'1.3-3' }}</th>
-                        <th class="text-end">{{ getCATOVRTotal('CURRENT') | number:'1.3-3' }}</th>
-                        <th class="text-end">{{ getCATOVRTotal('Thirty_DAYS') | number:'1.3-3' }}</th>
-                        <th class="text-end">{{ getCATOVRTotal('Sixty_DAYS') | number:'1.3-3' }}</th>
-                        <th class="text-end">{{ getCATOVRTotal('Ninety_DAYS') | number:'1.3-3' }}</th>
-                        <th class="text-end">{{ getCATOVRTotal('OneTwenty_DAYS') | number:'1.3-3' }}</th>
-                        <th class="text-end">{{ getCATOVRTotal('ABOVE_120_DAYS') | number:'1.3-3' }}</th>
+                    <tr class="fw-bold    table-dark">
+                        <th colspan="3"   ><small>Grand Total</small></th>
+                        <!--<th   ><small>{{ getCATOVRTotal('CURRENT') | number:'1.3-3' }}</small></th>-->
+                        <th   ><small>{{ getCATOVRTotal('Thirty_DAYS') | number:'1.3-3' }}</small></th>
+                        <th   ><small>{{ getCATOVRTotal('Sixty_DAYS') | number:'1.3-3' }}</small></th>
+                        <th   ><small>{{ getCATOVRTotal('Ninety_DAYS') | number:'1.3-3' }}</small></th>
+                        <th   ><small>{{ getCATOVRTotal('OneTwenty_DAYS') | number:'1.3-3' }}</small></th>
+                        <th   ><small>{{ getCATOVRTotal('ABOVE_120_DAYS') | number:'1.3-3' }}</small></th>
+                        <th   ><small>{{ getCATOVRTotal('BALANCE') | number:'1.3-3' }}</small></th>
+                        <th   ><small>{{ getCATOVRTotal('OVERDUE') | number:'1.3-3' }}</small></th>
+                        <th   ><small>{{ getCATOVRTotal('COLLECTED') | number:'1.3-3' }}</small></th>
+                        <th><small></small></th>
                     </tr>
                 </tfoot>
             </table>
+            </div>
         </div>
         <br>
     </div>
