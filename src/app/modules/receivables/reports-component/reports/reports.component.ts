@@ -11,6 +11,7 @@ import { SapService } from 'src/app/services/SAP/sap.service';
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
 import { EmailService } from 'src/app/services/email/email.service';
+import { firstValueFrom } from 'rxjs';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -27,6 +28,7 @@ declare module 'jspdf' {
 })
 export class ReportsComponent {
 
+
   userRight = localStorage.getItem('userright')!
   loggedInUser = this.removeQuotes(localStorage.getItem('firstname')?.trim() || 'Guest') + ' ' + this.removeQuotes(localStorage.getItem('lastname')?.trim() || '');  
 
@@ -41,6 +43,7 @@ export class ReportsComponent {
   @ViewChild('ppwsoaLookupDialog', { static: false }) ppwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('pwoutLookupDialog', { static: false }) pwoutLookupDialog!: TemplateRef<any>;
   @ViewChild('catovrLookupDialog', { static: false }) catovrLookupDialog!: TemplateRef<any>;
+  @ViewChild('catansysLookupDialog', { static: false }) catansysLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
@@ -56,10 +59,15 @@ export class ReportsComponent {
   ppwsoaData: any[] = []
   pwoutData: any[] = []
   catovrData: any[] = []
+  catansysData: any[] = []
+  slpansysData: any[] = []
 
   industryList: any[] = [];
   organisationList: any[] = [];
+  salesPersonList: any[] = [];
   locationList: any[] = [];
+
+  catList = ['MM', 'PS', 'VET', 'FBR', 'OTHER'];
 
   periodTotalDebit = 0;
   periodTotalCredit = 0;
@@ -132,6 +140,10 @@ export class ReportsComponent {
     this.reportService.getOrganisation().subscribe((res: any) => {
       this.organisationList = res.recordset
       console.log(this.organisationList)
+    })
+    this.reportService.getSalesPerson().subscribe((res: any) => {
+      this.salesPersonList = res.recordset
+      console.log(this.salesPersonList)
     })
     this.reportService.getLocation().subscribe((res: any) => {
       this.locationList = res.recordset
@@ -3410,157 +3422,158 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     };
     this.catovrData = []
   }
-  
-  setCATOVR() {
-    this.catovrData = [];
 
-    if (!this.startDate || !this.endDate) {
-      alert('Please select both start and end dates.');
-      return;
-    }
-    if (!this.selectedCategories || this.selectedCategories.length === 0) {
-      alert('Please select at least one category.');
-      return;
-    }
-      this.getData = true;
+async setCATOVR() {
+  if (!this.startDate || !this.endDate) {
+    alert('Please select both start and end dates.');
+    return;
+  }
+  if (!this.selectedCategories || this.selectedCategories.length === 0) {
+    alert('Please select at least one category.');
+    return;
+  }
 
+  this.getData = true;
+  this.catovrData = [];
 
+  try {
     const start = new Date(this.startDate);
     start.setHours(0, 0, 0, 0);
     const end = new Date(this.endDate);
     end.setHours(23, 59, 59, 999);
 
-    let allRequests: any[] = [];
+    for (const category of this.selectedCategories) {
+      const res: any = await firstValueFrom(this.reportService.getParentFromOrg(category));
+      if (!res.recordset.length) continue;
 
-    this.selectedCategories.forEach(category => {
-      const orgRequest = this.reportService.getParentFromOrg(category).toPromise();
+      for (const parent of res.recordset) {
+        console.log(parent)
+        const resp: any = await firstValueFrom(this.reportService.getParentSoa(parent.PARENTNAMEID));
+        const data = (resp.recordset || []).filter((r: any) => new Date(r.INV_DATE) <= end);
+        if (!data.length) continue;
 
-      allRequests.push(
-        orgRequest.then((res: any) => {
-          if (!res.recordset.length) {
-            console.warn(`No data found for category: ${category}`);
-            return;
+        // 🔹 Separate DEBIT and CREDIT lines
+        const debits = data
+          .filter((r: any) => r.DEBIT > 0)
+          .map((r: any) => ({ ...r, remaining: Number(r.DEBIT), applied: 0 }))
+          .sort((a: any, b: any) => new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime());
+
+        const credits = data
+          .filter((r: any) => r.CREDIT > 0)
+          .map((r: any) => ({ ...r, remaining: Number(r.CREDIT) }))
+          .sort((a: any, b: any) => new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime());
+
+        // 🔹 Apply FIFO: credits reduce earliest debits
+        credits.forEach((credit: any) => {
+          let remainingCredit = credit.remaining;
+          for (const debit of debits) {
+            if (remainingCredit <= 0) break;
+            if (debit.remaining <= 0) continue;
+
+            const applied = Math.min(debit.remaining, remainingCredit);
+            debit.remaining -= applied;
+            debit.applied += applied;
+            remainingCredit -= applied;
           }
+        });
 
-          let parentRequests = res.recordset.map((parent: any) => {
-            return this.reportService.getParentSoa(parent.PARENTNAMEID).toPromise().then((resp: any) => {
-              console.log(resp)
-              //const data = resp.recordset || [];
-              const data = (resp.recordset || []).filter((r: any) => {
-                const trnDate = new Date(r.INV_DATE);
-                return trnDate <= end;
-              });
-              if (!data.length) return;
+        // 🔹 Calculate ageing, balance, collections
+        let runningBalance = 0;
+        let totalCollection = 0;
+        let localAgeing = { CURRENT: 0, '30_DAYS': 0, '60_DAYS': 0, '90_DAYS': 0, '120_DAYS': 0, 'ABOVE_120_DAYS': 0 };
+        const today = new Date(this.endDate);
+        today.setHours(0, 0, 0, 0);
 
-              // 🔹 Separate DEBIT and CREDIT lines
-              const debits = data
-                .filter((r: any) => r.DEBIT > 0)
-                .map((r: any) => ({ ...r, remaining: Number(r.DEBIT), applied: 0 }))
-                .sort((a: any, b: any) => new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime());
- 
-              const credits = data
-                .filter((r: any) => r.CREDIT > 0)
-                .map((r: any) => ({ ...r, remaining: Number(r.CREDIT) }))
-                .sort((a: any, b: any) => new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime());
+        debits.forEach((row: any) => {
+          const amt = row.remaining || 0;
+          runningBalance += amt;
 
-              // 🔹 Apply FIFO logic: credits reduce earliest debits
-              credits.forEach((credit: any) => {
-                let remainingCredit = credit.remaining;
-                for (const debit of debits) {
-                  if (remainingCredit <= 0) break;
-                  if (debit.remaining <= 0) continue;
+          const dueDate = row.DUEDATE ? new Date(row.DUEDATE) : null;
+          if (dueDate) {
+            dueDate.setHours(0, 0, 0, 0);
+            const diffDays = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
 
-                  const applied = Math.min(debit.remaining, remainingCredit);
-                  debit.remaining -= applied;
-                  debit.applied += applied;
-                  remainingCredit -= applied;
-                }
-              });
+            if (diffDays < 0) localAgeing.CURRENT += amt;
+            else if (diffDays <= 30) localAgeing['30_DAYS'] += amt;
+            else if (diffDays <= 60) localAgeing['60_DAYS'] += amt;
+            else if (diffDays <= 90) localAgeing['90_DAYS'] += amt;
+            else if (diffDays <= 120) localAgeing['120_DAYS'] += amt;
+            else localAgeing['ABOVE_120_DAYS'] += amt;
+          }
+        });
 
-              // 🔹 Now calculate runningBalance, ageing, etc. based on *remaining* debit amounts
-              let runningBalance = 0;
-              let totalCollection = 0;
-              let localAgeing = {
-                CURRENT: 0,
-                '30_DAYS': 0,
-                '60_DAYS': 0,
-                '90_DAYS': 0,
-                '120_DAYS': 0,
-                'ABOVE_120_DAYS': 0
-              };
+        // Sum payments (credits) within period
+        data.forEach((row: any) => {
+          const trnDate = new Date(row.INV_DATE);
+          if (trnDate >= start && trnDate <= end && row.DESCRIPTION === 'Payment') {
+            totalCollection += Number(row.CREDIT) || 0;
+          }
+        });
 
-              const today = new Date(this.endDate);
-              today.setHours(0, 0, 0, 0);
+        // Determine status
+        const overdue = runningBalance - localAgeing.CURRENT;
+        let custStatus = runningBalance === 0 ? 'Consignment' : overdue > 0 ? 'Overdue' : 'Current';
 
-              debits.forEach((row: any) => {
-                const amt = row.remaining || 0;
-                runningBalance += amt;
-
-                const dueDate = row.DUEDATE ? new Date(row.DUEDATE) : null;
-                if (dueDate) {
-                  dueDate.setHours(0, 0, 0, 0);
-                  const diffDays = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-
-                  if (diffDays < 0) localAgeing.CURRENT += amt;
-                  else if (diffDays <= 30) localAgeing['30_DAYS'] += amt;
-                  else if (diffDays <= 60) localAgeing['60_DAYS'] += amt;
-                  else if (diffDays <= 90) localAgeing['90_DAYS'] += amt;
-                  else if (diffDays <= 120) localAgeing['120_DAYS'] += amt;
-                  else localAgeing['ABOVE_120_DAYS'] += amt;
-                }
-              });
-
-              // 🔹 Sum payments (credits) within selected period
-              data.forEach((row: any) => {
-                const trnDate = new Date(row.INV_DATE);
-                if (trnDate >= start && trnDate <= end && row.DESCRIPTION === 'Payment') {
-                  totalCollection += Number(row.CREDIT) || 0;
-                }
-              });
-
-              // 🔹 Calculate overdue & determine status
-              const overdue = runningBalance - localAgeing.CURRENT;
-              let custStatus = '';
-
-              if (runningBalance === 0) custStatus = 'Consignment';
-              else if (overdue > 0) custStatus = 'Overdue';
-              else custStatus = 'Current';
-
-              if (runningBalance > 0) {
-                this.catovrData.push({
-                  ...parent,
-                  ORGNISATION: category,
-                  BALANCE: runningBalance,
-                  OVERDUE: overdue > 0 ? overdue : 0,
-                  COLLECTED: totalCollection,
-                  CURRENT: localAgeing.CURRENT,
-                  Thirty_DAYS: localAgeing['30_DAYS'],
-                  Sixty_DAYS: localAgeing['60_DAYS'],
-                  Ninety_DAYS: localAgeing['90_DAYS'],
-                  OneTwenty_DAYS: localAgeing['120_DAYS'],
-                  ABOVE_120_DAYS: localAgeing['ABOVE_120_DAYS'],
-                  STATUS: custStatus
-                });
-              }
-            });
+        if (runningBalance > 0) {
+          this.catovrData.push({
+            ParentCode: parent.ParentCode || '',
+            PARENTNAMEID: parent.PARENTNAMEID,
+            ORGNISATION: category,
+            BALANCE: runningBalance,
+            OVERDUE: overdue > 0 ? overdue : 0,
+            COLLECTED: totalCollection,
+            CURRENT: localAgeing.CURRENT,
+            Thirty_DAYS: localAgeing['30_DAYS'],
+            Sixty_DAYS: localAgeing['60_DAYS'],
+            Ninety_DAYS: localAgeing['90_DAYS'],
+            OneTwenty_DAYS: localAgeing['120_DAYS'],
+            ABOVE_120_DAYS: localAgeing['ABOVE_120_DAYS'],
+            REMARKS: parent.REMARKS,
+            STATUS: custStatus
           });
-
-          return Promise.all(parentRequests);
-        })
-      );
-    });
-
-    // ✅ Wait for all async data before ending spinner
-    Promise.all(allRequests)
-      .then(() => {
-        this.getData = false;
-        console.log('All overdue data loaded:', this.catovrData);
-      })
-      .catch(err => {
-        console.error('Error generating overdue report:', err);
-        this.getData = false;
-      });
+        }
+      }
     }
+
+    // 🔹 Clear table before inserting
+   if (this.catovrData.length > 0) {
+    await this.saveCATOVR();  // Clear table and insert rows
+  } else {
+    console.warn('No data to save.');
+  }
+
+    console.log('CATOVR FIFO data cleared and inserted successfully!');
+  } catch (err) {
+    console.error('Error in setCATOVR:', err);
+  } finally {
+    this.getData = false;
+  }
+}
+
+async saveCATOVR() {
+  if (!this.catovrData || this.catovrData.length === 0) {
+    console.warn('No CATOVR data to save.');
+    return;
+  }
+ try {
+  this.getData = true;
+
+    // 1️⃣ Clear table first
+    await this.reportService.clearCATOVR().toPromise();
+    console.log('CATOVR table cleared');
+
+    // 2️⃣ Insert all rows sequentially (or Promise.all for parallel)
+    for (const row of this.catovrData) {
+      await this.reportService.postCATOVR(row).toPromise();
+    }
+
+    console.log('CATOVR data inserted successfully!');
+  } catch (err) {
+    console.error('Error saving CATOVR:', err);
+  } finally {
+    this.getData = false;
+  }
+}
 
   getCATOVRTotal(field: 'BALANCE' | 'OVERDUE' | 'COLLECTED' | 'CURRENT' | 'Thirty_DAYS'| 'Sixty_DAYS'| 'Ninety_DAYS'| 'OneTwenty_DAYS'| 'ABOVE_120_DAYS'): number {
     if (!this.catovrData || this.catovrData.length === 0) return 0;
@@ -3606,16 +3619,6 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
       return;
     } else {
       console.log(this.selectedParent)
-    /*var doc = new jsPDF("portrait", "px", "a4");
-    doc.setFontSize(16);
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Category-wise Customer Overdue Statement', 130, 20);
-    doc.roundedRect(5, 32.5, 436, 25, 5, 5);
-    doc.setFontSize(10);
-    doc.text(`${this.selectedCategories}`,10,42);
-    doc.setFont('Helvetica', 'normal');
-    doc.text(`Date: ${this.mCurDate}`,330,42);*/
     var doc = new jsPDF("landscape", "px", "a4");
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
@@ -3641,20 +3644,17 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
         textColor: [0, 0, 0],
         lineColor: [0, 0, 0],
         lineWidth: 0.1,
-        halign: 'left',
-        valign: 'middle'
+        halign: 'center'
       },
       headStyles: {
-        fillColor: [255, 255, 255], // White background
-        textColor: [0, 0, 0],       // Black text
-        fontStyle: 'bold',
-        halign: 'left'
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
       },
       footStyles: {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
         fontStyle: 'bold',
-        halign: 'right'
       },
       /*columnStyles: {
         2: { halign: 'right' },
@@ -3702,7 +3702,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     }
   }
 
-exportCATOVR(): void {
+  exportCATOVR_Raw(): void {
   const fileName = `overdue-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
 
   // Build an array representing the Excel rows
@@ -3798,6 +3798,639 @@ exportCATOVR(): void {
   });
 
   FileSaver.saveAs(blob, fileName);
+}
+
+exportCATOVR_Pivot(): void {
+  const link = document.createElement('a');
+  link.href = 'assets/reports/categorywise-od-stmt.xlsx';
+  link.click();
+}
+
+  openCATANSYS() {
+    let dialogRef = this.dialog.open(this.catansysLookupDialog);
+    this.periodTotalDebit = 0;
+    this.periodTotalCredit = 0;
+    this.periodClosingBalance = 0;
+    this.periodAgeingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.catansysData = []
+    this.slpansysData = []
+  }
+
+async getCATANSYS() {
+  if (!this.startDate || !this.endDate) {
+    alert('Select date range');
+    return;
+  }
+
+  this.getData = true;
+  try {
+    await this.setSLPANSYS();
+    await this.setCATANSYS();
+  } catch (err) {
+    console.error('ANSYS run failed', err);
+  } finally {
+    this.getData = false;
+  }
+}
+
+async setCATANSYS() {
+  this.catansysData = [];
+
+  const start = new Date(this.startDate);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(this.endDate);
+  end.setHours(23, 59, 59, 999);
+
+  const curMonth = start.getMonth();
+  const curYear = start.getFullYear();
+
+  try {
+    for (const org of this.organisationList) {
+
+      const parents: any = await firstValueFrom(
+        this.reportService.getParentFromOrg(org.ORGANISATION)
+      );
+      if (!parents?.recordset?.length) continue;
+
+      let outstanding = 0;
+      let overdue = 0;
+      let collection = 0;
+
+      for (const parent of parents.recordset) {
+        console.log(parent)
+
+        const data = (await this.safeGetParentSoa(parent.PARENTNAMEID))
+          .filter((r: any) => new Date(r.INV_DATE) <= end);
+
+        if (!data.length) continue;
+
+        // 🔁 FIFO — EXACTLY like CATOVR
+        const debits = data
+          .filter((r: any) => r.DEBIT > 0)
+          .map((r: any) => ({ ...r, remaining: Number(r.DEBIT) }))
+          .sort((a: any, b: any) =>
+            new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime()
+          );
+
+        const credits = data
+          .filter((r: any) => r.CREDIT > 0)
+          .map((r: any) => ({ ...r, remaining: Number(r.CREDIT) }))
+          .sort((a: any, b: any) =>
+            new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime()
+          );
+
+        credits.forEach((credit: any) => {
+          let rem = credit.remaining;
+          for (const debit of debits) {
+            if (rem <= 0) break;
+            if (debit.remaining <= 0) continue;
+
+            const applied = Math.min(debit.remaining, rem);
+            debit.remaining -= applied;
+            rem -= applied;
+          }
+        });
+
+        // ⏳ Ageing
+        const today = new Date(end);
+        today.setHours(0, 0, 0, 0);
+
+        let localOutstanding = 0;
+        let localCurrent = 0;
+
+        debits.forEach((d: any) => {
+          const amt = d.remaining || 0;
+          localOutstanding += amt;
+
+          const due = d.DUEDATE ? new Date(d.DUEDATE) : null;
+          if (!due) return;
+
+          const diff = Math.floor(
+            (today.getTime() - due.getTime()) / 86400000
+          );
+
+          if (diff < 0) localCurrent += amt;
+        });
+
+        outstanding += localOutstanding;
+        overdue += Math.max(localOutstanding - localCurrent, 0);
+
+        // 💰 Collection — THIS month only
+        data.forEach((r: any) => {
+          const d = new Date(r.INV_DATE);
+          if (
+            d.getMonth() === curMonth &&
+            d.getFullYear() === curYear &&
+            r.DESCRIPTION === 'Payment'
+          ) {
+            collection += Number(r.CREDIT) || 0;
+          }
+        });
+      }
+
+      this.catansysData.push({
+        BUSINESS: this.getBusinessCentre(org.ORGANISATION),
+        CATEGORY: org.ORGANISATION,
+        OUTSTANDING: outstanding,
+        OVERDUE: overdue,
+        OVERDUE_PCT: outstanding ? (overdue / outstanding) * 100 : 0,
+        COLLECTION: collection,
+        COLLECTION_PCT: outstanding ? (collection / outstanding) * 100 : 0,
+      });
+      
+    }
+
+  } catch (err) {
+    console.error('CATANSYS error:', err);
+  } finally {
+    this.saveCATANSYS()
+    console.log(this.catansysData)
+  }
+}
+
+  async safeGetParentSoa(parentName: string): Promise<any[]> {
+  try {
+    const resp: any = await firstValueFrom(
+      this.reportService.getParentSoa(parentName)
+    );
+    return resp?.recordset || [];
+  } catch (err: any) {
+    if (err?.status === 404) {
+      console.warn(`SOA not found for parent: ${parentName}`);
+    } else {
+      console.error(`SOA error for parent: ${parentName}`, err);
+    }
+    return []; // <-- critical: move on
+  }
+}
+
+getGroupedCATANSYS() {
+  const map = new Map<string, any>();
+
+  for (const row of this.catansysData) {
+    if (!map.has(row.BUSINESS)) {
+      map.set(row.BUSINESS, {
+        business: row.BUSINESS,
+        rows: [],
+        totals: {
+          OUTSTANDING: 0,
+          OVERDUE: 0,
+          COLLECTION: 0
+        }
+      });
+    }
+
+    const grp = map.get(row.BUSINESS);
+    grp.rows.push(row);
+    grp.totals.OUTSTANDING += row.OUTSTANDING;
+    grp.totals.OVERDUE += row.OVERDUE;
+    grp.totals.COLLECTION += row.COLLECTION;
+  }
+
+  return Array.from(map.values());
+}
+
+  getBusinessCentre(category: string): string {
+    if (category.startsWith('MM')) return 'MM';
+    if (category.startsWith('PS')) return 'PS';
+    if (category.startsWith('VET')) return 'VET';
+    if (category.startsWith('FBR')) return 'FBR';
+    return 'OTHER';
+  }
+
+async setSLPANSYS() {
+  this.slpansysData = [];
+
+  const start = new Date(this.startDate);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(this.endDate);
+  end.setHours(23, 59, 59, 999);
+
+  const curMonth = start.getMonth();
+  const curYear = start.getFullYear();
+
+  try {
+    for (const slp of this.salesPersonList) {
+
+      const parents: any = await firstValueFrom(
+        this.reportService.getParentFromSlp(slp.SALESMANCD)
+      );
+      if (!parents?.recordset?.length) continue;
+
+      let outstanding = 0;
+      let overdue = 0;
+      let collection = 0;
+
+      for (const parent of parents.recordset) {
+
+        const data = (await this.safeGetParentSoa(parent.customer))
+          .filter((r: any) => new Date(r.INV_DATE) <= end);
+
+        if (!data.length) continue;
+
+        // 🔁 FIFO — EXACTLY like CATOVR
+        const debits = data
+          .filter((r: any) => r.DEBIT > 0)
+          .map((r: any) => ({ ...r, remaining: Number(r.DEBIT) }))
+          .sort((a: any, b: any) =>
+            new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime()
+          );
+
+        const credits = data
+          .filter((r: any) => r.CREDIT > 0)
+          .map((r: any) => ({ ...r, remaining: Number(r.CREDIT) }))
+          .sort((a: any, b: any) =>
+            new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime()
+          );
+
+        credits.forEach((credit: any) => {
+          let rem = credit.remaining;
+          for (const debit of debits) {
+            if (rem <= 0) break;
+            if (debit.remaining <= 0) continue;
+
+            const applied = Math.min(debit.remaining, rem);
+            debit.remaining -= applied;
+            rem -= applied;
+          }
+        });
+
+        // ⏳ Ageing
+        const today = new Date(end);
+        today.setHours(0, 0, 0, 0);
+
+        let localOutstanding = 0;
+        let localCurrent = 0;
+
+        debits.forEach((d: any) => {
+          const amt = d.remaining || 0;
+          localOutstanding += amt;
+
+          const due = d.DUEDATE ? new Date(d.DUEDATE) : null;
+          if (!due) return;
+
+          const diff = Math.floor(
+            (today.getTime() - due.getTime()) / 86400000
+          );
+
+          if (diff < 0) localCurrent += amt;
+        });
+
+        outstanding += localOutstanding;
+        overdue += Math.max(localOutstanding - localCurrent, 0);
+
+        // 💰 Collection — THIS month only
+        data.forEach((r: any) => {
+          const d = new Date(r.INV_DATE);
+          if (
+            d.getMonth() === curMonth &&
+            d.getFullYear() === curYear &&
+            r.DESCRIPTION === 'Payment'
+          ) {
+            collection += Number(r.CREDIT) || 0;
+          }
+        });
+      }
+
+      this.slpansysData.push({
+        SALESMAN: slp.SALESMANCD,
+        OUTSTANDING: outstanding,
+        OVERDUE: overdue,
+        OVERDUE_PCT: outstanding ? (overdue / outstanding) * 100 : 0,
+        COLLECTION: collection,
+        COLLECTION_PCT: outstanding ? (collection / outstanding) * 100 : 0,
+      });
+    }
+
+  } catch (err) {
+    console.error('SLPANSYS error:', err);
+  } finally {
+    this.saveSLPANSYS()
+    console.log(this.slpansysData)
+  }
+}
+
+async saveCATANSYS() {
+  if (!this.catansysData || this.catansysData.length === 0) {
+    console.warn('No CATANSYS data to save.');
+    return;
+  }
+ try {
+  this.getData = true;
+
+    // 1️⃣ Clear table first
+    await this.reportService.clearCATANSYS().toPromise();
+    console.log('CATANSYS table cleared');
+
+    // 2️⃣ Insert all rows sequentially (or Promise.all for parallel)
+    for (const row of this.catansysData) {
+      await this.reportService.postCATANSYS(row).toPromise();
+    }
+
+    console.log('CATANSYS data inserted successfully!');
+  } catch (err) {
+    console.error('Error saving CATANSYS:', err);
+  } 
+}
+
+async saveSLPANSYS() {
+  if (!this.slpansysData || this.slpansysData.length === 0) {
+    console.warn('No SLPANSYS data to save.');
+    return;
+  }
+ try {
+  this.getData = true;
+
+    // 1️⃣ Clear table first
+    await this.reportService.clearSLPANSYS().toPromise();
+    console.log('SLPANSYS table cleared');
+
+    // 2️⃣ Insert all rows sequentially (or Promise.all for parallel)
+    for (const row of this.slpansysData) {
+      await this.reportService.postSLPANSYS(row).toPromise();
+    }
+
+    console.log('SLPANSYS data inserted successfully!');
+  } catch (err) {
+    console.error('Error saving SLPANSYS:', err);
+  } 
+}
+
+  printCATANSYS() {
+    if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    } else {
+      var doc = new jsPDF("portrait", "px", "a4");
+      doc.setFontSize(16);
+      doc.setFont('Helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Period Overdue & Collection Analysis ', 125, 20);
+    doc.roundedRect(5, 32.5, 436, 15, 5, 5);
+    doc.setFontSize(10);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,42);
+    doc.text('Period',10,42);
+    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 42)
+ let firstPageStartY = 50; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page         
+    autoTable(doc, {
+      html: '#slpAnsysTable',
+      tableWidth: 435,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+      },
+     /* columnStyles: {
+        6: { halign: 'right' },
+        7: { halign: 'right' },
+        8: { halign: 'right' }
+      },*/
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      showFoot: 'lastPage', 
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+        autoTable(doc, {
+      html: '#catAnsysTable',
+      startY: finalY1 + 5,
+      tableWidth: 435,
+      margin: { left: 5 },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      /*columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' },
+        6: { halign: 'center' }
+      }*/
+    });
+        let finalY2 = doc.lastAutoTable?.finalY || 0
+
+    // Bilingual footer text
+    doc.setFontSize(8);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 435, finalY2+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc,'p');
+    // Save the PDF
+    doc.save(`Overdue-and-collection-report${this.startDate}-to-${this.endDate}-${this.mCurDate}.pdf`);
+    }
+  }
+
+exportCATANSYS_Raw() {
+  const wsData: any[][] = [];
+  const merges: XLSX.Range[] = [];
+
+  let row = 0;
+
+  /* ============================
+     Title
+  ============================ */
+  wsData.push(['Period Overdue & Collection Analysis']);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 5 } });
+  row++;
+
+  wsData.push([]); row++;
+
+  /* ============================
+     Date Range
+  ============================ */
+  wsData.push([
+    'Start Date', this.startDate,
+    'End Date', this.endDate
+  ]);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 1 } });
+  merges.push({ s: { r: row, c: 2 }, e: { r: row, c: 3 } });
+  row++;
+
+  wsData.push([]); row++;
+
+  /* ============================
+     Salesman-wise Section
+  ============================ */
+  wsData.push(['Salesman-wise Analysis']);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 5 } });
+  row++;
+
+  wsData.push([
+    'Salesman',
+    'Outstanding',
+    'Overdue',
+    'Overdue %',
+    'Current Month Collection',
+    'Collection %'
+  ]);
+  row++;
+
+  this.slpansysData.forEach(r => {
+    wsData.push([
+      r.SALESMAN,
+      r.OUTSTANDING,
+      r.OVERDUE,
+      r.OVERDUE_PCT / 100,
+      r.COLLECTION,
+      r.COLLECTION_PCT / 100
+    ]);
+    row++;
+  });
+
+  wsData.push([]); row++;
+
+  /* ============================
+     Category-wise Section
+  ============================ */
+  wsData.push(['Category-wise Analysis']);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 5 } });
+  row++;
+
+  wsData.push([
+    'Category',
+    'Outstanding',
+    'Overdue',
+    'Overdue %',
+    'Current Month Collection',
+    'Collection %'
+  ]);
+  row++;
+
+  this.getGroupedCATANSYS().forEach(group => {
+
+    // Business header
+    wsData.push([group.business]);
+    merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 5 } });
+    row++;
+
+    group.rows.forEach((r: any) => {
+      wsData.push([
+        r.CATEGORY,
+        r.OUTSTANDING,
+        r.OVERDUE,
+        r.OVERDUE_PCT / 100,
+        r.COLLECTION,
+        r.COLLECTION_PCT / 100
+      ]);
+      row++;
+    });
+
+    // Subtotal
+    wsData.push([
+      'Subtotal',
+      group.totals.OUTSTANDING,
+      group.totals.OVERDUE,
+      group.totals.OVERDUE / group.totals.OUTSTANDING,
+      group.totals.COLLECTION,
+      group.totals.COLLECTION / group.totals.OUTSTANDING
+    ]);
+    row++;
+
+    wsData.push([]); row++;
+  });
+
+  /* ============================
+     Build worksheet
+  ============================ */
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!merges'] = merges;
+
+  /* ============================
+     Column widths
+  ============================ */
+  ws['!cols'] = [
+    { wch: 22 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 14 },
+    { wch: 22 },
+    { wch: 14 }
+  ];
+
+  /* ============================
+     Workbook export
+  ============================ */
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Analysis');
+
+  const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, 'Overdue_Collection_Analysis.xlsx');
+}
+
+exportCATANSYS_Pivot(): void {
+  const link = document.createElement('a');
+  link.href = 'assets/reports/Category-Analisys.xlsx';
+  link.click();
 }
 
 

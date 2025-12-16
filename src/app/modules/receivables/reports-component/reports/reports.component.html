@@ -20,7 +20,7 @@
             </div>
             <hr>
             <div class="col-12" *ngIf="isSyncing">
-                <p style="color: white;" class="mt-2 text-white">Syncing... {{ getProgressTotal() }}% Complete. Please make sure not to leave this page to avoid any changes being loat.</p>
+                <p style="color: white;" class="mt-2 text-white">Syncing... {{ getProgressTotal() }}% Complete. Please make sure not to leave this page to avoid any changes being lost.</p>
                 <div *ngIf="financeData" class="progress progress-bar-striped progress-bar-animated fixed-top" style="height: 25px; z-index: 1050;">
                    <!--- <div class="progress-bar bg-primary" [style.width.%]="progress[0]">Invoices</div>-->
                     <div class="progress-bar bg-success" [style.width.%]="progress[1]">Payables</div>
@@ -34,64 +34,58 @@
                 <div class="col-12">
                     <mat-card class="bg-secondary">
                         <mat-card-content>
-                            <div class="row">
-                                <div class="col-4">  
-                                    <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
-                                        <li class="nav-item active">
-                                            <a class="nav-link" (click)="openCWSOA()">Customer Statement of Account (Full)</a>
-                                        </li>
-                                        <li class="nav-item active">
-                                            <a class="nav-link" (click)="openCWASL()">Customer Ageing Statement</a>
-                                        </li>
-                                        <li class="nav-item active">
-                                            <a class="nav-link" (click)="openCOSOA()">Customer Open Statement of Account</a>
-                                        </li>
-                                        <li class="nav-item active">
-                                            <a class="nav-link" (click)="openCPWSOA()">Period-wise Customer Statement of Account</a>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="col-4">  
-                                    <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
-                                        <li class="nav-item active">
-                                            <a class="nav-link" (click)="openPWSOA()">Parent-wise Statement of Account (Full)</a>
-                                        </li>
-                                        <li class="nav-item active">
-                                            <a class="nav-link" (click)="openPWASL()">Parent Ageing Statement</a>
-                                        </li>
-                                        <li class="nav-item active">
-                                            <a class="nav-link" (click)="openPOSOA()">Parent-wise Open Statement of Account</a>
-                                        </li>
-                                        <li class="nav-item active">
-                                            <a class="nav-link" (click)="openPPWSOA()">Period-wise Parent Statement of Account</a>
-                                        </li>
-                                        <li class="nav-item active">
-                                            <a class="nav-link" (click)="openPWOUT()">Parent-wise Outstanding</a>
-                                        </li>
-                                    </ul>
-                                </div>                                
-                                <div class="col-4">  
-                                    <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
-                                        <li class="nav-item active">
-                                            <br>                                        
-                                            <br>                                        
-                                        </li>
-                                        <li class="nav-item active">
-                                            <a class="nav-link" (click)="openPCASL()">Parent-wise Customer Ageing Statement</a>
-                                        </li>
-                                        <li class="nav-item active">
-                                            <br>                                        
-                                            <br>                                        
-                                        </li>
-                                        <li class="nav-item active">
-                                            <a class="nav-link" (click)="openCPWSOA()">Period-wise Customer Statement of Account</a>
-                                        </li>
-                                        <li class="nav-item active">
-                                            <a class="nav-link" (click)="openCATOVR()">Category-wise Overdue Statement</a>
-                                        </li>
-                                    </ul>
-                                </div>                            
-                            </div>
+                            <table class="table report-table">
+                                <tr>
+                                    <td>
+                                        <a class="nav-link" (click)="openCWSOA()">Customer Statement of Account (Full)</a>
+                                    </td>
+                                    <td>
+                                        <a class="nav-link" (click)="openPWSOA()">Parent-wise Statement of Account (Full)</a>
+                                    </td>
+                                    <td>
+                                        <a class="nav-link" (click)="openCOSOA()">Customer Open Statement of Account</a>
+                                    </td>
+                                    <td>
+                                        <a class="nav-link" (click)="openPOSOA()">Parent-wise Open Statement of Account</a>
+                                    </td>                                
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <a class="nav-link" (click)="openCWASL()">Customer Ageing Statement</a>
+                                    </td>
+                                    <td>
+                                        <a class="nav-link" (click)="openPWASL()">Parent Ageing Statement</a>
+                                    </td>
+                                    <td>
+                                        <a class="nav-link" (click)="openPCASL()">Parent-wise Customer Ageing Statement</a>
+                                    </td>                                
+                                    <td>
+                                        <a class="nav-link" (click)="openPWOUT()">Parent-wise Outstanding</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <a class="nav-link" (click)="openCPWSOA()">Period-wise Customer Statement of Account</a>
+                                    </td>
+                                    <td>
+                                        <a class="nav-link" (click)="openPPWSOA()">Period-wise Parent Statement of Account</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <a class="nav-link" (click)="openCATOVR()">Category-wise Overdue Ageing Statement</a>
+                                    </td>
+                                    <td>
+                                        <a class="nav-link" (click)="openCATANSYS()">Period Overdue & Collection Analysis</a>
+                                    </td>
+                                    <td>
+                                        <a class="nav-link" (click)="openCATOVR()">Parent-wise Monthly Collection Analysis</a>
+                                    </td>
+                                    <td>
+                                        <a class="nav-link" (click)="openCATOVR()">Category-wise Monthly Collection Analysis</a>
+                                    </td>
+                                </tr>
+                            </table>
                         </mat-card-content>
                     </mat-card>
                 </div>
@@ -128,7 +122,7 @@
                     <input type="text" class="form-control form-control-sm" [value]="selectedCustomer?.CUST_NAME" placeholder="Customer Name" disabled>
                 </div>
                 <br>            
-                <div class="row" *ngIf="cwsoaData.length === 0 && getData === true">
+                <div class="row" *ngIf="getData === true">
                     <div class="col-4"></div>
                     <div class="col-4">
                         <mat-spinner></mat-spinner>
@@ -221,7 +215,7 @@
         <div class="col-4"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportCWSOA()" style="float: right" title="export">
-                Export to Excel
+                Export Raw Excel
             </button>
         </div>
         <div class="col-4">
@@ -263,7 +257,7 @@
                     <input type="text" class="form-control form-control-sm" [value]="selectedParent?.PARENTNAME" placeholder="Parent Name" disabled>
                 </div>
                 <br>
-                <div class="row" *ngIf="pwsoaData.length === 0 && getData === true">
+                <div class="row" *ngIf="getData === true">
                     <div class="col-4"></div>
                     <div class="col-4">
                         <mat-spinner></mat-spinner>
@@ -363,7 +357,7 @@
         <div class="col-4"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportPWSOA()" style="float: right" title="export">
-                Export to Excel
+                Export Raw Excel
             </button>
         </div>
         <div class="col-4">
@@ -447,7 +441,7 @@
         <div class="col-4"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportCWASL()" style="float: right" title="export">
-                Export to Excel
+                Export Raw Excel
             </button>
         </div>
         <div class="col-4">
@@ -543,7 +537,7 @@
         <div class="col-4"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportPWASL()" style="float: right" title="export">
-                Export to Excel
+                Export Raw Excel
             </button>
         </div>
         <div class="col-4">
@@ -652,7 +646,7 @@
         <div class="col-4"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportPCASL()" style="float: right" title="export">
-                Export to Excel
+                Export Raw Excel
             </button>
         </div>
         <div class="col-4">
@@ -694,7 +688,7 @@
                     <input type="text" class="form-control form-control-sm" [value]="selectedCustomer?.CUST_NAME" placeholder="Customer Name" disabled>
                 </div>
                 <br>
-                <div class="row" *ngIf="cosoaData.length === 0 && getData === true">
+                <div class="row" *ngIf="getData === true">
                     <div class="col-4"></div>
                     <div class="col-4">
                         <mat-spinner></mat-spinner>
@@ -788,7 +782,7 @@
         <div class="col-4"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-warning text-block btn btn-block" (click)="exportCOSOA()" style="float: right" title="export">
-                Export to Excel
+                Export Raw Excel
             </button>
         </div>
         <div class="col-4">
@@ -830,7 +824,7 @@
                     <input type="text" class="form-control form-control-sm" [value]="selectedParent?.PARENTNAME" placeholder="Parent Name" disabled>
                 </div>
                 <br>  
-                <div class="row" *ngIf="posoaData.length === 0 && getData === true">
+                <div class="row" *ngIf="getData === true">
                     <div class="col-4"></div>
                     <div class="col-4">
                         <mat-spinner></mat-spinner>
@@ -930,7 +924,7 @@
         <div class="col-4"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportPOSOA()" style="float: right" title="export">
-                Export to Excel
+                Export Raw Excel
             </button>
         </div>
         <div class="col-4">
@@ -983,7 +977,7 @@
                     </div>
                 </div>
                 <br>
-                <div class="row" *ngIf="cpwsoaData.length === 0 && getData === true">
+                <div class="row" *ngIf="getData === true">
                     <div class="col-4"></div>
                     <div class="col-4">
                         <mat-spinner></mat-spinner>
@@ -1082,7 +1076,7 @@
         <div class="col-4"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportCPWSOA()" style="float: right" title="export">
-                Export to Excel
+                Export Raw Excel
             </button>
         </div>
         <div class="col-4">
@@ -1135,7 +1129,7 @@
                     </div>
                 </div>
                 <br>
-                <div class="row" *ngIf="ppwsoaData.length === 0 && getData === true">
+                <div class="row" *ngIf="getData === true">
                     <div class="col-4"></div>
                     <div class="col-4">
                         <mat-spinner></mat-spinner>
@@ -1236,7 +1230,7 @@
         <div class="col-4"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportPPWSOA()" style="float: right" title="export">
-                Export to Excel
+                Export Raw Excel
             </button>
         </div>
         <div class="col-4">
@@ -1289,7 +1283,7 @@
                     </div>
                 </div>  
                 <br>
-                <div class="row" *ngIf="pwoutData.length === 0 && getData === true">
+                <div class="row" *ngIf="getData === true">
                     <div class="col-4"></div>
                     <div class="col-4">
                         <mat-spinner></mat-spinner>
@@ -1336,7 +1330,7 @@
 
                     <!--<tfoot>
                         <tr class="fw-bold   ">
-                            <td colspan="6" class="text-start">Period Total ({{ startDate | date:'dd-MM-yyyy' }} to {{ endDate | date:'dd-MM-yyyy' }})</small></td>
+                            <td colspan="6" class="text-start">Period Total ({{ startDate | date:'dd-MM-yyyy' }} Raw {{ endDate | date:'dd-MM-yyyy' }})</small></td>
                             <td><small>{{ totalDebit | number:'1.3-3' }}</small></td>
                             <td><small>{{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')': ((totalDebit - totalCredit) | number:'1.3-3') }}</small></td>
                         </tr>
@@ -1399,7 +1393,7 @@
         <div class="col-4"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportPWOUT()" style="float: right" title="export">
-                Export to Excel
+                Export Raw Excel
             </button>
         </div>
         <div class="col-4">
@@ -1414,7 +1408,7 @@
 
 <ng-template #catovrLookupDialog>
     <h3 matDialogTitle>
-        <b>Category-wise Overdue Statement Preview</b>
+        <b>Category-wise Overdue Ageing Statement Preview</b>
     </h3>
      
     <div mat-dialog-content style="font-size: small;">      
@@ -1441,7 +1435,7 @@
                 </div>
             </div>
             <br>
-            <div class="row" *ngIf="catovrData.length === 0 && getData === true">
+            <div class="row" *ngIf="getData === true">
                 <div class="col-4"></div>
                 <div class="col-4">
                     <mat-spinner></mat-spinner>
@@ -1529,14 +1523,132 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportCATOVR()" style="float: right" title="export">
-                Export to Excel
+            <button mat-raised-button class="bg-info text-black btn btn-block" (click)="exportCATOVR_Raw()" style="float: right" title="export">
+                Export Raw Excel
+            </button>
+        </div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportCATOVR_Pivot()" style="float: right" title="export">
+                Export Excel Report
             </button>
         </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCATOVR()" style="float: right" title="print">
+                Print Statement
+            </button>
+        </div>
+    </div>
+    <br>
+</ng-template>
+
+<ng-template #catansysLookupDialog>
+    <h3 matDialogTitle>
+        <b>Period Overdue & Collection Analysis Preview</b>
+    </h3>
+    <div mat-dialog-content style="font-size: small;">      
+        <div class="col-12">
+            <div class="row">
+                <div class="col-5">
+                    <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" placeholder="Start Date">
+                </div>
+                <div class="col-5">
+                    <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" placeholder="End Date">
+                </div>
+                <div class="col-2">
+                    <button class="btn btn-sm btn-primary" (click)="getCATANSYS()">Filter</button>
+                </div>
+            </div>
+            <br>
+            <div class="row" *ngIf="getData === true">
+                <div class="col-4"></div>
+                <div class="col-4">
+                    <mat-spinner></mat-spinner>
+                </div>
+                <div class="col-4"></div>
+            </div>
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="slpAnsysTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;"> 
+                        <tr>
+                            <th colspan="6">Salesman-wise Analysis</th>
+                        </tr>
+                        <tr>
+                            <th>Salesman</th>
+                            <th>Outstanding</th>
+                            <th>Overdue</th>
+                            <th>Overdue %</th>
+                            <th>Current Month Collection</th>
+                            <th>Collection %</th>
+                        </tr>
+                    </thead>
+                    <tbody >
+                        <tr *ngFor="let r of slpansysData">
+                            <td>{{ r.SALESMAN }}</td>
+                            <td>{{ r.OUTSTANDING | number:'1.3-3' }}</td>
+                            <td>{{ r.OVERDUE | number:'1.3-3' }}</td>
+                            <td>{{ r.OVERDUE_PCT | number:'1.2-2' }}%</td>
+                            <td>{{ r.COLLECTION | number:'1.3-3' }}</td>
+                            <td>{{ r.COLLECTION_PCT | number:'1.3-3' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-striped table-sm table-bordered table-responsive" id="catAnsysTable" style="max-height: 300px; overflow-y: auto;">
+                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;"> 
+                        <tr>
+                            <th colspan="6">Category-wise Analysis</th>
+                        </tr>
+                        <tr>
+                            <th>Category</th>
+                            <th>Outstanding</th>
+                            <th>Overdue</th>
+                            <th>Overdue %</th>
+                            <th>Current Month Collection</th>
+                            <th>Collection %</th>
+                        </tr>
+                    </thead>
+                    <tbody *ngFor="let group of getGroupedCATANSYS()">
+                        <tr class="table-secondary fw-bold">
+                            <td colspan="6">{{ group.business }}</td>
+                        </tr>
+                        <tr *ngFor="let r of group.rows">
+                            <td>{{ r.CATEGORY }}</td>
+                            <td>{{ r.OUTSTANDING | number:'1.3-3' }}</td>
+                            <td>{{ r.OVERDUE | number:'1.3-3' }}</td>
+                            <td>{{ r.OVERDUE_PCT | number:'1.2-2' }}%</td>
+                            <td>{{ r.COLLECTION | number:'1.3-3' }}</td>
+                            <td>{{ r.COLLECTION_PCT | number:'1.2-2' }} %</td>
+                        </tr>
+                        <tr class="fw-bold table-light">
+                            <td>Subtotal</td>
+                            <td>{{ group.totals.OUTSTANDING | number:'1.3-3' }}</td>
+                            <td>{{ group.totals.OVERDUE | number:'1.3-3' }}</td>
+                            <td>{{ (group.totals.OVERDUE*100/group.totals.OUTSTANDING) | number:'1.2-2' }}%</td>
+                            <td>{{ group.totals.COLLECTION | number:'1.3-3' }}</td>
+                            <td>{{ (group.totals.COLLECTION*100/group.totals.OUTSTANDING) | number:'1.2-2' }}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <br>
+    </div>
+    <hr>
+    <div class="row container-fluid">
+        <div class="col-4">
+            <button mat-raised-button class="bg-info text-black btn btn-block" (click)="exportCATANSYS_Raw()" style="float: right" title="export">
+                Export Raw Excel
+            </button>
+        </div>        
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportCATANSYS_Pivot()" style="float: right" title="export">
+                Export Excel Report
+            </button>
+        </div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printCATANSYS()" style="float: right" title="print">
                 Print Statement
             </button>
         </div>

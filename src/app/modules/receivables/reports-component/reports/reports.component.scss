@@ -145,3 +145,23 @@
 
   }
   
+
+:host ::ng-deep report-table.table td {
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+:host ::ng-deep report-table.table td:hover {
+    background-color: #111827 !important;
+    color: #fff !important;
+}
+
+:host ::ng-deep report-table.table td:hover .nav-link {
+    color: #fff !important;
+}
+
+:host ::ng-deep report-table.table .nav-link {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 10px;
+}

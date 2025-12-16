@@ -47,7 +47,9 @@ private url = 'https://api.ifagate-petzone.theworkpc.com/api'
   }
 
   getParentSoa(parentcode: string) {
-    return this.http.get(this.url + '/report/get-parent-soa/' + parentcode)
+    return this.http.get(this.url + '/report/get-parent-soa', {
+      params: { parentcode }
+    })
   }
 
   getCustomerOpenSoa(type: string,pcode: string) {
@@ -66,12 +68,20 @@ private url = 'https://api.ifagate-petzone.theworkpc.com/api'
     return this.http.get(this.url + '/report/get-organisation')
   }
 
+  getSalesPerson() {
+    return this.http.get(this.url + '/report/get-salesperson')
+  }
+
   getParent() {
     return this.http.get(this.url + '/report/get-parent')
   }
 
   getParentFromOrg(org: string) {
     return this.http.get(this.url + '/report/get-parent-from-organisation/' + org)
+  }
+
+  getParentFromSlp(slp: string) {
+    return this.http.get(this.url + '/report/get-parent-from-salesperson/' + slp)
   }
 
   getCategory() {
@@ -121,4 +131,93 @@ private url = 'https://api.ifagate-petzone.theworkpc.com/api'
   getSlowMovingBrand(period: string) {
     return this.http.get(this.url + '/report/get-slow-moving-brand/'  + period)
   }  
+
+    getCATOVR() {
+    return this.http.get(this.url + '/report/get-CATOVR');
+  }
+
+  clearCATOVR() {
+    return this.http.get(this.url + '/report/clear-CATOVR');
+  }
+
+  postCATOVR(row: any) {
+    const headers = new HttpHeaders().set('Content-Type', 'application/json');
+
+    const newRow = {
+      ORGNISATION: row.ORGNISATION,
+      ParentCode: row.ParentCode,          // only if exists
+      PARENTNAMEID: row.PARENTNAMEID,      // only if exists
+      BALANCE: row.BALANCE,
+      OVERDUE: row.OVERDUE,
+      COLLECTED: row.COLLECTED,
+      CURRENT: row.CURRENT,
+      Thirty_DAYS: row.Thirty_DAYS,
+      Sixty_DAYS: row.Sixty_DAYS,
+      Ninety_DAYS: row.Ninety_DAYS,
+      OneTwenty_DAYS: row.OneTwenty_DAYS,
+      ABOVE_120_DAYS: row.ABOVE_120_DAYS,
+      REMARKS: row.REMARKS
+    };
+
+  return this.http.post(
+    this.url + '/report/add-CATOVR',
+    JSON.stringify(newRow),
+    { headers: headers }
+  );
+}
+
+  getSLPANSYS() {
+    return this.http.get(this.url + '/report/get-SLPANSYS');
+  }
+
+  clearSLPANSYS() {
+    return this.http.get(this.url + '/report/clear-SLPANSYS');
+  }
+
+  postSLPANSYS(row: any) {
+    const headers = new HttpHeaders().set('Content-Type', 'application/json');
+
+    const newRow = {
+      Salesperson: row.SALESMAN,      // only if exists
+      BALANCE: row.OUTSTANDING,
+      OVERDUE: row.OVERDUE,
+      COLLECTED: row.COLLECTION,
+    };
+
+  return this.http.post(
+    this.url + '/report/add-SLPANSYS',
+    JSON.stringify(newRow),
+    { headers: headers }
+  );
+}
+
+  getCATANSYS() {
+    return this.http.get(this.url + '/report/get-CATANSYS');
+  }
+
+  clearCATANSYS() {
+    return this.http.get(this.url + '/report/clear-CATANSYS');
+  }
+
+  postCATANSYS(row: any) {
+    const headers = new HttpHeaders().set('Content-Type', 'application/json');
+
+    const newRow = {
+      ORGNISATION: row.CATEGORY,
+      BALANCE: row.OUTSTANDING,
+      OVERDUE: row.OVERDUE,
+      COLLECTED: row.COLLECTION,
+      BUSINESS: row.BUSINESS,
+    };
+    console.log(newRow)
+
+  return this.http.post(
+    this.url + '/report/add-CATANSYS',
+    JSON.stringify(newRow),
+    { headers: headers }
+  );
+}
+
+
+
 }
