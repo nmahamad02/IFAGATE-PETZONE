@@ -98,6 +98,20 @@ export class ReportsComponent {
   selectedCategories: string[] = []
   selectedLocation: string = 'NULL'
 
+  countries = [
+    { name: 'All Countries', code: 'un' },
+    { name: 'Bahrain', code: 'bh' },
+    { name: 'Kuwait', code: 'kw' },
+    { name: 'Saudi Arabia', code: 'sa' },
+    { name: 'United Arab Emirates', code: 'ae' },
+    { name: 'Oman', code: 'om' },
+    { name: 'Qatar', code: 'qa' },
+  ];
+
+  selectedCountry: { name: string; code: string } = this.countries[0];
+  selectedCountryName = '*';
+  selectedCountryCode = 'un';
+
   startDate: Date;
   endDate: Date;
 
@@ -120,36 +134,57 @@ export class ReportsComponent {
   progress = [0, 0, 0];
 
   constructor(private financeService: FinanceService, private route: ActivatedRoute, private dialog: MatDialog, private router: Router, private accountService: AccountsService, private reportService: ReportsService, private dataSharingService: DataSharingService, private sapservice: SapService, private emailService: EmailService) { 
-    console.log(this.userRight)
     this.accountService.listOpbal(this.currentYear.toString(),'C').subscribe((res: any) => {
-      console.log(res.recordset)
       this.customerList = res.recordset;
     }, (error: any) => {
       console.log(error);
     });
-    this.reportService.getParent().subscribe((res: any) => {
-      console.log(res)
+    this.reportService.getParent('*').subscribe((res: any) => {
       this.parentList = res.recordset
+      console.log(this.parentList)
     }, (err: any) => {
       console.log(err)
     })
     this.reportService.getIndustry().subscribe((res: any) => {
       this.industryList = res.recordset
-      console.log(this.industryList)
     })
     this.reportService.getOrganisation().subscribe((res: any) => {
       this.organisationList = res.recordset
-      console.log(this.organisationList)
     })
     this.reportService.getSalesPerson().subscribe((res: any) => {
       this.salesPersonList = res.recordset
-      console.log(this.salesPersonList)
     })
     this.reportService.getLocation().subscribe((res: any) => {
       this.locationList = res.recordset
-      console.log(this.locationList)
     })
   }
+
+    updateFlag(country: { name: string; code: string }) {
+      this.selectedCountry = country;
+      this.selectedCountryName = country.name;
+  this.selectedCountryCode = country.code;
+
+  // Special case
+  if (country.name === 'All Countries') {
+    this.reportService.getParent('*').subscribe(
+      (res: any) => {
+        this.parentList = res.recordset;
+        console.log(this.parentList);
+      },
+      (err: any) => console.log(err)
+    );
+  } 
+  // Normal case
+  else {
+    this.reportService.getParent(country.name).subscribe(
+      (res: any) => {
+        this.parentList = res.recordset;
+        console.log(this.parentList);
+      },
+      (err: any) => console.log(err)
+    );
+  }
+}
 
 startFinanceSync() {
   this.isSyncing = true;
@@ -175,7 +210,6 @@ syncInvoice() {
 syncPayable() {
   this.sapservice.syncPayablesDetails().subscribe({
     next: res => {
-      console.log(res);
       this.progress[1] = 50;
       this.syncPayment();
     },
@@ -196,7 +230,6 @@ syncPayable() {
 syncPayment() {
   this.sapservice.syncPaymentsDetails().subscribe({
     next: res => {
-      console.log(res);
       this.progress[2] = 50;
       setTimeout(() => {
         alert("Finance sync successful!");
@@ -247,7 +280,6 @@ syncCustomerTimer() {
 syncCustomer() {
   this.sapservice.syncCustomerDetails().subscribe({
     next: res => {
-      console.log(res);
       this.progress[1] = 33;
       this.syncOPBAL();
     },
@@ -267,7 +299,6 @@ syncCustomer() {
 syncOPBAL() {
   this.sapservice.syncOPBALDetails().subscribe({
     next: res => {
-      console.log(res);
       this.progress[2] = 34;
       setTimeout(() => {
         alert("Customer sync successful!");
@@ -365,7 +396,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   }
 
   getCWSOA(customer: any) {
-    console.log(customer)
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -386,7 +416,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
               this.getData = false
         return;
       }
-      console.log(res.recordset);
       this.cwsoaData = res.recordset;
           this.getData = false
       let runningBalance = 0;
@@ -447,7 +476,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   }
 
   printCWSOA() {
-    console.log(this.selectedCustomer)
     var doc = new jsPDF("portrait", "px", "a4");
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
@@ -640,7 +668,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   }
 
   getPWSOA(parent: any) {
-    console.log(parent)
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -661,7 +688,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
               this.getData = false
         return;
       }
-      console.log(res.recordset);
       this.pwsoaData = res.recordset;
           this.getData = false
       let runningBalance = 0;
@@ -930,7 +956,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     this.customerList.forEach(customer => {
       this.reportService.getCustomerSoa('C', customer.PCODE).subscribe(
         (response: any) => {
-          console.log(response)
           const soaList = response.recordset.map((item: any) => {
             const btdDate = new Date(item.DUEDATE);
             const today = new Date();
@@ -964,7 +989,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   }
 
   printCWASL() {
-    console.log(this.selectedCustomer)
     var doc = new jsPDF("portrait", "px", "a4");
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
@@ -1169,9 +1193,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     this.parentAgeingSummaryList = []
     let daysDiff: number | null = null;
     this.parentList.forEach(parent => {
-      console.log(parent)
       this.reportService.getParentSoa(parent.PARENTNAME).subscribe((resp: any) => {
-        console.log(resp)
         const data = resp.recordset;
         let runningBalance = 0;
         let localAgeing = {      
@@ -1230,7 +1252,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
           total
         });
         this.getData = false;
-        console.log(this.parentAgeingSummaryList)
       });
     });
   }
@@ -1415,7 +1436,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   }
 
   getPCASL(parent: any) {
-    console.log(parent)
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -1685,7 +1705,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   }
 
   getCOSOA(customer: any) {
-    console.log(customer)
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -1707,7 +1726,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
               this.getData = false
         return;
       }
-      console.log(res.recordset);
       this.cosoaData = res.recordset;
           this.getData = false
       let runningBalance = 0;
@@ -1768,7 +1786,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   }
 
   printCOSOA() {
-    console.log(this.selectedCustomer)
     var doc = new jsPDF("portrait", "px", "a4");
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
@@ -1961,7 +1978,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   }
 
   getPOSOA(parent: any) {
-    console.log(parent)
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -1982,7 +1998,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
               this.getData = false
         return;
       }
-      console.log(res.recordset);
       this.posoaData = res.recordset;
           this.getData = false
       let runningBalance = 0;
@@ -2248,7 +2263,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   }
 
   getCPWSOA(customer: any) {
-    console.log(customer)
     this.cpwsoaData = []
     this.selectedCustomer = customer
   }
@@ -2267,9 +2281,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   const end = new Date(this.endDate);
   end.setHours(23, 59, 59, 999);
 
-  console.log("Start:", start.toISOString());
-  console.log("End:", end.toISOString());
-
   if (!this.startDate || !this.endDate) {
     alert('Please select both start and end dates.');
     return;
@@ -2283,7 +2294,6 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     }
     const data = res.recordset;
         this.getData = false
-    console.log("Raw SOA Data:", data);
 
     let runningBalance = 0;
     this.ageingSummary = {
@@ -2391,7 +2401,6 @@ const openingRow = {
 // Combine into final list
 this.cpwsoaData = [openingRow, ...filteredPeriodRows]
 
-    console.log("Filtered CPWSOA length:", this.cpwsoaData.length);
     if(this.cpwsoaData.length === 0) {
       alert('No data available in selected range!')
     }
@@ -2422,7 +2431,6 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
       alert('Please select both start and end dates.');
       return;
     } else {
-      console.log(this.selectedCustomer)
     var doc = new jsPDF("portrait", "px", "a4");
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
@@ -2644,7 +2652,6 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
   }
 
   getPPWSOA(parent: any) {
-    console.log(parent)
 this.periodTotalDebit = 0;
     this.periodTotalCredit = 0;
     this.periodClosingBalance = 0;
@@ -2705,9 +2712,6 @@ this.periodTotalDebit = 0;
   const end = new Date(this.endDate);
   end.setHours(23, 59, 59, 999);
 
-  console.log("Start:", start.toISOString());
-  console.log("End:", end.toISOString());
-
   if (!this.startDate || !this.endDate) {
     alert('Please select both start and end dates.');
     return;
@@ -2722,7 +2726,6 @@ this.periodTotalDebit = 0;
     }
     const data = res.recordset;
         this.getData = false
-    console.log("Raw SOA Data:", data);
 
     let runningBalance = 0;
     this.ageingSummary = {
@@ -2830,7 +2833,6 @@ const openingRow = {
 // Combine into final list
 this.ppwsoaData = [openingRow, ...filteredPeriodRows];
 
-    console.log("Filtered CPWSOA length:", this.ppwsoaData.length);
     if(this.ppwsoaData.length === 0) {
       alert('No data available in selected range!')
     }
@@ -2861,7 +2863,6 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
       alert('Please select both start and end dates.');
       return;
     } else {
-      console.log(this.selectedParent)
     var doc = new jsPDF("portrait", "px", "a4");
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
@@ -3075,7 +3076,6 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
   }
 
   setPWOUT(parent: any) {
-    console.log(parent)
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -3111,7 +3111,6 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
         this.getData = false
         return;
       }
-      console.log(res.recordset);
 
       const rawData = res.recordset;
       this.getData = false
@@ -3185,9 +3184,6 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
           DAYS_DIFF: daysDiff
         };
       });
-
-    console.log('Filtered Outstanding:', this.pwoutData);
-    console.log('Ageing Summary:', this.ageingSummary);
   });
   }
 
@@ -3396,7 +3392,6 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
   }
 
   getCATOVR(categories: any[]) {
-    console.log('Selected categories:', categories);
     this.selectedCategories = categories;
     this.periodTotalDebit = 0;
     this.periodTotalCredit = 0;
@@ -3443,11 +3438,10 @@ async setCATOVR() {
     end.setHours(23, 59, 59, 999);
 
     for (const category of this.selectedCategories) {
-      const res: any = await firstValueFrom(this.reportService.getParentFromOrg(category));
+      const res: any = await firstValueFrom(this.reportService.getParentFromOrg(category,this.selectedCountryName));
       if (!res.recordset.length) continue;
 
       for (const parent of res.recordset) {
-        console.log(parent)
         const resp: any = await firstValueFrom(this.reportService.getParentSoa(parent.PARENTNAMEID));
         const data = (resp.recordset || []).filter((r: any) => new Date(r.INV_DATE) <= end);
         if (!data.length) continue;
@@ -3542,7 +3536,6 @@ async setCATOVR() {
     console.warn('No data to save.');
   }
 
-    console.log('CATOVR FIFO data cleared and inserted successfully!');
   } catch (err) {
     console.error('Error in setCATOVR:', err);
   } finally {
@@ -3560,14 +3553,12 @@ async saveCATOVR() {
 
     // 1️⃣ Clear table first
     await this.reportService.clearCATOVR().toPromise();
-    console.log('CATOVR table cleared');
 
     // 2️⃣ Insert all rows sequentially (or Promise.all for parallel)
     for (const row of this.catovrData) {
       await this.reportService.postCATOVR(row).toPromise();
     }
 
-    console.log('CATOVR data inserted successfully!');
   } catch (err) {
     console.error('Error saving CATOVR:', err);
   } finally {
@@ -3618,7 +3609,6 @@ async saveCATOVR() {
       alert('Please select both start and end dates.');
       return;
     } else {
-      console.log(this.selectedParent)
     var doc = new jsPDF("landscape", "px", "a4");
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
@@ -3867,7 +3857,7 @@ async setCATANSYS() {
     for (const org of this.organisationList) {
 
       const parents: any = await firstValueFrom(
-        this.reportService.getParentFromOrg(org.ORGANISATION)
+        this.reportService.getParentFromOrg(org.ORGANISATION,this.selectedCountryName)
       );
       if (!parents?.recordset?.length) continue;
 
@@ -3876,7 +3866,6 @@ async setCATANSYS() {
       let collection = 0;
 
       for (const parent of parents.recordset) {
-        console.log(parent)
 
         const data = (await this.safeGetParentSoa(parent.PARENTNAMEID))
           .filter((r: any) => new Date(r.INV_DATE) <= end);
@@ -3935,16 +3924,35 @@ async setCATANSYS() {
         overdue += Math.max(localOutstanding - localCurrent, 0);
 
         // 💰 Collection — THIS month only
-        data.forEach((r: any) => {
-          const d = new Date(r.INV_DATE);
-          if (
-            d.getMonth() === curMonth &&
-            d.getFullYear() === curYear &&
-            r.DESCRIPTION === 'Payment'
-          ) {
-            collection += Number(r.CREDIT) || 0;
-          }
-        });
+        const COLLECTION_KEYWORDS = [
+          'LINK',
+          'INVO',
+          'RV',
+          'CH',
+          'TRF',
+          'REVENUE',
+          'PAYMENT'
+        ];
+
+data.forEach((r: any) => {
+  const d = new Date(r.INV_DATE);
+
+  if (d.getMonth() !== curMonth || d.getFullYear() !== curYear) {
+    return;
+  }
+
+  const description = (r.DESCRIPTION || '').toUpperCase();
+  const remarks = (r.REMARKS || '').toUpperCase();
+
+  const isCollection = COLLECTION_KEYWORDS.some(k =>
+    description.includes(k) || remarks.includes(k)
+  );
+
+  if (isCollection) {
+    collection += Number(r.CREDIT) || 0;
+  }
+});
+
       }
 
       this.catansysData.push({
@@ -3963,7 +3971,6 @@ async setCATANSYS() {
     console.error('CATANSYS error:', err);
   } finally {
     this.saveCATANSYS()
-    console.log(this.catansysData)
   }
 }
 
@@ -4100,16 +4107,34 @@ async setSLPANSYS() {
         overdue += Math.max(localOutstanding - localCurrent, 0);
 
         // 💰 Collection — THIS month only
-        data.forEach((r: any) => {
-          const d = new Date(r.INV_DATE);
-          if (
-            d.getMonth() === curMonth &&
-            d.getFullYear() === curYear &&
-            r.DESCRIPTION === 'Payment'
-          ) {
-            collection += Number(r.CREDIT) || 0;
-          }
-        });
+        const COLLECTION_KEYWORDS = [
+          'LINK',
+          'INVO',
+          'RV',
+          'CH',
+          'TRF',
+          'REVENUE',
+          'PAYMENT'
+        ];
+
+data.forEach((r: any) => {
+  const d = new Date(r.INV_DATE);
+
+  if (d.getMonth() !== curMonth || d.getFullYear() !== curYear) {
+    return;
+  }
+
+  const description = (r.DESCRIPTION || '').toUpperCase();
+  const remarks = (r.REMARKS || '').toUpperCase();
+
+  const isCollection = COLLECTION_KEYWORDS.some(k =>
+    description.includes(k) || remarks.includes(k)
+  );
+
+  if (isCollection) {
+    collection += Number(r.CREDIT) || 0;
+  }
+});
       }
 
       this.slpansysData.push({
@@ -4126,7 +4151,6 @@ async setSLPANSYS() {
     console.error('SLPANSYS error:', err);
   } finally {
     this.saveSLPANSYS()
-    console.log(this.slpansysData)
   }
 }
 
@@ -4140,14 +4164,12 @@ async saveCATANSYS() {
 
     // 1️⃣ Clear table first
     await this.reportService.clearCATANSYS().toPromise();
-    console.log('CATANSYS table cleared');
 
     // 2️⃣ Insert all rows sequentially (or Promise.all for parallel)
     for (const row of this.catansysData) {
       await this.reportService.postCATANSYS(row).toPromise();
     }
 
-    console.log('CATANSYS data inserted successfully!');
   } catch (err) {
     console.error('Error saving CATANSYS:', err);
   } 
@@ -4163,14 +4185,12 @@ async saveSLPANSYS() {
 
     // 1️⃣ Clear table first
     await this.reportService.clearSLPANSYS().toPromise();
-    console.log('SLPANSYS table cleared');
 
     // 2️⃣ Insert all rows sequentially (or Promise.all for parallel)
     for (const row of this.slpansysData) {
       await this.reportService.postSLPANSYS(row).toPromise();
     }
 
-    console.log('SLPANSYS data inserted successfully!');
   } catch (err) {
     console.error('Error saving SLPANSYS:', err);
   } 

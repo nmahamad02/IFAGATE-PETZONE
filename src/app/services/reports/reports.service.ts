@@ -72,12 +72,12 @@ private url = 'https://api.ifagate-petzone.theworkpc.com/api'
     return this.http.get(this.url + '/report/get-salesperson')
   }
 
-  getParent() {
-    return this.http.get(this.url + '/report/get-parent')
+  getParent(country: string) {
+    return this.http.get(this.url + '/report/get-parent/' + country)
   }
 
-  getParentFromOrg(org: string) {
-    return this.http.get(this.url + '/report/get-parent-from-organisation/' + org)
+  getParentFromOrg(org: string,country: string) {
+    return this.http.get(this.url + '/report/get-parent-from-organisation/' + org + '/' + country)
   }
 
   getParentFromSlp(slp: string) {
@@ -122,6 +122,10 @@ private url = 'https://api.ifagate-petzone.theworkpc.com/api'
   
   getVoucherwisePeriodSales(startDate: string, endDate: string, location: string, customer: string) {
     return this.http.get(this.url + '/report/get-voucherwise-period-sales/'  + startDate + '/' + endDate + '/' + location + '/' + customer)
+  }
+
+  getCustomerwisePeriodSalesByLocation( startDate: string, endDate: string, location: string) {
+    return this.http.get(this.url + '/report/get-customerwise-period-sales/' + startDate + '/' + endDate + '/' + location);
   }
 
   getFastMovingBrand(period: string) {

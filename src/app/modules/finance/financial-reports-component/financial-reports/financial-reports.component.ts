@@ -21,6 +21,7 @@ export class FinancialReportsComponent {
   userRight = localStorage.getItem('userright')!
 
   @ViewChild('locmosLookupDialog', { static: false }) locmosLookupDialog!: TemplateRef<any>;
+  @ViewChild('locposLookupDialog', { static: false }) locposLookupDialog!: TemplateRef<any>;
   @ViewChild('mossumLookupDialog', { static: false }) mossumLookupDialog!: TemplateRef<any>;
   @ViewChild('iwpdslLookupDialog', { static: false }) iwpdslLookupDialog!: TemplateRef<any>;
   @ViewChild('iwpdcsLookupDialog', { static: false }) iwpdcsLookupDialog!: TemplateRef<any>;
@@ -37,6 +38,7 @@ export class FinancialReportsComponent {
   iwpdcsData: any[] = []
   iwpdpfData: any[] = []
   vwpdpfData: any[] = []
+  locposData: any[] = [];
 
   groupedData: any[] = [];
   grandTotal: number = 0;
@@ -226,6 +228,80 @@ export class FinancialReportsComponent {
 
     FileSaver.saveAs(blob, fileName);
   }
+
+  openLOCPOS() {
+    this.dialog.open(this.locposLookupDialog);
+    this.locposData = [];
+    this.groupedData = [];
+    this.grandTotal = 0;
+  }
+
+  getLOCPOS(location: any) {
+  if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    }
+    const start = new Date(this.startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(this.endDate);
+    end.setHours(23, 59, 59, 999);  
+
+  this.getData = true;
+  this.selectedLocation = location;
+
+  this.reportService.getCustomerwisePeriodSalesByLocation(
+      this.formatDate(start),
+      this.formatDate(end),
+      location
+    )
+    .subscribe((res: any) => {
+
+      if (!res.recordset || res.recordset.length === 0) {
+        alert('No data for the selected period!');
+        this.getData = false;
+        return;
+      }
+
+      this.locposData = res.recordset;
+      this.getData = false;
+
+      // Reset
+      this.groupedData = [];
+      this.grandTotal = 0;
+
+      // Group by location
+      const tempGroup: { [loc: string]: any[] } = {};
+
+      this.locposData.forEach((row: any) => {
+        const loc = row.LOCATIONNAME;
+        if (!tempGroup[loc]) tempGroup[loc] = [];
+        tempGroup[loc].push(row);
+      });
+
+      // Build subtotals
+      for (const loc of Object.keys(tempGroup)) {
+        const rows = tempGroup[loc];
+        const subtotal = rows.reduce(
+          (sum, r) => sum + Number(r.Sales_KWD || 0),
+          0
+        );
+
+        this.groupedData.push({
+          location: loc,
+          rows,
+          subtotal
+        });
+
+        this.grandTotal += subtotal;
+      }
+
+      this.groupedData.sort((a, b) =>
+        a.location.localeCompare(b.location)
+      );
+    });
+}
+
+
 
   openMOSSUM() {
     let dialogRef = this.dialog.open(this.mossumLookupDialog);

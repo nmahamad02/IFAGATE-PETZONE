@@ -3,8 +3,29 @@
         <div class="visualization-heading col-12">
             <div class="heading-info">
                 <div class="row">
-                    <div class="col-8">
+                    <div class="col-6">
                         <h2 class="heading-title">Financial Reports</h2>
+                    </div>
+                    <div class="col-2 flex-1">
+                        <mat-select
+  [(value)]="selectedCountry"
+  (selectionChange)="updateFlag($event.value)">
+
+  <mat-select-trigger>
+    <img
+      [src]="'https://flagcdn.com/w40/' + selectedCountryCode + '.png'"
+      style="width: 24px; margin-right: 8px;" />
+    {{ selectedCountry.name }}
+  </mat-select-trigger>
+
+  <mat-option *ngFor="let country of countries" [value]="country">
+    <img
+      [src]="'https://flagcdn.com/w40/' + country.code + '.png'"
+      style="width: 24px; margin-right: 8px;" />
+    {{ country.name }}
+  </mat-option>
+</mat-select>
+
                     </div>
                     <div class="col-2" *ngIf="userRight==='true'">
                         <button mat-raised-button class="bg-primary text-white btn btn-block" (click)="startFinanceSync()" [disabled]="isSyncing" title="Update Transaction Data" style="float: right">
