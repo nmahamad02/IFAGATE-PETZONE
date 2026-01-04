@@ -44,6 +44,9 @@ export class ReportsComponent {
   @ViewChild('pwoutLookupDialog', { static: false }) pwoutLookupDialog!: TemplateRef<any>;
   @ViewChild('catovrLookupDialog', { static: false }) catovrLookupDialog!: TemplateRef<any>;
   @ViewChild('catansysLookupDialog', { static: false }) catansysLookupDialog!: TemplateRef<any>;
+  @ViewChild('pwmcasLookupDialog', { static: false }) pwmcasLookupDialog!: TemplateRef<any>;
+  @ViewChild('cwmcasLookupDialog', { static: false }) cwmcasLookupDialog!: TemplateRef<any>;
+  @ViewChild('swmcasLookupDialog', { static: false }) swmcasLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
@@ -61,6 +64,9 @@ export class ReportsComponent {
   catovrData: any[] = []
   catansysData: any[] = []
   slpansysData: any[] = []
+  pwmcasData: any[] = []
+  cwmcasData: any[] = []
+  swmcasData: any[] = []
 
   industryList: any[] = [];
   organisationList: any[] = [];
@@ -3497,10 +3503,28 @@ async setCATOVR() {
         });
 
         // Sum payments (credits) within period
-        data.forEach((row: any) => {
-          const trnDate = new Date(row.INV_DATE);
-          if (trnDate >= start && trnDate <= end && row.DESCRIPTION === 'Payment') {
-            totalCollection += Number(row.CREDIT) || 0;
+        const COLLECTION_KEYWORDS = [
+          'LINK',
+          'INVO',
+          'RV',
+          'CH',
+          'REVENUE',
+          'PAYMENT',
+          'TRNF',
+          'TRN',
+          'TRANSFER'
+        ];
+        data.forEach((r: any) => {
+          const trnDate = new Date(r.INV_DATE);
+          if (trnDate >= start && trnDate <= end) {
+            const description = (r.DESCRIPTION || '').toUpperCase();
+            const remarks = (r.REMARKS || '').toUpperCase();
+            const isCollection = COLLECTION_KEYWORDS.some(k =>
+              description.includes(k) || remarks.includes(k)
+            );
+            if (isCollection) {
+              totalCollection += Number(r.CREDIT) || 0;
+            }          
           }
         });
 
@@ -3923,15 +3947,16 @@ async setCATANSYS() {
         outstanding += localOutstanding;
         overdue += Math.max(localOutstanding - localCurrent, 0);
 
-        // 💰 Collection — THIS month only
         const COLLECTION_KEYWORDS = [
           'LINK',
           'INVO',
           'RV',
           'CH',
-          'TRF',
           'REVENUE',
-          'PAYMENT'
+          'PAYMENT',
+          'TRNF',
+          'TRN',
+          'TRANSFER'
         ];
 
 data.forEach((r: any) => {
@@ -4040,7 +4065,7 @@ async setSLPANSYS() {
     for (const slp of this.salesPersonList) {
 
       const parents: any = await firstValueFrom(
-        this.reportService.getParentFromSlp(slp.SALESMANCD)
+        this.reportService.getParentFromSlp(slp.SALESMANCD,this.selectedCountryName)
       );
       if (!parents?.recordset?.length) continue;
 
@@ -4112,9 +4137,11 @@ async setSLPANSYS() {
           'INVO',
           'RV',
           'CH',
-          'TRF',
           'REVENUE',
-          'PAYMENT'
+          'PAYMENT',
+          'TRNF',
+          'TRN',
+          'TRANSFER'
         ];
 
 data.forEach((r: any) => {
@@ -4452,6 +4479,965 @@ exportCATANSYS_Pivot(): void {
   link.href = 'assets/reports/Category-Analisys.xlsx';
   link.click();
 }
+
+  openPWMCAS() {
+    let dialogRef = this.dialog.open(this.pwmcasLookupDialog);
+    this.pwmcasData = []
+  }
+
+async setPWMCAS() {
+
+  if (!this.startDate || !this.endDate) {
+    alert('Please select both start and end dates.');
+    return;
+  }
+  if (!this.selectedCategories || this.selectedCategories.length === 0) {
+    alert('Please select at least one category.');
+    return;
+  }
+
+  this.getData = true;
+
+  const start = new Date(this.startDate);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(this.endDate);
+  end.setHours(23, 59, 59, 999);
+
+  const COLLECTION_KEYWORDS = [
+    'LINK','INVO','RV','CH','REVENUE','PAYMENT','TRNF','TRN','TRANSFER'
+  ];
+
+  const monthKeys = this.getMonthKeys()
+
+  try {
+
+    for (const category of this.selectedCategories) {
+
+      const res: any = await firstValueFrom(
+        this.reportService.getParentFromOrg(category, this.selectedCountryName)
+      );
+      if (!res.recordset?.length) continue;
+
+      for (const parent of res.recordset) {
+
+        const resp: any = await firstValueFrom(
+          this.reportService.getParentSoa(parent.PARENTNAMEID)
+        );
+
+        const data = (resp.recordset || [])
+          .filter((r: any) => new Date(r.INV_DATE) <= end);
+
+        if (!data.length) continue;
+
+        /* ---------------- FIFO BLOCK (UNCHANGED) ---------------- */
+
+        const debits = data
+          .filter((r: any) => r.DEBIT > 0)
+          .map((r: any) => ({ ...r, remaining: Number(r.DEBIT) }))
+          .sort((a: any, b: any) =>
+            new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime()
+          );
+
+        const credits = data
+          .filter((r: any) => r.CREDIT > 0)
+          .map((r: any) => ({ ...r, remaining: Number(r.CREDIT) }))
+          .sort((a: any, b: any) =>
+            new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime()
+          );
+
+        credits.forEach((credit: any) => {
+          let rem = credit.remaining;
+          for (const debit of debits) {
+            if (rem <= 0) break;
+            if (debit.remaining <= 0) continue;
+            const applied = Math.min(debit.remaining, rem);
+            debit.remaining -= applied;
+            rem -= applied;
+          }
+        });
+
+        let runningBalance = 0;
+        let current = 0;
+        const today = new Date(this.endDate);
+        today.setHours(0, 0, 0, 0);
+
+        debits.forEach((d: any) => {
+          runningBalance += d.remaining;
+          if (d.DUEDATE && new Date(d.DUEDATE) > today) {
+            current += d.remaining;
+          }
+        });
+
+        const overdue = Math.max(runningBalance - current, 0);
+
+        /* ---------------- MONTHLY COLLECTION DISCRETISATION ---------------- */
+
+        const monthly: any = {};
+        monthKeys.forEach(m => monthly[m] = 0);
+
+        data.forEach((r: any) => {
+          const trnDate = new Date(r.INV_DATE);
+          if (trnDate < start || trnDate > end) return;
+
+          const desc = (r.DESCRIPTION || '').toUpperCase();
+          const rem = (r.REMARKS || '').toUpperCase();
+
+          const isCollection = COLLECTION_KEYWORDS.some(k =>
+            desc.includes(k) || rem.includes(k)
+          );
+
+          if (!isCollection || Number(r.CREDIT) <= 0) return;
+
+          const key = trnDate
+            .toLocaleString('en-GB', { month: 'short', year: '2-digit' })
+            .replace(' ', '-');
+
+          if (monthly[key] !== undefined) {
+            monthly[key] += Number(r.CREDIT) || 0;
+          }
+        });
+
+        const totalCollection = Object.values(monthly)
+          .reduce((a: number, b: any) => a + b, 0);
+
+        /* ---------------- FINAL PUSH ---------------- */
+
+        this.pwmcasData.push({
+          ParentCode: parent.ParentCode || '',
+          PARENTNAMEID: parent.PARENTNAMEID,
+          CATEGORY: category,
+          OUTSTANDING: runningBalance,
+          OVERDUE: overdue,
+          ...monthly,
+          TOTAL_COLLECTION: totalCollection
+        });
+      }
+    }
+
+  } catch (err) {
+    console.error('Category Monthly Collection Error:', err);
+  } finally {
+    this.getData = false;
+    console.log(this.pwmcasData)
+  }
+}
+
+  printPWMCAS() {
+    if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    } else {
+    var doc = new jsPDF("landscape", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Parent-wise Monthly Collection Analysis Statement', 200, 20);
+    doc.roundedRect(5, 32.5, 620, 25, 5, 5);
+    doc.setFontSize(10);
+    doc.text(`${this.selectedCategories}`,10,42);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,550,20);
+    doc.text('Period',10,52);
+    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 52)
+    let firstPageStartY = 60; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#pwmCasTable',
+      tableWidth: 620,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+      },
+      /*columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' },
+        8: { halign: 'right' },
+        9: { halign: 'right' },
+        10: { halign: 'right' },
+        11: { halign: 'right' },
+        12: { halign: 'right' },
+      },*/
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      showFoot: 'lastPage', 
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+
+    // Bilingual footer text
+    doc.setFontSize(9);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.text(engText, 10, finalY1+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 620, finalY1+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc,'l');
+    // Save the PDF
+    doc.save(`parent-collection-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
+    }
+  }
+
+exportPWMCAS_Raw(): void {
+
+  const fileName =
+    `parent-wise-monthly-collection-${this.mCurDate}-${this.startDate}-${this.endDate}.xlsx`;
+
+  const exportRows: any[] = [];
+  const monthKeys = this.getMonthKeys();
+  const groups = this.getGroupedMonthlyData() as any[];
+
+  /* ---------------- CATEGORY GROUPS ---------------- */
+
+  groups.forEach(group => {
+
+    /* Category Header */
+    exportRows.push({
+      'Account Code': `CATEGORY : ${group.category}`,
+      'Parent Name': '',
+      'Category': '',
+      'Outstanding': '',
+      'Overdue': '',
+      ...Object.fromEntries(monthKeys.map(m => [m, ''])),
+      'Total Collection': ''
+    });
+
+    /* Data Rows */
+    group.rows.forEach((row: any) => {
+      exportRows.push({
+        'Account Code': row.ParentCode ?? '',
+        'Parent Name': row.PARENTNAMEID ?? '',
+        'Category': row.CATEGORY ?? '',
+        'Outstanding': row.OUTSTANDING ?? 0,
+        'Overdue': row.OVERDUE ?? 0,
+        ...Object.fromEntries(monthKeys.map(m => [m, row[m] ?? 0])),
+        'Total Collection': row.TOTAL_COLLECTION ?? 0
+      });
+    });
+
+    /* Subtotal Row */
+    exportRows.push({
+      'Account Code': `Subtotal (${group.category})`,
+      'Parent Name': '',
+      'Category': '',
+      'Outstanding': group.totals.OUTSTANDING ?? 0,
+      'Overdue': group.totals.OVERDUE ?? 0,
+      ...Object.fromEntries(monthKeys.map(m => [m, group.totals[m] ?? 0])),
+      'Total Collection': group.totals.TOTAL_COLLECTION ?? 0
+    });
+
+    /* Spacer */
+    exportRows.push({});
+  });
+
+  /* ---------------- GRAND TOTAL ---------------- */
+
+  exportRows.push({
+    'Account Code': 'GRAND TOTAL',
+    'Parent Name': '',
+    'Category': '',
+    'Outstanding': this.getMonthlyGrandTotal('OUTSTANDING'),
+    'Overdue': this.getMonthlyGrandTotal('OVERDUE'),
+    ...Object.fromEntries(
+      monthKeys.map(m => [m, this.getMonthlyGrandTotal(m)])
+    ),
+    'Total Collection': this.getMonthlyGrandTotal('TOTAL_COLLECTION')
+  });
+
+  /* ---------------- EXCEL GENERATION ---------------- */
+
+  const ws: XLSX.WorkSheet =
+    XLSX.utils.json_to_sheet(exportRows, { skipHeader: false });
+
+  const wb: XLSX.WorkBook = {
+    Sheets: { 'PWMCAS': ws },
+    SheetNames: ['PWMCAS']
+  };
+
+  const excelBuffer = XLSX.write(wb, {
+    bookType: 'xlsx',
+    type: 'array'
+  });
+
+  const blob = new Blob([excelBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+  });
+
+  FileSaver.saveAs(blob, fileName);
+}
+
+
+  openCWMCAS() {
+    let dialogRef = this.dialog.open(this.cwmcasLookupDialog);
+    this.cwmcasData = []
+  }
+
+  async setCWMCAS() {
+
+  if (!this.startDate || !this.endDate) {
+    alert('Please select both start and end dates.');
+    return;
+  }
+
+  this.getData = true;
+  this.cwmcasData = [];
+
+  const start = new Date(this.startDate);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(this.endDate);
+  end.setHours(23, 59, 59, 999);
+
+  const COLLECTION_KEYWORDS = [
+    'LINK','INVO','RV','CH','REVENUE','PAYMENT','TRNF','TRN','TRANSFER'
+  ];
+
+  const monthKeys = this.getMonthKeys();
+
+  try {
+
+    for (const org of this.organisationList) {
+
+      const category = org.ORGANISATION;
+
+      /* Initialise accumulators */
+      const monthly: any = {};
+      monthKeys.forEach(m => monthly[m] = 0);
+
+      let totalOutstanding = 0;
+      let totalOverdue = 0;
+
+      /* 🔹 All parents under this category */
+      const parentRes: any = await firstValueFrom(
+        this.reportService.getParentFromOrg(category, this.selectedCountryName)
+      );
+
+      if (!parentRes.recordset?.length) continue;
+
+      for (const parent of parentRes.recordset) {
+
+        const resp: any = await firstValueFrom(
+          this.reportService.getParentSoa(parent.PARENTNAMEID)
+        );
+
+        const data = (resp.recordset || [])
+          .filter((r: any) => new Date(r.INV_DATE) <= end);
+
+        if (!data.length) continue;
+
+        /* ---------------- FIFO BLOCK (UNCHANGED) ---------------- */
+
+        const debits = data
+          .filter((r: any) => r.DEBIT > 0)
+          .map((r: any) => ({ ...r, remaining: Number(r.DEBIT) }))
+          .sort((a: any, b: any) =>
+            new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime()
+          );
+
+        const credits = data
+          .filter((r: any) => r.CREDIT > 0)
+          .map((r: any) => ({ ...r, remaining: Number(r.CREDIT) }))
+          .sort((a: any, b: any) =>
+            new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime()
+          );
+
+        credits.forEach((credit: any) => {
+          let rem = credit.remaining;
+          for (const debit of debits) {
+            if (rem <= 0) break;
+            if (debit.remaining <= 0) continue;
+            const applied = Math.min(debit.remaining, rem);
+            debit.remaining -= applied;
+            rem -= applied;
+          }
+        });
+
+        let runningBalance = 0;
+        let current = 0;
+        const today = new Date(this.endDate);
+        today.setHours(0, 0, 0, 0);
+
+        debits.forEach((d: any) => {
+          runningBalance += d.remaining;
+          if (d.DUEDATE && new Date(d.DUEDATE) > today) {
+            current += d.remaining;
+          }
+        });
+
+        const overdue = Math.max(runningBalance - current, 0);
+
+        totalOutstanding += runningBalance;
+        totalOverdue += overdue;
+
+        /* ---------------- MONTHLY COLLECTION ---------------- */
+
+        data.forEach((r: any) => {
+          const trnDate = new Date(r.INV_DATE);
+          if (trnDate < start || trnDate > end) return;
+
+          const desc = (r.DESCRIPTION || '').toUpperCase();
+          const rem = (r.REMARKS || '').toUpperCase();
+
+          const isCollection = COLLECTION_KEYWORDS.some(k =>
+            desc.includes(k) || rem.includes(k)
+          );
+
+          if (!isCollection || Number(r.CREDIT) <= 0) return;
+
+          const key = trnDate
+            .toLocaleString('en-GB', { month: 'short', year: '2-digit' })
+            .replace(' ', '-');
+
+          if (monthly[key] !== undefined) {
+            monthly[key] += Number(r.CREDIT) || 0;
+          }
+        });
+      }
+
+      const totalCollection = Object.values(monthly)
+        .reduce((a: number, b: any) => a + b, 0);
+
+      /* ---------------- FINAL PUSH ---------------- */
+
+      this.cwmcasData.push({
+        CATEGORY: category,
+        OUTSTANDING: totalOutstanding,
+        OVERDUE: totalOverdue,
+        ...monthly,
+        TOTAL_COLLECTION: totalCollection
+      });
+    }
+
+  } catch (err) {
+    console.error('Category Monthly Summary Error:', err);
+  } finally {
+    this.getData = false;
+    console.log(this.cwmcasData);
+  }
+}
+
+  printCWMCAS() {
+    if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    } else {
+    var doc = new jsPDF("landscape", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Category-wise Monthly Collection Analysis Summary Statement', 200, 20);
+    doc.roundedRect(5, 32.5, 620, 15, 5, 5);
+    doc.setFontSize(10);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,42);
+    doc.text('Period',10,42);
+    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 42)
+    let firstPageStartY = 60; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#cwmCasTable',
+      tableWidth: 620,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+      },
+      /*columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' },
+        8: { halign: 'right' },
+        9: { halign: 'right' },
+        10: { halign: 'right' },
+        11: { halign: 'right' },
+        12: { halign: 'right' },
+      },*/
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      showFoot: 'lastPage', 
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+
+    // Bilingual footer text
+    doc.setFontSize(9);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.text(engText, 10, finalY1+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 620, finalY1+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc,'l');
+    // Save the PDF
+    doc.save(`category-collection-summary-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
+    }
+  }
+
+    exportCWMCAS_Raw(): void {
+  const fileName = `category-monthly-collection-summary-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
+
+  // Build an array representing the Excel rows
+  const exportRows: any[] = [];
+
+  this.cwmcasData.forEach(row => {
+    exportRows.push({
+      'Category': row.CATEGORY ?? '',
+      'Outstanding': row.OUTSTANDING ?? 0,
+      'Overdue': row.OVERDUE ?? 0,
+      ...this.getMonthKeys().reduce((acc, m) => {
+        acc[m] = row[m] ?? 0;
+        return acc;
+      }, {} as any),
+      'Total Collection': row.TOTAL_COLLECTION ?? 0
+    });
+  });
+
+  // Grand total row
+  const grandTotalRow: any = {
+    'Category': 'Grand Total',
+    'Outstanding': this.getMonthlyGrandTotal('OUTSTANDING'),
+    'Overdue': this.getMonthlyGrandTotal('OVERDUE'),
+    'Total Collection': this.getMonthlyGrandTotal('TOTAL_COLLECTION')
+  };
+
+  // Add month totals
+  this.getMonthKeys().forEach(m => {
+    grandTotalRow[m] = this.getMonthlyGrandTotal(m);
+  });
+
+  exportRows.push(grandTotalRow);
+
+  // Create worksheet
+  const ws: XLSX.WorkSheet = XLSX.utils.json_to_sheet(exportRows, { skipHeader: false });
+
+  // Create workbook
+  const wb: XLSX.WorkBook = {
+    Sheets: { 'Category Summary': ws },
+    SheetNames: ['Category Summary']
+  };
+
+  // Write + save
+  const excelBuffer: any = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+  const blob = new Blob([excelBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+  });
+
+  FileSaver.saveAs(blob, fileName);
+}
+
+    openSWMCAS() {
+    let dialogRef = this.dialog.open(this.swmcasLookupDialog);
+    this.swmcasData = []
+  }
+
+
+  async setSWMCAS() {
+
+  if (!this.startDate || !this.endDate) {
+    alert('Please select both start and end dates.');
+    return;
+  }
+
+  this.getData = true;
+  this.swmcasData = [];
+
+  const start = new Date(this.startDate);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(this.endDate);
+  end.setHours(23, 59, 59, 999);
+
+  const COLLECTION_KEYWORDS = [
+    'LINK','INVO','RV','CH','REVENUE','PAYMENT','TRNF','TRN','TRANSFER'
+  ];
+
+  const monthKeys = this.getMonthKeys();
+
+  try {
+
+for (const slp of this.salesPersonList) {
+
+      /* Initialise accumulators */
+      const monthly: any = {};
+      monthKeys.forEach(m => monthly[m] = 0);
+
+      let totalOutstanding = 0;
+      let totalOverdue = 0;
+
+      /* 🔹 All parents under this category */
+      const parents: any = await firstValueFrom(
+        this.reportService.getParentFromSlp(slp.SALESMANCD,this.selectedCountryName)
+      );
+
+      if (!parents.recordset?.length) continue;
+
+      for (const parent of parents.recordset) {
+
+        const resp: any = await firstValueFrom(
+          this.reportService.getParentSoa(parent.PARENTNAMEID)
+        );
+
+        const data = (resp.recordset || [])
+          .filter((r: any) => new Date(r.INV_DATE) <= end);
+
+        if (!data.length) continue;
+
+        /* ---------------- FIFO BLOCK (UNCHANGED) ---------------- */
+
+        const debits = data
+          .filter((r: any) => r.DEBIT > 0)
+          .map((r: any) => ({ ...r, remaining: Number(r.DEBIT) }))
+          .sort((a: any, b: any) =>
+            new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime()
+          );
+
+        const credits = data
+          .filter((r: any) => r.CREDIT > 0)
+          .map((r: any) => ({ ...r, remaining: Number(r.CREDIT) }))
+          .sort((a: any, b: any) =>
+            new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime()
+          );
+
+        credits.forEach((credit: any) => {
+          let rem = credit.remaining;
+          for (const debit of debits) {
+            if (rem <= 0) break;
+            if (debit.remaining <= 0) continue;
+            const applied = Math.min(debit.remaining, rem);
+            debit.remaining -= applied;
+            rem -= applied;
+          }
+        });
+
+        let runningBalance = 0;
+        let current = 0;
+        const today = new Date(this.endDate);
+        today.setHours(0, 0, 0, 0);
+
+        debits.forEach((d: any) => {
+          runningBalance += d.remaining;
+          if (d.DUEDATE && new Date(d.DUEDATE) > today) {
+            current += d.remaining;
+          }
+        });
+
+        const overdue = Math.max(runningBalance - current, 0);
+
+        totalOutstanding += runningBalance;
+        totalOverdue += overdue;
+
+        /* ---------------- MONTHLY COLLECTION ---------------- */
+
+        data.forEach((r: any) => {
+          const trnDate = new Date(r.INV_DATE);
+          if (trnDate < start || trnDate > end) return;
+
+          const desc = (r.DESCRIPTION || '').toUpperCase();
+          const rem = (r.REMARKS || '').toUpperCase();
+
+          const isCollection = COLLECTION_KEYWORDS.some(k =>
+            desc.includes(k) || rem.includes(k)
+          );
+
+          if (!isCollection || Number(r.CREDIT) <= 0) return;
+
+          const key = trnDate
+            .toLocaleString('en-GB', { month: 'short', year: '2-digit' })
+            .replace(' ', '-');
+
+          if (monthly[key] !== undefined) {
+            monthly[key] += Number(r.CREDIT) || 0;
+          }
+        });
+      }
+
+      const totalCollection = Object.values(monthly)
+        .reduce((a: number, b: any) => a + b, 0);
+
+      /* ---------------- FINAL PUSH ---------------- */
+
+      this.swmcasData.push({
+        SALESMAN: slp.SALESMANCD,
+        OUTSTANDING: totalOutstanding,
+        OVERDUE: totalOverdue,
+        ...monthly,
+        TOTAL_COLLECTION: totalCollection
+      });
+    }
+
+  } catch (err) {
+    console.error('Category Monthly Summary Error:', err);
+  } finally {
+    this.getData = false;
+    console.log(this.cwmcasData);
+  }
+}
+
+  printSWMCAS() {
+    if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    } else {
+    var doc = new jsPDF("landscape", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Salesman-wise Monthly Collection Analysis Statement', 200, 20);
+    doc.roundedRect(5, 32.5, 620, 15, 5, 5);
+    doc.setFontSize(10);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,42);
+    doc.text('Period',10,42);
+    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 42)
+    let firstPageStartY = 60; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#swmCasTable',
+      tableWidth: 620,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+      },
+      /*columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' },
+        8: { halign: 'right' },
+        9: { halign: 'right' },
+        10: { halign: 'right' },
+        11: { halign: 'right' },
+        12: { halign: 'right' },
+      },*/
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      showFoot: 'lastPage', 
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+
+    // Bilingual footer text
+    doc.setFontSize(9);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.text(engText, 10, finalY1+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 620, finalY1+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc,'l');
+    // Save the PDF
+    doc.save(`salesman-collection-summary-statement-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
+    }
+  }
+
+    exportSWMCAS_Raw(): void {
+  const fileName = `salesman-monthly-collection-summary-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
+
+  // Build an array representing the Excel rows
+  const exportRows: any[] = [];
+
+  this.swmcasData.forEach(row => {
+    exportRows.push({
+      'Salesman': row.SALESMAN ?? '',
+      'Outstanding': row.OUTSTANDING ?? 0,
+      'Overdue': row.OVERDUE ?? 0,
+      ...this.getMonthKeys().reduce((acc, m) => {
+        acc[m] = row[m] ?? 0;
+        return acc;
+      }, {} as any),
+      'Total Collection': row.TOTAL_COLLECTION ?? 0
+    });
+  });
+
+  // Grand total row
+  const grandTotalRow: any = {
+    'Category': 'Grand Total',
+    'Outstanding': this.getMonthlyGrandTotal('OUTSTANDING'),
+    'Overdue': this.getMonthlyGrandTotal('OVERDUE'),
+    'Total Collection': this.getMonthlyGrandTotal('TOTAL_COLLECTION')
+  };
+
+  // Add month totals
+  this.getMonthKeys().forEach(m => {
+    grandTotalRow[m] = this.getMonthlyGrandTotal(m);
+  });
+
+  exportRows.push(grandTotalRow);
+
+  // Create worksheet
+  const ws: XLSX.WorkSheet = XLSX.utils.json_to_sheet(exportRows, { skipHeader: false });
+
+  // Create workbook
+  const wb: XLSX.WorkBook = {
+    Sheets: { 'Salesman Summary': ws },
+    SheetNames: ['Salesman Summary']
+  };
+
+  // Write + save
+  const excelBuffer: any = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+  const blob = new Blob([excelBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+  });
+
+  FileSaver.saveAs(blob, fileName);
+}
+
+getMonthKeys(): string[] {
+  if (!this.startDate || !this.endDate) return [];
+  const start = new Date(this.startDate);
+  const end = new Date(this.endDate);
+
+  const months: string[] = [];
+  const d = new Date(start.getFullYear(), start.getMonth(), 1);
+
+  while (d <= end) {
+    months.push(
+      d.toLocaleString('en-GB', { month: 'short', year: '2-digit' })
+       .replace(' ', '-')
+    );
+    d.setMonth(d.getMonth() + 1);
+  }
+  return months;
+}
+
+
+getGroupedMonthlyData() {
+  const groups: any = {};
+    if (!this.startDate || !this.endDate) return [];
+  const start = new Date(this.startDate);
+  const end = new Date(this.endDate);
+
+  this.pwmcasData.forEach(row => {
+    const cat = row.CATEGORY;
+    if (!groups[cat]) {
+      groups[cat] = {
+        category: cat,
+        rows: [],
+        totals: {
+          OUTSTANDING: 0,
+          OVERDUE: 0,
+          TOTAL_COLLECTION: 0
+        }
+      };
+
+      this.getMonthKeys().forEach(m => groups[cat].totals[m] = 0);
+    }
+
+    groups[cat].rows.push(row);
+
+    groups[cat].totals.OUTSTANDING += row.OUTSTANDING || 0;
+    groups[cat].totals.OVERDUE += row.OVERDUE || 0;
+    groups[cat].totals.TOTAL_COLLECTION += row.TOTAL_COLLECTION || 0;
+
+    this.getMonthKeys().forEach(m => {
+      groups[cat].totals[m] += row[m] || 0;
+    });
+  });
+
+  return Object.values(groups) as any[];
+}
+
+getMonthlyGrandTotal(field: string): number {
+  return this.pwmcasData.reduce(
+    (sum, r) => sum + (r[field] || 0), 0
+  );
+}
+
 
 
 calculateAgeing(data: any[]): any {

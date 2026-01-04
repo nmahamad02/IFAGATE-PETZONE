@@ -80,8 +80,8 @@ private url = 'https://api.ifagate-petzone.theworkpc.com/api'
     return this.http.get(this.url + '/report/get-parent-from-organisation/' + org + '/' + country)
   }
 
-  getParentFromSlp(slp: string) {
-    return this.http.get(this.url + '/report/get-parent-from-salesperson/' + slp)
+  getParentFromSlp(slp: string,country: string) {
+    return this.http.get(this.url + '/report/get-parent-from-salesperson/' + slp + '/' + country)
   }
 
   getCategory() {
