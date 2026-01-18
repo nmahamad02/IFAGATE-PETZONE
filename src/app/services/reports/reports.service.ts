@@ -72,16 +72,16 @@ private url = 'https://api.ifagate-petzone.theworkpc.com/api'
     return this.http.get(this.url + '/report/get-salesperson')
   }
 
-  getParent(country: string) {
-    return this.http.get(this.url + '/report/get-parent/' + country)
+  getParent(country: string, type: string) {
+    return this.http.get(this.url + '/report/get-parent/' + country + '/' + type)
   }
 
-  getParentFromOrg(org: string,country: string) {
-    return this.http.get(this.url + '/report/get-parent-from-organisation/' + org + '/' + country)
+  getParentFromOrg(org: string,country: string, type: string) {
+    return this.http.get(this.url + '/report/get-parent-from-organisation/' + org + '/' + country+ '/' + type)
   }
 
-  getParentFromSlp(slp: string,country: string) {
-    return this.http.get(this.url + '/report/get-parent-from-salesperson/' + slp + '/' + country)
+  getParentFromSlp(slp: string,country: string, type: string) {
+    return this.http.get(this.url + '/report/get-parent-from-salesperson/' + slp + '/' + country + '/' + type)
   }
 
   getCategory() {

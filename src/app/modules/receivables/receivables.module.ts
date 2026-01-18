@@ -27,6 +27,9 @@ import { ReceiptVoucherListComponent } from './receipt-voucher-component/receipt
 import { ReceiptVoucherAllocationComponent } from './receipt-voucher-component/receipt-voucher-allocation/receipt-voucher-allocation.component';
 import { SharedModule } from '../shared/shared.module';
 import { ReportsComponent } from './reports-component/reports/reports.component';
+import { SoaComponent } from './reports-component/soa/soa.component';
+import { AgeingComponent } from './reports-component/ageing/ageing.component';
+import { CollectionComponent } from './reports-component/collection/collection.component';
 
 export const receivablesRoutes = [
   {
@@ -52,6 +55,18 @@ export const receivablesRoutes = [
   {
     path: 'Financial-Reports',
     component: ReportsComponent
+  },
+  {
+    path: 'soa-reports',
+    component: SoaComponent
+  },
+  {
+    path: 'ageing-reports',
+    component: AgeingComponent
+  },
+  {
+    path: 'collection-reports',
+    component: CollectionComponent
   }
 ];
 
@@ -62,7 +77,10 @@ export const receivablesRoutes = [
     ReceiptVoucherDetailComponent,
     ReceiptVoucherListComponent,
     ReceiptVoucherAllocationComponent,
-    ReportsComponent
+    ReportsComponent,
+    SoaComponent,
+    AgeingComponent,
+    CollectionComponent
   ],
   imports: [
     MatIconModule,
