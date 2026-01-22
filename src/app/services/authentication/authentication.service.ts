@@ -11,7 +11,7 @@ import { LoggedUserModel } from 'src/app/models/logged-user';
 })
 export class AuthenticationService {
   //private url = 'http://157.175.235.195:5075/api/user';
-private url = 'https://api.ifagate-petzone.theworkpc.com/api/user'
+private url = 'https://ifagate-petzone-api.theworkpc.com/api/user'
 
   loggedUserSubject: BehaviorSubject<LoggedUserModel>;
   loggedUser: LoggedUserModel;
