@@ -7,7 +7,7 @@ import { Injectable } from '@angular/core';
 export class SapService {
 
 
-  private url = 'https://api.ifagate-petzone.theworkpc.com/api'
+  private url = 'https://ifagate-petzone-api.theworkpc.com/api'
 
   constructor(private http:HttpClient) { }
 
