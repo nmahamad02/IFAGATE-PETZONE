@@ -956,16 +956,13 @@ async setCATANSYS() {
           'TRANSFER'
         ];
 
-data.forEach((r: any) => {
+/*data.forEach((r: any) => {
   const d = new Date(r.INV_DATE);
-
   if (d.getMonth() !== curMonth || d.getFullYear() !== curYear) {
     return;
   }
-
   const description = (r.DESCRIPTION || '').toUpperCase();
   const remarks = (r.REMARKS || '').toUpperCase();
-
   const isCollection = COLLECTION_KEYWORDS.some(k =>
     description.includes(k) || remarks.includes(k)
   );
@@ -973,7 +970,21 @@ data.forEach((r: any) => {
   if (isCollection) {
     collection += Number(r.CREDIT) || 0;
   }
-});
+});*/
+
+data.forEach((r: any) => {
+          const trnDate = new Date(r.INV_DATE);
+          if (trnDate >= start && trnDate <= end) {
+            const description = (r.DESCRIPTION || '').toUpperCase();
+            const remarks = (r.REMARKS || '').toUpperCase();
+            const isCollection = COLLECTION_KEYWORDS.some(k =>
+              description.includes(k) || remarks.includes(k)
+            );
+            if (isCollection) {
+              collection += Number(r.CREDIT) || 0;
+            }          
+          }
+        });
 
       }
 
@@ -1071,7 +1082,6 @@ async setSLPANSYS() {
       let collection = 0;
 
       for (const parent of parents.recordset) {
-
         const data = (await this.safeGetParentSoa(parent.customer))
           .filter((r: any) => new Date(r.INV_DATE) <= end);
 
@@ -1141,7 +1151,7 @@ async setSLPANSYS() {
           'TRANSFER'
         ];
 
-data.forEach((r: any) => {
+/*data.forEach((r: any) => {
   const d = new Date(r.INV_DATE);
 
   if (d.getMonth() !== curMonth || d.getFullYear() !== curYear) {
@@ -1158,7 +1168,21 @@ data.forEach((r: any) => {
   if (isCollection) {
     collection += Number(r.CREDIT) || 0;
   }
-});
+});*/
+
+data.forEach((r: any) => {
+          const trnDate = new Date(r.INV_DATE);
+          if (trnDate >= start && trnDate <= end) {
+            const description = (r.DESCRIPTION || '').toUpperCase();
+            const remarks = (r.REMARKS || '').toUpperCase();
+            const isCollection = COLLECTION_KEYWORDS.some(k =>
+              description.includes(k) || remarks.includes(k)
+            );
+            if (isCollection) {
+              collection += Number(r.CREDIT) || 0;
+            }          
+          }
+        });
       }
 
       this.slpansysData.push({
