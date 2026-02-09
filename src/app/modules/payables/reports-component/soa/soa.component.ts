@@ -31,29 +31,14 @@ export class SoaComponent {
   userRight = localStorage.getItem('userright')!
   loggedInUser = this.removeQuotes(localStorage.getItem('firstname')?.trim() || 'Guest') + ' ' + this.removeQuotes(localStorage.getItem('lastname')?.trim() || '');  
 
-  @ViewChild('cwsoaLookupDialog', { static: false }) cwsoaLookupDialog!: TemplateRef<any>;
-  @ViewChild('pwsoaLookupDialog', { static: false }) pwsoaLookupDialog!: TemplateRef<any>;
-  @ViewChild('cosoaLookupDialog', { static: false }) cosoaLookupDialog!: TemplateRef<any>;
-  @ViewChild('posoaLookupDialog', { static: false }) posoaLookupDialog!: TemplateRef<any>;
-  @ViewChild('cpwsoaLookupDialog', { static: false }) cpwsoaLookupDialog!: TemplateRef<any>;
-  @ViewChild('ppwsoaLookupDialog', { static: false }) ppwsoaLookupDialog!: TemplateRef<any>;
+  @ViewChild('swsoaLookupDialog', { static: false }) swsoaLookupDialog!: TemplateRef<any>;
+  @ViewChild('spwsoaLookupDialog', { static: false }) spwsoaLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
-
-  cwsoaData: any[] = []
-  pwsoaData: any[] = []
-  cosoaData: any[] = []
-  posoaData: any[] = []
-  cpwsoaData: any[] = []
-  ppwsoaData: any[] = []
-
-  industryList: any[] = [];
-  organisationList: any[] = [];
-  salesPersonList: any[] = [];
-  locationList: any[] = [];
-
-  catList = ['MM', 'PS', 'VET', 'FBR', 'OTHER'];
+  
+  swsoaData: any[] = []
+  spwsoaData: any[] = []
 
   periodTotalDebit = 0;
   periodTotalCredit = 0;
@@ -77,26 +62,8 @@ export class SoaComponent {
   openingBalance = 0;
   closingBalance = 0;
   customerList: any[] = []
-  parentList: any[] = []
 
-  selectedCustomer: any
-  selectedParent: any
-  selectedCategories: string[] = []
-  selectedLocation: string = 'NULL'
-
-  countries = [
-    { name: 'All Countries', code: 'un' },
-    { name: 'Bahrain', code: 'bh' },
-    { name: 'Kuwait', code: 'kw' },
-    { name: 'Saudi Arabia', code: 'sa' },
-    { name: 'United Arab Emirates', code: 'ae' },
-    { name: 'Oman', code: 'om' },
-    { name: 'Qatar', code: 'qa' },
-  ];
-
-  selectedCountry: { name: string; code: string } = this.countries[0];
-  selectedCountryName = '*';
-  selectedCountryCode = 'un';
+  selectedSupplier: any
 
   startDate: Date;
   endDate: Date;
@@ -120,254 +87,19 @@ export class SoaComponent {
   progress = [0, 0, 0];
 
   constructor(private financeService: FinanceService, private route: ActivatedRoute, private dialog: MatDialog, private router: Router, private accountService: AccountsService, private reportService: ReportsService, private dataSharingService: DataSharingService, private sapservice: SapService, private emailService: EmailService) { 
-    this.accountService.listOpbal(this.currentYear.toString(),'C').subscribe((res: any) => {
+    this.accountService.listOpbal(this.currentYear.toString(),'S').subscribe((res: any) => {
+      console.log(res)
       this.customerList = res.recordset;
     }, (error: any) => {
       console.log(error);
     });
-    this.reportService.getParent('*','C').subscribe((res: any) => {
-      this.parentList = res.recordset
-      console.log(this.parentList)
-    }, (err: any) => {
-      console.log(err)
-    })
-    this.reportService.getIndustry().subscribe((res: any) => {
-      this.industryList = res.recordset
-    })
-    this.reportService.getOrganisation().subscribe((res: any) => {
-      this.organisationList = res.recordset
-    })
-    this.reportService.getSalesPerson().subscribe((res: any) => {
-      this.salesPersonList = res.recordset
-    })
-    this.reportService.getLocation().subscribe((res: any) => {
-      this.locationList = res.recordset
-    })
   }
 
-    updateFlag(country: { name: string; code: string }) {
-      this.selectedCountry = country;
-      this.selectedCountryName = country.name;
-  this.selectedCountryCode = country.code;
+  ngOnInit() {}
 
-  // Special case
-  if (country.name === 'All Countries') {
-    this.reportService.getParent('*','C').subscribe(
-      (res: any) => {
-        this.parentList = res.recordset;
-        console.log(this.parentList);
-      },
-      (err: any) => console.log(err)
-    );
-  } 
-  // Normal case
-  else {
-    this.reportService.getParent(country.name,'C').subscribe(
-      (res: any) => {
-        this.parentList = res.recordset;
-        console.log(this.parentList);
-      },
-      (err: any) => console.log(err)
-    );
-  }
-}
-
-startFinanceSync() {
-  this.isSyncing = true;
-  this.financeData = true;
-  this.progress = [33, 0, 0];
-  //this.syncInvoice();
-  this.syncPayable()
-}
-
-syncInvoice() {
-  let seconds = 0;
-  const interval = setInterval(() => {
-    seconds++;
-    this.progress[0] = seconds;
-    
-    if (seconds >= 33) {
-      clearInterval(interval);
-      this.syncPayable();
-    }
-  }, 1000);
-}
-
-syncPayable() {
-  this.sapservice.syncPayablesDetails().subscribe({
-    next: res => {
-      this.progress[1] = 50;
-      this.syncPayment();
-    },
-    error: err => {
-      // Only treat real errors (status 4xx/5xx)
-      if (err.status >= 400) {
-        console.error('Error syncing payables:', err);
-        this.sendErrorEmail('Payable');
-      } else {
-        console.warn('Non-critical response in payables sync:', err);
-      }
-      this.progress[1] = 50;
-      this.syncPayment();
-    }
-  });
-}
- 
-syncPayment() {
-  this.sapservice.syncPaymentsDetails().subscribe({
-    next: res => {
-      this.progress[2] = 50;
-      setTimeout(() => {
-        alert("Finance sync successful!");
-        this.sendSuccessEmail('Finance');
-        this.resetProgress();
-      }, 300);
-    },
-    error: err => {
-      this.progress[2] = 50;
-      if (err.status >= 400) {
-        console.error('Error syncing payments:', err);
-        if (err.status === 401) {
-          alert("Finance sync unsuccessful: Unauthorized.");
-        } else {
-          alert("Finance sync error occurred.");
-        }
-        this.sendErrorEmail('Payment');
-      } else {
-        console.warn('Non-critical response in payments sync:', err);
-        alert("Finance sync successful (minor issue).");
-        this.sendSuccessEmail('Finance');
-      }
-      this.resetProgress();
-    }
-  });
-}
-
-startCustomerSync() {
-  this.isSyncing = true;
-  this.customerData = true;
-  this.progress = [0, 0, 0];
-  this.syncCustomerTimer();
-}
-
-syncCustomerTimer() {
-  let seconds = 0;
-  const interval = setInterval(() => {
-    seconds++;
-    this.progress[0] = seconds;
-    
-    if (seconds >= 33) {
-      clearInterval(interval);
-      this.syncCustomer();
-    }
-  }, 1000);
-}
-
-syncCustomer() {
-  this.sapservice.syncCustomerDetails().subscribe({
-    next: res => {
-      this.progress[1] = 33;
-      this.syncOPBAL();
-    },
-    error: err => {
-      this.progress[1] = 33;
-      if (err.status >= 400) {
-        console.error('Error syncing customers:', err);
-        this.sendErrorEmail('Customer');
-      } else {
-        console.warn('Non-critical response in customer sync:', err);
-      }
-      this.syncOPBAL();
-    }
-  });
-}
-
-syncOPBAL() {
-  this.sapservice.syncOPBALDetails().subscribe({
-    next: res => {
-      this.progress[2] = 34;
-      setTimeout(() => {
-        alert("Customer sync successful!");
-        this.sendSuccessEmail('Customer');
-        this.resetProgress();
-      }, 300);
-    },
-    error: err => {
-      this.progress[2] = 34;
-      if (err.status >= 400) {
-        console.error('Error syncing OPBAL:', err);
-        if (err.status === 401) {
-          alert("Customer sync unsuccessful: Unauthorized.");
-        } else {
-          alert("Customer sync error occurred!");
-        }
-        this.sendErrorEmail('BuPa');
-      } else {
-        console.warn('Non-critical response in OPBAL sync:', err);
-        alert("Customer sync successful (minor issue).");
-        this.sendSuccessEmail('Customer');
-      }
-      this.resetProgress();
-    }
-  });
-}
-
-resetProgress() {
-  this.progress = [0, 0, 0];
-  this.isSyncing = false;
-  this.financeData = false;
-  this.customerData = false;
-}
-
-getProgressTotal(): number {
-  return this.progress.reduce((a, b) => a + b, 0);
-}
-
-sendSuccessEmail(type: string) {
-  const state = 'Manual';
-  const user = this.loggedInUser || "SYSTEM";
-  const date = new Date().toLocaleDateString("en-GB").replace(/\//g, "-");
-  const time = new Date().toLocaleTimeString("en-GB");
-
-  this.emailService.sendSyncSuccessEmail(type, state, user, date, time)
-    .subscribe({
-      next: res => console.log("Success email sent", res),
-      error: err => console.error("Error sending success email", err)
-    });
-}
-
-sendErrorEmail(type: string) {
-  const state = 'Manual';
-  const user = this.loggedInUser || "SYSTEM";
-  const date = new Date().toLocaleDateString("en-GB").replace(/\//g, "-");
-  const time = new Date().toLocaleTimeString("en-GB");
-
-  this.emailService.sendSyncErrorEmail(type, state, user, date, time)
-    .subscribe({
-      next: res => console.log("Error email sent", res),
-      error: err => console.error("Error sending error email", err)
-    });
-}
-
-ngOnInit() {
-  window.addEventListener('beforeunload', this.beforeUnloadHandler);
-}
-
-ngOnDestroy() {
-  window.removeEventListener('beforeunload', this.beforeUnloadHandler);
-}
-
-beforeUnloadHandler = (event: BeforeUnloadEvent) => {
-  if (this.isSyncing) {
-    event.preventDefault();
-    event.returnValue = 'Data sync is in progress. Are you sure you want to leave?';
-    return event.returnValue;
-  }
-}
-
-  openCWSOA() {
+  openSWSOA() {
     //let dialogRef = this.dialog.open(this.cwsoaLookupDialog);
-    this.dialog.open(this.cwsoaLookupDialog, {
+    this.dialog.open(this.swsoaLookupDialog, {
         width: '100vw',
         maxWidth: '100vw',
     }
@@ -383,10 +115,10 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       'ABOVE_120_DAYS': 0,
       'CURRENT': 0
     };
-    this.cwsoaData = []
+    this.swsoaData = []
   }
 
-  getCWSOA(customer: any) {
+  getSWSOA(customer: any) {
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -398,26 +130,26 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       'ABOVE_120_DAYS': 0,
       'CURRENT': 0
     };
-    this.cwsoaData = []
-    this.selectedCustomer = customer
+    this.swsoaData = []
+    this.selectedSupplier = customer
         this.getData = true
-    this.reportService.getCustomerSoa('C', customer.PCODE).subscribe((res: any) => {
+    this.reportService.getCustomerSoa('S', customer.PCODE).subscribe((res: any) => {
       if (res.recordset.length === 0) {
         alert('No data for the selected parameters!');
               this.getData = false
         return;
       }
-      this.cwsoaData = res.recordset;
+      this.swsoaData = res.recordset;
           this.getData = false
       let runningBalance = 0;
 
-      this.cwsoaData = this.cwsoaData.map(row => {
+      this.swsoaData = this.swsoaData.map(row => {
         const debit = Number(row.DEBIT) || 0;
         const credit = Number(row.CREDIT) || 0;
         this.totalDebit += debit;
         this.totalCredit += credit;
 
-        runningBalance += debit - credit;
+        runningBalance += credit - debit;
 
         let daysDiff: number | null = null;
 
@@ -440,10 +172,10 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         };
       });
 
-      this.cwsoaData.forEach(row => {
+      this.swsoaData.forEach(row => {
         const debit = Number(row.DEBIT) || 0;
         const credit = Number(row.CREDIT) || 0;
-        const amt = debit - credit;
+        const amt = credit - debit;
         const diff = Number(row.DAYS_DIFF);
         if (diff < 0) {
           this.ageingSummary.CURRENT += amt;
@@ -466,7 +198,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     });
   }
 
-  printCWSOA() {
+  printSWSOA() {
     var doc = new jsPDF("portrait", "px", "a4");
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
@@ -474,23 +206,23 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.text('Statement of Accounts', 160, 20);
     doc.roundedRect(5, 32.5, 436, 55, 5, 5);
     doc.setFontSize(10);
-    doc.text(`${this.selectedCustomer.CUST_NAME}`,10,42);
-    doc.text(`Account ID: ${this.selectedCustomer.PCODE} (B2B)`,330,42);
+    doc.text(`${this.selectedSupplier.CUST_NAME}`,10,42);
+    doc.text(`Account ID: ${this.selectedSupplier.PCODE} (B2B)`,330,42);
     doc.setFont('Helvetica', 'normal');
     doc.text(`Date: ${this.mCurDate}`,330,52);
     doc.text('Address',10,52);
-    doc.text(`: ${this.selectedCustomer.ADD1}`,45,52);
-    doc.text(`  ${this.selectedCustomer.ACCOUNT_CATEGORY_DESC}`,45,62);
+    doc.text(`: ${this.selectedSupplier.ADD1}`,45,52);
+    doc.text(`  ${this.selectedSupplier.ACCOUNT_CATEGORY_DESC}`,45,62);
     doc.text('Mobile',10,72);
-    doc.text(`: ${this.selectedCustomer.MOBILE}`,45,72);
+    doc.text(`: ${this.selectedSupplier.MOBILE}`,45,72);
     doc.text('Email',10,82);
-    doc.text(`: ${this.selectedCustomer.EMAIL}`,45,82);
+    doc.text(`: ${this.selectedSupplier.EMAIL}`,45,82);
     let firstPageStartY = 90; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
 
     autoTable(doc, {
-      html: '#cwSoaTable',
+      html: '#swSoaTable',
       tableWidth: 435,
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
@@ -529,9 +261,9 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     });
 
     let finalY1 = doc.lastAutoTable?.finalY || 0
-    if(this.selectedCustomer?.Orgnisation != 'MM-COOP') {
+    if(this.selectedSupplier?.Orgnisation != 'MM-COOP') {
     autoTable(doc, {
-      html: '#cwsoaAgeingSummaryTable',
+      html: '#swsoaAgeingSummaryTable',
       startY: finalY1 + 5,
       tableWidth: 435,
       margin: { left: 5 },
@@ -581,14 +313,14 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     // Add watermark (if necessary)
     doc = this.addWaterMark(doc,'p');
     // Save the PDF
-    doc.save(`${this.selectedCustomer.PCODE}-statement-of-accounts-${this.mCurDate}.pdf`);
+    doc.save(`${this.selectedSupplier.PCODE}-statement-of-accounts-${this.mCurDate}.pdf`);
   }
 
-  exportCWSOA(): void {
-    const fileName = `${this.selectedCustomer.PCODE}-statement-of-accounts-${this.mCurDate}.xlsx`;
+  exportSWSOA(): void {
+    const fileName = `${this.selectedSupplier.PCODE}-statement-of-accounts-${this.mCurDate}.xlsx`;
 
     // 1. Create worksheet from cwsoaData
-    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.cwsoaData.map(row => ({
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.swsoaData.map(row => ({
       'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
       'Invoice No': row.INV_NO,
       'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
@@ -642,842 +374,10 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     FileSaver.saveAs(blob, fileName);
   }
 
-  openPWSOA() {
-    //let dialogRef = this.dialog.open(this.pwsoaLookupDialog);
-    this.dialog.open(this.pwsoaLookupDialog, {
-        width: '100vw',
-        maxWidth: '100vw',
-    }
-  )
-    this.totalDebit = 0;
-    this.totalCredit = 0;
-    this.closingBalance = 0;
-    this.ageingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.pwsoaData = []
-  }
 
-  getPWSOA(parent: any) {
-    this.totalDebit = 0;
-    this.totalCredit = 0;
-    this.closingBalance = 0;
-    this.ageingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.pwsoaData = []
-    this.selectedParent = parent
-        this.getData = true
-    this.reportService.getParentSoa(parent.PARENTNAME).subscribe((res: any) => {
-      if (res.recordset.length === 0) {
-        alert('No data for the selected parameters!');
-              this.getData = false
-        return;
-      }
-      this.pwsoaData = res.recordset;
-          this.getData = false
-      let runningBalance = 0;
-
-      this.pwsoaData = this.pwsoaData.map(row => {
-        const debit = Number(row.DEBIT) || 0;
-        const credit = Number(row.CREDIT) || 0;
-        this.totalDebit += debit;
-        this.totalCredit += credit;
-
-        runningBalance += debit - credit;
-
-        let daysDiff: number | null = null;
-
-        // Only calculate overdue if there's a debit and it's not fully offset
-    //    if ((debit - credit) > 0) {
-          const dueDate = new Date(row.DUEDATE);
-          const today = new Date();
-
-          dueDate.setHours(0, 0, 0, 0);
-          today.setHours(0, 0, 0, 0);
-
-          const diffTime = today.getTime() - dueDate.getTime()
-          daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));    
-     //   }
-        
-        return {
-          ...row,
-          BALANCE: runningBalance,
-          DAYS_DIFF: daysDiff // could be null if not applicable
-        };
-      });
-
-      this.pwsoaData.forEach(row => {
-        const debit = Number(row.DEBIT) || 0;
-        const credit = Number(row.CREDIT) || 0;
-        const amt = debit - credit;
-        const diff = Number(row.DAYS_DIFF);
-        if (diff < 0) {
-          this.ageingSummary.CURRENT += amt;
-        } else if (diff <= 30) {
-          this.ageingSummary['30_DAYS'] += amt;
-        } else if (diff <= 60) {
-          this.ageingSummary['60_DAYS'] += amt;
-        } else if (diff <= 90) {
-          this.ageingSummary['90_DAYS'] += amt;
-        } else if (diff <= 120) {
-          this.ageingSummary['120_DAYS'] += amt;
-        } else {
-          this.ageingSummary['ABOVE_120_DAYS'] += amt;
-        }
-      })
-    }, (err: any) => {
-      alert('No data for the selected parameters!');
-            this.getData = false
-      return;
-    });
-  }
-
-  printPWSOA() {
-    var doc = new jsPDF("portrait", "px", "a4");
-    doc.setFontSize(16);
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Statement of Accounts', 160, 20);
-    doc.roundedRect(5, 32.5, 436, 55, 5, 5);
-    doc.setFontSize(10);
-    doc.text(`${this.selectedParent.PARENTNAME}`,10,42);
-    doc.text(`Group Acc ID: ${this.selectedParent.pcode}`,330,42);// (${this.selectedParent.customertype})`,330,42);
-    doc.setFont('Helvetica', 'normal');
-    doc.text(`Date: ${this.mCurDate}`,330,52);
-    doc.text('Address',10,52);
-    doc.text(`: ${this.selectedParent.add1}`,45,52);
-    doc.text(`  ${this.selectedParent.country}`,45,62);
-    doc.text('Mobile',10,72);
-    doc.text(`: ${this.selectedParent.mobile}`,45,72);
-    doc.text('Email',10,82);
-    doc.text(`: ${this.selectedParent.email}`,45,82);
-    let firstPageStartY = 90; // Start Y position for first page
-    let nextPagesStartY = 35; // Start Y position for subsequent pages
-    let firstPage = true;      // Flag to check if it's the first page
-
-    autoTable(doc, {
-      html: '#pwSoaTable',
-      tableWidth: 435,
-      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'left',
-        valign: 'middle'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255], // White background
-        textColor: [0, 0, 0],       // Black text
-        fontStyle: 'bold',
-        halign: 'left'
-      },
-      footStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        halign: 'right'
-      },
-     /* columnStyles: {
-        6: { halign: 'right' },
-        7: { halign: 'right' },
-        8: { halign: 'right' }
-      },*/
-      margin: { 
-        top: firstPage ? firstPageStartY : nextPagesStartY,
-        left: 5
-      },
-      showFoot: 'lastPage', 
-      didDrawPage: function () {
-        firstPage = false;
-      }
-    });
-
-    let finalY1 = doc.lastAutoTable?.finalY || 0
-    if(this.selectedParent?.orgnisation != 'MM-COOP') {
-    autoTable(doc, {
-      html: '#pwsoaAgeingSummaryTable',
-      startY: finalY1 + 5,
-      tableWidth: 435,
-      margin: { left: 5 },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'center'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold'
-      },
-      /*columnStyles: {
-        0: { halign: 'center' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' },
-        5: { halign: 'center' },
-        6: { halign: 'center' }
-      }*/
-    });
-  }
-    let finalY2 = doc.lastAutoTable?.finalY || 0
-
-    // Bilingual footer text
-    doc.setFontSize(8);
-    // Now the font is already registered thanks to the JS file!
-    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
-    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
-    // Manually reverse Arabic for basic rendering
-    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
-    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
-    const pageWidth = doc.internal.pageSize.getWidth();
-    // Calculate X to center
-    const centerX = pageWidth / 2;
-    doc.setFontSize(10)
-    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
-    doc.setFont('Amiri-Regular', 'normal')
-    doc.text(araText, 435, finalY2+15, { align: 'right' });
-
-    // Add watermark (if necessary)
-    doc = this.addWaterMark(doc,'p');
-    // Save the PDF
-    doc.save(`${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}.pdf`);
-  }
-
-  exportPWSOA(): void {
-    const fileName = `${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}.xlsx`;
-
-    // 1. Create worksheet from cwsoaData
-    const pwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.pwsoaData.map(row => ({
-      'Branch Name': row.CUST_NAME,
-      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
-      'Invoice No': row.INV_NO,
-      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
-      'Description': row.DESCRIPTION,
-      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
-      'Debit': row.DEBIT || '',
-      'Credit': row.CREDIT || '',
-      'Balance': row.BALANCE
-    })));
-
-    // 2. Create another sheet for Ageing Summary
-    const ageingData = [{
-      'Current': this.ageingSummary['CURRENT'] || 0,
-      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
-      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
-      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
-      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
-      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
-      'Total Outstanding': (
-        (this.ageingSummary['CURRENT'] || 0) +
-        (this.ageingSummary['30_DAYS'] || 0) +
-        (this.ageingSummary['60_DAYS'] || 0) +
-        (this.ageingSummary['90_DAYS'] || 0) +
-        (this.ageingSummary['120_DAYS'] || 0) +
-        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
-      )
-    }];
-
-    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
-
-    // 3. Create a workbook and add the sheets
-    const workbook: XLSX.WorkBook = {
-      Sheets: {
-        'Statement': pwsoaSheet,
-        'Ageing Summary': ageingSheet
-      },
-      SheetNames: ['Statement', 'Ageing Summary']
-    };
-
-    // 4. Generate buffer
-    const excelBuffer: any = XLSX.write(workbook, {
-      bookType: 'xlsx',
-      type: 'array'
-    });
-
-    // 5. Save to file
-    const blob = new Blob([excelBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
-    });
-
-    FileSaver.saveAs(blob, fileName);
-  }
-
-  openCOSOA() {
-    //let dialogRef = this.dialog.open(this.cosoaLookupDialog);
-    this.dialog.open(this.cosoaLookupDialog, {
-        width: '100vw',
-        maxWidth: '100vw',
-    }
-  )
-    this.totalDebit = 0;
-    this.totalCredit = 0;
-    this.closingBalance = 0;
-    this.ageingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.cosoaData = []
-  }
-
-  getCOSOA(customer: any) {
-    this.totalDebit = 0;
-    this.totalCredit = 0;
-    this.closingBalance = 0;
-    this.ageingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.cosoaData = []
-    this.selectedCustomer = customer
-        this.getData = true
-
-    this.reportService.getCustomerOpenSoa('C', customer.PCODE).subscribe((res: any) => {
-      if (res.recordset.length === 0) {
-        alert('No data for the selected parameters!');
-              this.getData = false
-        return;
-      }
-      this.cosoaData = res.recordset;
-          this.getData = false
-      let runningBalance = 0;
-
-      this.cosoaData = this.cosoaData.map(row => {
-        const debit = Number(row.DEBIT) || 0;
-        const credit = Number(row.CREDIT) || 0;
-        this.totalDebit += debit;
-        this.totalCredit += credit;
-
-        runningBalance += debit - credit;
-
-        let daysDiff: number | null = null;
-
-        // Only calculate overdue if there's a debit and it's not fully offset
-    //    if ((debit - credit) > 0) {
-          const dueDate = new Date(row.DUEDATE);
-          const today = new Date();
-
-          dueDate.setHours(0, 0, 0, 0);
-          today.setHours(0, 0, 0, 0);
-
-          const diffTime = today.getTime() - dueDate.getTime()
-          daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));    
-      //  }
-        
-        return {
-          ...row,
-          BALANCE: runningBalance,
-          DAYS_DIFF: daysDiff // could be null if not applicable
-        };
-      });
-
-      this.cosoaData.forEach(row => {
-        const debit = Number(row.DEBIT) || 0;
-        const credit = Number(row.CREDIT) || 0;
-        const amt = debit - credit;
-        const diff = Number(row.DAYS_DIFF);
-        if (diff < 0) {
-          this.ageingSummary.CURRENT += amt;
-        } else if (diff <= 30) {
-          this.ageingSummary['30_DAYS'] += amt;
-        } else if (diff <= 60) {
-          this.ageingSummary['60_DAYS'] += amt;
-        } else if (diff <= 90) {
-          this.ageingSummary['90_DAYS'] += amt;
-        } else if (diff <= 120) {
-          this.ageingSummary['120_DAYS'] += amt;
-        } else {
-          this.ageingSummary['ABOVE_120_DAYS'] += amt;
-        }
-      })
-    }, (err: any) => {
-      alert('No data for the selected parameters!');
-            this.getData = false
-      return;
-    });
-  }
-
-  printCOSOA() {
-    var doc = new jsPDF("portrait", "px", "a4");
-    doc.setFontSize(16);
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Customer Open Statement of Accounts', 125, 20);
-    doc.roundedRect(5, 32.5, 436, 55, 5, 5);
-    doc.setFontSize(10);
-    doc.text(`${this.selectedCustomer.CUST_NAME}`,10,42);
-    doc.text(`Account ID: ${this.selectedCustomer.PCODE} (B2B)`,330,42);
-    doc.setFont('Helvetica', 'normal');
-    doc.text(`Date: ${this.mCurDate}`,330,52);
-    doc.text('Address',10,52);
-    doc.text(`: ${this.selectedCustomer.ADD1}`,45,52);
-    doc.text(`  ${this.selectedCustomer.ACCOUNT_CATEGORY_DESC}`,45,62);
-    doc.text('Mobile',10,72);
-    doc.text(`: ${this.selectedCustomer.MOBILE}`,45,72);
-    doc.text('Email',10,82);
-    doc.text(`: ${this.selectedCustomer.EMAIL}`,45,82);
-    let firstPageStartY = 90; // Start Y position for first page
-    let nextPagesStartY = 35; // Start Y position for subsequent pages
-    let firstPage = true;      // Flag to check if it's the first page
-
-    autoTable(doc, {
-      html: '#coSoaTable',
-      tableWidth: 435,
-      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'left',
-        valign: 'middle'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255], // White background
-        textColor: [0, 0, 0],       // Black text
-        fontStyle: 'bold',
-        halign: 'left'
-      },
-      footStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        halign: 'right'
-      },
-     /* columnStyles: {
-        5: { halign: 'right' },
-        6: { halign: 'right' },
-        7: { halign: 'right' }
-      },*/
-      margin: { 
-        top: firstPage ? firstPageStartY : nextPagesStartY,
-        left: 5
-      },
-      showFoot: 'lastPage', 
-      didDrawPage: function () {
-        firstPage = false;
-      }
-    });
-
-    let finalY1 = doc.lastAutoTable?.finalY || 0
-      if(this.selectedCustomer?.Orgnisation != 'MM-COOP') {
-
-    autoTable(doc, {
-      html: '#cosoaAgeingSummaryTable',
-      startY: finalY1 + 5,
-      tableWidth: 435,
-      margin: { left: 5 },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'center'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold'
-      },
-    /*  columnStyles: {
-        0: { halign: 'center' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' },
-        5: { halign: 'center' },
-        6: { halign: 'center' }
-      }*/
-    });
-  }
-    let finalY2 = doc.lastAutoTable?.finalY || 0
-
-    // Bilingual footer text
-    doc.setFontSize(8);
-    // Now the font is already registered thanks to the JS file!
-    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
-    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
-    // Manually reverse Arabic for basic rendering
-    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
-    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
-    const pageWidth = doc.internal.pageSize.getWidth();
-    // Calculate X to center
-    const centerX = pageWidth / 2;
-    doc.setFontSize(10)
-    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
-    doc.setFont('Amiri-Regular', 'normal')
-    doc.text(araText, 435, finalY2+15, { align: 'right' });
-
-    // Add watermark (if necessary)
-    doc = this.addWaterMark(doc,'p');
-    // Save the PDF
-    doc.save(`${this.selectedCustomer.PCODE}-open-statement-of-accounts-${this.mCurDate}.pdf`);
-  }
-
-  exportCOSOA(): void {
-    const fileName = `${this.selectedCustomer.PCODE}-open-statement-of-accounts-${this.mCurDate}.xlsx`;
-
-    // 1. Create worksheet from cwsoaData
-    const cosoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.cosoaData.map(row => ({
-      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
-      'Invoice No': row.INV_NO,
-      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
-      'Description': row.DESCRIPTION,
-      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
-      'Debit': row.DEBIT || '',
-      'Credit': row.CREDIT || '',
-      'Balance': row.BALANCE
-    })));
-
-    // 2. Create another sheet for Ageing Summary
-    const ageingData = [{
-      'Current': this.ageingSummary['CURRENT'] || 0,
-      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
-      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
-      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
-      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
-      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
-      'Total Outstanding': (
-        (this.ageingSummary['CURRENT'] || 0) +
-        (this.ageingSummary['30_DAYS'] || 0) +
-        (this.ageingSummary['60_DAYS'] || 0) +
-        (this.ageingSummary['90_DAYS'] || 0) +
-        (this.ageingSummary['120_DAYS'] || 0) +
-        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
-      )
-    }];
-
-    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
-
-    // 3. Create a workbook and add the sheets
-    const workbook: XLSX.WorkBook = {
-      Sheets: {
-        'Statement': cosoaSheet,
-        'Ageing Summary': ageingSheet
-      },
-      SheetNames: ['Statement', 'Ageing Summary']
-    };
-
-    // 4. Generate buffer
-    const excelBuffer: any = XLSX.write(workbook, {
-      bookType: 'xlsx',
-      type: 'array'
-    });
-
-    // 5. Save to file
-    const blob = new Blob([excelBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
-    });
-
-    FileSaver.saveAs(blob, fileName);
-  }
-
-  openPOSOA() {
-    //let dialogRef = this.dialog.open(this.posoaLookupDialog);
-    this.dialog.open(this.posoaLookupDialog, {
-        width: '100vw',
-        maxWidth: '100vw',
-    }
-  )
-    this.totalDebit = 0;
-    this.totalCredit = 0;
-    this.closingBalance = 0;
-    this.ageingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.posoaData = []
-  }
-
-  getPOSOA(parent: any) {
-    this.totalDebit = 0;
-    this.totalCredit = 0;
-    this.closingBalance = 0;
-    this.ageingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.posoaData = []
-        this.getData = true
-    this.selectedParent = parent
-    this.reportService.getParentOpenSoa(parent.PARENTNAME).subscribe((res: any) => {
-      if (res.recordset.length === 0) {
-        alert('No data for the selected parameters!');
-              this.getData = false
-        return;
-      }
-      this.posoaData = res.recordset;
-          this.getData = false
-      let runningBalance = 0;
-
-      this.posoaData = this.posoaData.map(row => {
-        const debit = Number(row.DEBIT) || 0;
-        const credit = Number(row.CREDIT) || 0;
-        this.totalDebit += debit;
-        this.totalCredit += credit;
-
-        runningBalance += debit - credit;
-
-        let daysDiff: number | null = null;
-
-        // Only calculate overdue if there's a debit and it's not fully offset
-     //   if ((debit - credit) > 0) {
-          const dueDate = new Date(row.DUEDATE);
-          const today = new Date();
-
-          dueDate.setHours(0, 0, 0, 0);
-          today.setHours(0, 0, 0, 0);
-
-          const diffTime = today.getTime() - dueDate.getTime()
-          daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));    
-       // }
-        
-        return {
-          ...row,
-          BALANCE: runningBalance,
-          DAYS_DIFF: daysDiff // could be null if not applicable
-        };
-      });
-
-      this.posoaData.forEach(row => {
-        const debit = Number(row.DEBIT) || 0;
-        const credit = Number(row.CREDIT) || 0;
-        const amt = debit - credit;
-        const diff = Number(row.DAYS_DIFF);
-        if (diff < 0) {
-          this.ageingSummary.CURRENT += amt;
-        } else if (diff <= 30) {
-          this.ageingSummary['30_DAYS'] += amt;
-        } else if (diff <= 60) {
-          this.ageingSummary['60_DAYS'] += amt;
-        } else if (diff <= 90) {
-          this.ageingSummary['90_DAYS'] += amt;
-        } else if (diff <= 120) {
-          this.ageingSummary['120_DAYS'] += amt;
-        } else {
-          this.ageingSummary['ABOVE_120_DAYS'] += amt;
-        }
-      })
-    }, (err: any) => {
-      alert('No data for the selected parameters!');
-            this.getData = false
-      return;
-    });
-  }
-
-  printPOSOA() {
-    var doc = new jsPDF("portrait", "px", "a4");
-    doc.setFontSize(16);
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Parent-wise Open Statement of Accounts', 120, 20);
-    doc.roundedRect(5, 32.5, 436, 55, 5, 5);
-    doc.setFontSize(10);
-    doc.text(`${this.selectedParent.PARENTNAME}`,10,42);
-    doc.text(`Group Acc ID: ${this.selectedParent.pcode}`,330,42);// (${this.selectedParent.customertype})`,330,42);
-    doc.setFont('Helvetica', 'normal');
-    doc.text(`Date: ${this.mCurDate}`,330,52);
-    doc.text('Address',10,52);
-    doc.text(`: ${this.selectedParent.add1}`,45,52);
-    doc.text(`  ${this.selectedParent.country}`,45,62);
-    doc.text('Mobile',10,72);
-    doc.text(`: ${this.selectedParent.mobile}`,45,72);
-    doc.text('Email',10,82);
-    doc.text(`: ${this.selectedParent.email}`,45,82);
-    let firstPageStartY = 90; // Start Y position for first page
-    let nextPagesStartY = 35; // Start Y position for subsequent pages
-    let firstPage = true;      // Flag to check if it's the first page
-
-    autoTable(doc, {
-      html: '#poSoaTable',
-      tableWidth: 435,
-      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'left',
-        valign: 'middle'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255], // White background
-        textColor: [0, 0, 0],       // Black text
-        fontStyle: 'bold',
-        halign: 'left'
-      },
-      footStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        halign: 'right'
-      },
-     /* columnStyles: {
-        6: { halign: 'right' },
-        7: { halign: 'right' },
-        8: { halign: 'right' }
-      },*/
-      margin: { 
-        top: firstPage ? firstPageStartY : nextPagesStartY,
-        left: 5
-      },
-      showFoot: 'lastPage', 
-      didDrawPage: function () {
-        firstPage = false;
-      }
-    });
-
-    let finalY1 = doc.lastAutoTable?.finalY || 0
-      if(this.selectedParent?.orgnisation != 'MM-COOP') {
-
-    autoTable(doc, {
-      html: '#posoaAgeingSummaryTable',
-      startY: finalY1 + 5,
-      tableWidth: 435,
-      margin: { left: 5 },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'center'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold'
-      },
-    /*  columnStyles: {
-        0: { halign: 'center' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' },
-        5: { halign: 'center' },
-        6: { halign: 'center' }
-      }*/
-    });
-  }
-    let finalY2 = doc.lastAutoTable?.finalY || 0
-
-    // Bilingual footer text
-    doc.setFontSize(8);
-    // Now the font is already registered thanks to the JS file!
-    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
-    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
-    // Manually reverse Arabic for basic rendering
-    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
-    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
-    const pageWidth = doc.internal.pageSize.getWidth();
-    // Calculate X to center
-    const centerX = pageWidth / 2;
-    doc.setFontSize(10)
-    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
-    doc.setFont('Amiri-Regular', 'normal')
-    doc.text(araText, 435, finalY2+15, { align: 'right' });
-
-    // Add watermark (if necessary)
-    doc = this.addWaterMark(doc,'p');
-    // Save the PDF
-    doc.save(`${this.selectedParent.pcode}-open-statement-of-accounts-${this.mCurDate}.pdf`);
-  }
-
-  exportPOSOA(): void {
-    const fileName = `${this.selectedParent.pcode}-open-statement-of-accounts-${this.mCurDate}.xlsx`;
-
-    // 1. Create worksheet from cwsoaData
-    const posoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.posoaData.map(row => ({
-      'Branch Name': row.CUST_NAME,
-      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
-      'Invoice No': row.INV_NO,
-      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
-      'Description': row.DESCRIPTION,
-      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
-      'Debit': row.DEBIT || '',
-      'Credit': row.CREDIT || '',
-      'Balance': row.BALANCE
-    })));
-
-    // 2. Create another sheet for Ageing Summary
-    const ageingData = [{
-      'Current': this.ageingSummary['CURRENT'] || 0,
-      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
-      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
-      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
-      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
-      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
-      'Total Outstanding': (
-        (this.ageingSummary['CURRENT'] || 0) +
-        (this.ageingSummary['30_DAYS'] || 0) +
-        (this.ageingSummary['60_DAYS'] || 0) +
-        (this.ageingSummary['90_DAYS'] || 0) +
-        (this.ageingSummary['120_DAYS'] || 0) +
-        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
-      )
-    }];
-
-    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
-
-    // 3. Create a workbook and add the sheets
-    const workbook: XLSX.WorkBook = {
-      Sheets: {
-        'Statement': posoaSheet,
-        'Ageing Summary': ageingSheet
-      },
-      SheetNames: ['Statement', 'Ageing Summary']
-    };
-
-    // 4. Generate buffer
-    const excelBuffer: any = XLSX.write(workbook, {
-      bookType: 'xlsx',
-      type: 'array'
-    });
-
-    // 5. Save to file
-    const blob = new Blob([excelBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
-    });
-
-    FileSaver.saveAs(blob, fileName);
-  }
-
-  openCPWSOA() {
-    //let dialogRef = this.dialog.open(this.cpwsoaLookupDialog);
-    this.dialog.open(this.cpwsoaLookupDialog, {
+  openSPWSOA() {
+    //let dialogRef = this.dialog.open(this.spwsoaLookupDialog);
+    this.dialog.open(this.spwsoaLookupDialog, {
         width: '100vw',
         maxWidth: '100vw',
     }
@@ -1493,7 +393,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       'ABOVE_120_DAYS': 0,
       'CURRENT': 0
     };
-    this.cwsoaData = []
+    this.spwsoaData = []
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -1505,15 +405,15 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       'ABOVE_120_DAYS': 0,
       'CURRENT': 0
     };
-    this.cpwsoaData = []
+    this.spwsoaData = []
   }
 
-  getCPWSOA(customer: any) {
-    this.cpwsoaData = []
-    this.selectedCustomer = customer
+  getSPWSOA(customer: any) {
+    this.spwsoaData = []
+    this.selectedSupplier = customer
   }
 
-  setCPWSOA() {
+  setSPWSOA() {
   // Reset period totals
   this.periodTotalCredit = 0;
   this.periodTotalDebit = 0;
@@ -1532,7 +432,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     return;
   }
     this.getData = true
-  this.reportService.getCustomerSoa('C', this.selectedCustomer.PCODE).subscribe((res: any) => {
+  this.reportService.getCustomerSoa('S', this.selectedSupplier.PCODE).subscribe((res: any) => {
     if (res.recordset.length === 0) {
         alert('No data for the selected parameters!');
               this.getData = false
@@ -1551,14 +451,14 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       'ABOVE_120_DAYS': 0
     };
 
-    this.cwsoaData = data.map((row: any) => {
+    this.spwsoaData = data.map((row: any) => {
       const debit = Number(row.DEBIT) || 0;
       const credit = Number(row.CREDIT) || 0;
 
       this.totalDebit += debit;
       this.totalCredit += credit;
 
-      runningBalance += debit - credit;
+      runningBalance += credit - debit;
 
       let daysDiff: number | null = null;
    //   if ((debit - credit) > 0 && row.DUEDATE) {
@@ -1571,7 +471,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
         daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
    //   }
 
-      const amt = debit - credit;
+      const amt = credit - debit;
       if (daysDiff !== null) {
         if (daysDiff < 0) {
           this.ageingSummary.CURRENT += amt;
@@ -1600,7 +500,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   this.openingBalanceData = { DEBIT: 0, CREDIT: 0, BALANCE: 0 };
 
   // Calculate opening balance for transactions before startDate
-  const openingData = this.cwsoaData.filter(row => {
+  const openingData = this.spwsoaData.filter(row => {
     const txnDate = new Date(row.INV_DATE);
     txnDate.setHours(0, 0, 0, 0);
     return txnDate < start;
@@ -1611,22 +511,24 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     const credit = Number(row.CREDIT) || 0;
     this.openingBalanceData.DEBIT += debit;
     this.openingBalanceData.CREDIT += credit;
-    this.openingBalanceData.BALANCE += debit - credit;
+    this.openingBalanceData.BALANCE += credit - debit;
   });
 
-    /* Filter based on INV_DATE range
-    this.cpwsoaData = this.cosoaData.filter(row => {
-      const txnDate = new Date(row.INV_DATE);
-      const inRange = txnDate >= start && txnDate <= end;
-      console.log(`Checking INV_DATE: ${txnDate.toISOString()} -> In range: ${inRange}`);
-      return inRange;
-    });*/
+    
 
     // Filter transactions in selected period
-const filteredPeriodRows = this.cwsoaData.filter(row => {
+const filteredPeriodRows = this.spwsoaData.filter(row => {
   const txnDate = new Date(row.INV_DATE);
   return txnDate >= start && txnDate <= end;
 });
+
+  for(let i=0; i<filteredPeriodRows.length; i++){
+    const debit = Number(filteredPeriodRows[i].DEBIT) || 0;
+    const credit = Number(filteredPeriodRows[i].CREDIT) || 0;
+
+    this.periodTotalDebit += debit;
+    this.periodTotalCredit += credit;
+  }
 
 // Build opening balance row
 const openingRow = {
@@ -1641,25 +543,23 @@ const openingRow = {
   REMARKS: '',
   VENDOR_REF_NO: '',
   CUST_REF_NO: '',
-  ...this.selectedCustomer // optional: to keep column structure consistent
+  ...this.selectedSupplier // optional: to keep column structure consistent
 };
 
 // Combine into final list
-this.cpwsoaData = [openingRow, ...filteredPeriodRows]
+this.spwsoaData = [openingRow, ...filteredPeriodRows]
 
-    if(this.cpwsoaData.length === 0) {
+    if(this.spwsoaData.length === 0) {
       alert('No data available in selected range!')
     }
 
     // Calculate period-wise balances
     let periodRunningBalance = 0;
-    this.cpwsoaData = this.cpwsoaData.map(row => {
+    this.spwsoaData = this.spwsoaData.map(row => {
       const debit = Number(row.DEBIT) || 0;
       const credit = Number(row.CREDIT) || 0;
 
-      this.periodTotalDebit += debit;
-      this.periodTotalCredit += credit;
-      periodRunningBalance += debit - credit;
+      periodRunningBalance += credit - debit;
 
       return {
         ...row,
@@ -1667,12 +567,15 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
       };
     });
 
+    
+
     // Calculate ageing for filtered data
-    this.periodAgeingSummary = this.calculateAgeing(this.cpwsoaData);
+    this.periodAgeingSummary = this.calculateAgeing(this.spwsoaData);
   });
   }
 
-  printCPWSOA() {
+
+  printSPWSOA() {
     if (!this.startDate || !this.endDate) {
       alert('Please select both start and end dates.');
       return;
@@ -1681,20 +584,20 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Period-wise Customer Statement of Accounts', 115, 20);
+    doc.text('Period-wise Supplier Statement of Accounts', 115, 20);
     doc.roundedRect(5, 32.5, 436, 65, 5, 5);
     doc.setFontSize(10);
-    doc.text(`${this.selectedCustomer.CUST_NAME}`,10,42);
-    doc.text(`Account ID: ${this.selectedCustomer.PCODE} (B2B)`,330,42);
+    doc.text(`${this.selectedSupplier.CUST_NAME}`,10,42);
+    doc.text(`Account ID: ${this.selectedSupplier.PCODE} (B2B)`,330,42);
     doc.setFont('Helvetica', 'normal');
     doc.text(`Date: ${this.mCurDate}`,330,52);
     doc.text('Address',10,52);
-    doc.text(`: ${this.selectedCustomer.ADD1}`,45,52);
-    doc.text(`  ${this.selectedCustomer.ACCOUNT_CATEGORY_DESC}`,45,62);
+    doc.text(`: ${this.selectedSupplier.ADD1}`,45,52);
+    doc.text(`  ${this.selectedSupplier.ACCOUNT_CATEGORY_DESC}`,45,62);
     doc.text('Mobile',10,72);
-    doc.text(`: ${this.selectedCustomer.MOBILE}`,45,72);
+    doc.text(`: ${this.selectedSupplier.MOBILE}`,45,72);
     doc.text('Email',10,82);
-    doc.text(`: ${this.selectedCustomer.EMAIL}`,45,82);
+    doc.text(`: ${this.selectedSupplier.EMAIL}`,45,82);
     doc.text('Period',10,92);
     doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 92)
     let firstPageStartY = 100; // Start Y position for first page
@@ -1702,7 +605,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     let firstPage = true;      // Flag to check if it's the first page
 
     autoTable(doc, {
-      html: '#cpwSoaTable',
+      html: '#spwSoaTable',
       tableWidth: 435,
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
@@ -1741,10 +644,10 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     });
 
     let finalY1 = doc.lastAutoTable?.finalY || 0
-        if(this.selectedCustomer?.Orgnisation != 'MM-COOP') {
+        if(this.selectedSupplier?.Orgnisation != 'MM-COOP') {
 
     autoTable(doc, {
-      html: '#cpwsoaAgeingSummaryTable',
+      html: '#spwsoaAgeingSummaryTable',
       startY: finalY1 + 5,
       tableWidth: 435,
       margin: { left: 5 },
@@ -1808,15 +711,15 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     // Add watermark (if necessary)
     doc = this.addWaterMark(doc,'p');
     // Save the PDF
-    doc.save(`${this.selectedCustomer.PCODE}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
+    doc.save(`${this.selectedSupplier.PCODE}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
     }
   }
 
-  exportCPWSOA(): void {
-    const fileName = `${this.selectedCustomer.PCODE}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
+  exportSPWSOA(): void {
+    const fileName = `${this.selectedSupplier.PCODE}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
 
-    // 1. Create worksheet from cwsoaData
-    const cpwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.cpwsoaData.map(row => ({
+    // 1. Create worksheet from spwsoaData
+    const spwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.spwsoaData.map(row => ({
       'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
       'Invoice No': row.INV_NO,
       'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
@@ -1850,7 +753,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     // 3. Create a workbook and add the sheets
     const workbook: XLSX.WorkBook = {
       Sheets: {
-        'Statement': cpwsoaSheet,
+        'Statement': spwsoaSheet,
         'Ageing Summary': ageingSheet
       },
       SheetNames: ['Statement', 'Ageing Summary']
@@ -1870,443 +773,9 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     FileSaver.saveAs(blob, fileName);
   }
 
-  openPPWSOA() {
-    //let dialogRef = this.dialog.open(this.ppwsoaLookupDialog);
-    this.dialog.open(this.ppwsoaLookupDialog, {
-        width: '100vw',
-        maxWidth: '100vw',
-    }
-  )
-    this.periodTotalDebit = 0;
-    this.periodTotalCredit = 0;
-    this.periodClosingBalance = 0;
-    this.periodAgeingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.totalDebit = 0;
-    this.totalCredit = 0;
-    this.closingBalance = 0;
-    this.ageingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.ppwsoaData = []
-  }
-
-  getPPWSOA(parent: any) {
-this.periodTotalDebit = 0;
-    this.periodTotalCredit = 0;
-    this.periodClosingBalance = 0;
-    this.periodAgeingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.pwsoaData = []
-    this.totalDebit = 0;
-    this.totalCredit = 0;
-    this.closingBalance = 0;
-    this.ageingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.ppwsoaData = []
-    this.selectedParent = parent
-  }
-
-  setPPWSOA() {
-  // Reset period totals
-  this.periodTotalCredit = 0;
-  this.periodTotalDebit = 0;
-    this.periodClosingBalance = 0;
-    this.periodAgeingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.totalDebit = 0;
-    this.totalCredit = 0;
-    this.closingBalance = 0;
-    this.ageingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.ppwsoaData = []
-
-  // Start and end of the day to ensure inclusive date range
-  const start = new Date(this.startDate);
-  start.setHours(0, 0, 0, 0);
-
-  const end = new Date(this.endDate);
-  end.setHours(23, 59, 59, 999);
-
-  if (!this.startDate || !this.endDate) {
-    alert('Please select both start and end dates.');
-    return;
-  }
-    this.getData = true
-
-  this.reportService.getParentSoa(this.selectedParent.PARENTNAME).subscribe((res: any) => {
-    if (res.recordset.length === 0) {
-        alert('No data for the selected parameters!');
-              this.getData = false
-        return;
-    }
-    const data = res.recordset;
-        this.getData = false
-
-    let runningBalance = 0;
-    this.ageingSummary = {
-      CURRENT: 0,
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0
-    };
-
-    this.pwsoaData = data.map((row: any) => {
-      const debit = Number(row.DEBIT) || 0;
-      const credit = Number(row.CREDIT) || 0;
-
-      this.totalDebit += debit;
-      this.totalCredit += credit;
-
-      runningBalance += debit - credit;
-
-      let daysDiff: number | null = null;
-      //if ((debit - credit) > 0 && row.DUEDATE) {
-        const dueDate = new Date(row.DUEDATE);
-        const today = new Date();
-        dueDate.setHours(0, 0, 0, 0);
-        today.setHours(0, 0, 0, 0);
-
-        const diffTime = today.getTime() - dueDate.getTime();
-        daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    //  }
-
-      const amt = debit - credit;
-      if (daysDiff !== null) {
-        if (daysDiff < 0) {
-          this.ageingSummary.CURRENT += amt;
-        } else if (daysDiff <= 30) {
-          this.ageingSummary['30_DAYS'] += amt;
-        } else if (daysDiff <= 60) {
-          this.ageingSummary['60_DAYS'] += amt;
-        } else if (daysDiff <= 90) {
-          this.ageingSummary['90_DAYS'] += amt;
-        } else if (daysDiff <= 120) {
-          this.ageingSummary['120_DAYS'] += amt;
-        } else {
-          this.ageingSummary['ABOVE_120_DAYS'] += amt;
-        }
-      }
-
-      return {
-        ...row,
-        BALANCE: runningBalance,
-        DAYS_DIFF: daysDiff
-      };
-    });
 
 
-  // Reset opening balance
-  this.openingBalanceData = { DEBIT: 0, CREDIT: 0, BALANCE: 0 };
 
-  // Calculate opening balance for transactions before startDate
-  const openingData = this.pwsoaData.filter(row => {
-    const txnDate = new Date(row.INV_DATE);
-    txnDate.setHours(0, 0, 0, 0);
-    return txnDate < start;
-  });
-
-  openingData.forEach(row => {
-    const debit = Number(row.DEBIT) || 0;
-    const credit = Number(row.CREDIT) || 0;
-    this.openingBalanceData.DEBIT += debit;
-    this.openingBalanceData.CREDIT += credit;
-    this.openingBalanceData.BALANCE += debit - credit;
-  });
-
-    /* Filter based on INV_DATE range
-    this.cpwsoaData = this.cosoaData.filter(row => {
-      const txnDate = new Date(row.INV_DATE);
-      const inRange = txnDate >= start && txnDate <= end;
-      console.log(`Checking INV_DATE: ${txnDate.toISOString()} -> In range: ${inRange}`);
-      return inRange;
-    });*/
-
-    // Filter transactions in selected period
-const filteredPeriodRows = this.pwsoaData.filter(row => {
-  const txnDate = new Date(row.INV_DATE);
-  return txnDate >= start && txnDate <= end;
-});
-
-// Build opening balance row
-const openingRow = {
-  INV_NO: 'OPENING BALANCE',
-  INV_DATE: null,
-  DEBIT: this.openingBalanceData.DEBIT,
-  CREDIT: this.openingBalanceData.CREDIT,
-  BALANCE: this.openingBalanceData.BALANCE,
-  DAYS_DIFF: null,
-  DUEDATE: null,
-  DOC_TYPE: '',
-  REMARKS: '',
-  VENDOR_REF_NO: '',
-  CUST_REF_NO: '',
-  ...this.selectedParent // optional: to keep column structure consistent
-};
-
-// Combine into final list
-this.ppwsoaData = [openingRow, ...filteredPeriodRows];
-
-    if(this.ppwsoaData.length === 0) {
-      alert('No data available in selected range!')
-    }
-
-    // Calculate period-wise balances
-    let periodRunningBalance = 0;
-    this.ppwsoaData = this.ppwsoaData.map(row => {
-      const debit = Number(row.DEBIT) || 0;
-      const credit = Number(row.CREDIT) || 0;
-
-      this.periodTotalDebit += debit;
-      this.periodTotalCredit += credit;
-      periodRunningBalance += debit - credit;
-
-      return {
-        ...row,
-        BALANCE: periodRunningBalance
-      };
-    });
-
-    // Calculate ageing for filtered data
-    this.periodAgeingSummary = this.calculateAgeing(this.ppwsoaData);
-  });
-  }
-
-  printPPWSOA() {
-    if (!this.startDate || !this.endDate) {
-      alert('Please select both start and end dates.');
-      return;
-    } else {
-    var doc = new jsPDF("portrait", "px", "a4");
-    doc.setFontSize(16);
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Period-wise Parent-wise Customer Statement of Accounts', 100, 20);
-    doc.roundedRect(5, 32.5, 436, 65, 5, 5);
-    doc.setFontSize(10);
-    doc.text(`${this.selectedParent.PARENTNAME}`,10,42);
-    doc.text(`Account ID: ${this.selectedParent.pcode} (B2B)`,330,42);
-    doc.setFont('Helvetica', 'normal');
-    doc.text(`Date: ${this.mCurDate}`,330,52);
-    doc.text('Address',10,52);
-    doc.text(`: ${this.selectedParent.add1}`,45,52);
-    doc.text(`  ${this.selectedParent.country}`,45,62);
-    doc.text('Mobile',10,72);
-    doc.text(`: ${this.selectedParent.mobile}`,45,72);
-    doc.text('Email',10,82);
-    doc.text(`: ${this.selectedParent.email}`,45,82);
-    doc.text('Period',10,92);
-    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 92)
-    let firstPageStartY = 100; // Start Y position for first page
-    let nextPagesStartY = 35; // Start Y position for subsequent pages
-    let firstPage = true;      // Flag to check if it's the first page
-
-    autoTable(doc, {
-      html: '#ppwSoaTable',
-      tableWidth: 435,
-      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'left',
-        valign: 'middle'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255], // White background
-        textColor: [0, 0, 0],       // Black text
-        fontStyle: 'bold',
-        halign: 'left'
-      },
-      footStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        halign: 'right'
-      },
-     /* columnStyles: {
-        5: { halign: 'right' },
-        6: { halign: 'right' },
-        7: { halign: 'right' }
-      },*/
-      margin: { 
-        top: firstPage ? firstPageStartY : nextPagesStartY,
-        left: 5
-      },
-      showFoot: 'lastPage', 
-      didDrawPage: function () {
-        firstPage = false;
-      }
-    });
-
-    let finalY1 = doc.lastAutoTable?.finalY || 0
-        if(this.selectedParent?.orgnisation != 'MM-COOP') {
-
-    autoTable(doc, {
-      html: '#ppwsoaAgeingSummaryTable',
-      startY: finalY1 + 5,
-      tableWidth: 435,
-      margin: { left: 5 },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'center'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold'
-      },
-     /* columnStyles: {
-        0: { halign: 'center' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' },
-        5: { halign: 'center' },
-        6: { halign: 'center' }
-      }*/
-    });
-  }
-    // Bilingual footer text
-    doc.setFontSize(9);
-    let finalY2 = doc.lastAutoTable?.finalY || 0
-/*
-    doc.text(`Total Debit (All)`, 10, finalY2 + 15);
-    doc.text(`: ${this.totalDebit.toFixed(3)}`, 85, finalY2 + 15);
-    doc.text(`Total Debit (Period)`, 250, finalY2 + 15);
-    doc.text(`: ${this.periodTotalDebit.toFixed(3)}`, 325, finalY2 + 15);
-
-    doc.text(`Total Credit (All)`, 10, finalY2 + 25);
-    doc.text(`: ${this.totalCredit.toFixed(3)}`, 85, finalY2 + 25);
-    doc.text(`Total Credit (Period)`, 250, finalY2 + 25);
-    doc.text(`: ${this.periodTotalCredit.toFixed(3)}`, 325, finalY2 + 25);
-
-    doc.text(`Total Balance (All)`, 10, finalY2 + 35);
-    doc.text(`: ${(this.totalDebit - this.totalCredit).toFixed(3)}`, 85, finalY2 + 35);
-    doc.text(`Total Balance (Period)`, 250, finalY2 + 35);
-    doc.text(`: ${(this.periodTotalDebit - this.periodTotalCredit).toFixed(3)}`, 325, finalY2 + 35);
-*/
-    // Now the font is already registered thanks to the JS file!
-    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
-    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
-    // Manually reverse Arabic for basic rendering
-    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
-    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
-    const pageWidth = doc.internal.pageSize.getWidth();
-    // Calculate X to center
-    const centerX = pageWidth / 2;
-    doc.setFontSize(10)
-    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
-    doc.setFont('Amiri-Regular', 'normal')
-    doc.text(araText, 435, finalY2+15, { align: 'right' });
-
-    // Add watermark (if necessary)
-    doc = this.addWaterMark(doc,'p');
-    // Save the PDF
-    doc.save(`${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
-    }
-  }
-
-  exportPPWSOA(): void {
-    const fileName = `${this.selectedParent.pcode}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
-
-    // 1. Create worksheet from cwsoaData
-    const ppwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.ppwsoaData.map(row => ({
-      'Branch Name': row.CUST_NAME,
-      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
-      'Invoice No': row.INV_NO,
-      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
-      'Description': row.DESCRIPTION,
-      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
-      'Debit': row.DEBIT || '',
-      'Credit': row.CREDIT || '',
-      'Balance': row.BALANCE
-    })));
-
-    // 2. Create another sheet for Ageing Summary
-    const ageingData = [{
-      'Current': this.periodAgeingSummary['CURRENT'] || 0,
-      '0 - 30 days': this.periodAgeingSummary['30_DAYS'] || 0,
-      '31 - 60 days': this.periodAgeingSummary['60_DAYS'] || 0,
-      '61 - 90 days': this.periodAgeingSummary['90_DAYS'] || 0,
-      '91 - 120 days': this.periodAgeingSummary['120_DAYS'] || 0,
-      'Above 120 days': this.periodAgeingSummary['ABOVE_120_DAYS'] || 0,
-      'Total Outstanding': (
-        (this.periodAgeingSummary['CURRENT'] || 0) +
-        (this.periodAgeingSummary['30_DAYS'] || 0) +
-        (this.periodAgeingSummary['60_DAYS'] || 0) +
-        (this.periodAgeingSummary['90_DAYS'] || 0) +
-        (this.periodAgeingSummary['120_DAYS'] || 0) +
-        (this.periodAgeingSummary['ABOVE_120_DAYS'] || 0)
-      )
-    }];
-
-    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
-
-    // 3. Create a workbook and add the sheets
-    const workbook: XLSX.WorkBook = {
-      Sheets: {
-        'Statement': ppwsoaSheet,
-        'Ageing Summary': ageingSheet
-      },
-      SheetNames: ['Statement', 'Ageing Summary']
-    };
-
-    // 4. Generate buffer
-    const excelBuffer: any = XLSX.write(workbook, {
-      bookType: 'xlsx',
-      type: 'array'
-    });
-
-    // 5. Save to file
-    const blob = new Blob([excelBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
-    });
-
-    FileSaver.saveAs(blob, fileName);
-  }
 
 calculateAgeing(data: any[]): any {
   const ageing = {
@@ -2321,7 +790,7 @@ calculateAgeing(data: any[]): any {
   for (const row of data) {
     const debit = Number(row.DEBIT) || 0;
     const credit = Number(row.CREDIT) || 0;
-    const amt = debit - credit;
+    const amt = credit - debit;
     const diff = row.DAYS_DIFF;
 
       if (diff < 0) ageing.CURRENT += amt;
@@ -2387,6 +856,8 @@ calculateAgeing(data: any[]): any {
       return doc;
     }
   }
+
+
 
   formatDate(date: any) {
     var d = new Date(date), day = '' + d.getDate(), month = '' + (d.getMonth() + 1), year = d.getFullYear();

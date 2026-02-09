@@ -23,6 +23,8 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
 import { PaymentVoucherDetailComponent } from './payment-voucher-component/payment-voucher-detail/payment-voucher-detail.component';
 import { PaymentVoucherListComponent } from './payment-voucher-component/payment-voucher-list/payment-voucher-list.component';
 import { SharedModule } from '../shared/shared.module';
+import { SoaComponent } from './reports-component/soa/soa.component';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 export const payablesRoutes = [
   {
@@ -40,6 +42,10 @@ export const payablesRoutes = [
   {
     path: 'payment-voucher/detail/:id',
     component: PaymentVoucherDetailComponent
+  },
+  {
+    path: 'soa-reports',
+    component: SoaComponent
   }
 ];
 
@@ -49,6 +55,7 @@ export const payablesRoutes = [
     SupplierDetailComponent,
     PaymentVoucherDetailComponent,
     PaymentVoucherListComponent,
+    SoaComponent,
   ],
   imports: [
     MatIconModule,
@@ -62,6 +69,7 @@ export const payablesRoutes = [
     MatDialogModule,
     MatTableModule,
     MatButtonModule,
+    MatProgressSpinnerModule,
     MatCardModule,
     MatSelectModule,
     MatPaginatorModule,
