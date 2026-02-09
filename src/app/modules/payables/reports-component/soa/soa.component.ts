@@ -210,14 +210,11 @@ export class SoaComponent {
     doc.text(`Account ID: ${this.selectedSupplier.PCODE} (B2B)`,330,42);
     doc.setFont('Helvetica', 'normal');
     doc.text(`Date: ${this.mCurDate}`,330,52);
-    doc.text('Address',10,52);
-    doc.text(`: ${this.selectedSupplier.ADD1}`,45,52);
-    doc.text(`  ${this.selectedSupplier.ACCOUNT_CATEGORY_DESC}`,45,62);
-    doc.text('Mobile',10,72);
-    doc.text(`: ${this.selectedSupplier.MOBILE}`,45,72);
-    doc.text('Email',10,82);
-    doc.text(`: ${this.selectedSupplier.EMAIL}`,45,82);
-    let firstPageStartY = 90; // Start Y position for first page
+    doc.text('Nature',10,52);
+    doc.text(`: ${this.selectedSupplier.Nature}`,45,52);
+    doc.text('Category',10,62);
+    doc.text(`: ${this.selectedSupplier.SupplierCategory}`,45,62);
+    let firstPageStartY = 70; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
 
@@ -292,23 +289,23 @@ export class SoaComponent {
     });
     }
 
-    let finalY2 = doc.lastAutoTable?.finalY || 0
+//    let finalY2 = doc.lastAutoTable?.finalY || 0
 
     // Bilingual footer text
-    doc.setFontSize(8);
+  //  doc.setFontSize(8);
     // Now the font is already registered thanks to the JS file!
-    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
-    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+   // doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+   // doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
     // Manually reverse Arabic for basic rendering
-    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
-    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
-    const pageWidth = doc.internal.pageSize.getWidth();
+   // const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+   // const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+  //  const pageWidth = doc.internal.pageSize.getWidth();
     // Calculate X to center
-    const centerX = pageWidth / 2;
-    doc.setFontSize(10)
-    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
-    doc.setFont('Amiri-Regular', 'normal')
-    doc.text(araText, 435, finalY2+15, { align: 'right' });
+   // const centerX = pageWidth / 2;
+   // doc.setFontSize(10)
+   // doc.text(engText, 10, finalY2+15);//, { align: 'center' });
+   // doc.setFont('Amiri-Regular', 'normal')
+   // doc.text(araText, 435, finalY2+15, { align: 'right' });
 
     // Add watermark (if necessary)
     doc = this.addWaterMark(doc,'p');
@@ -591,16 +588,13 @@ this.spwsoaData = [openingRow, ...filteredPeriodRows]
     doc.text(`Account ID: ${this.selectedSupplier.PCODE} (B2B)`,330,42);
     doc.setFont('Helvetica', 'normal');
     doc.text(`Date: ${this.mCurDate}`,330,52);
-    doc.text('Address',10,52);
-    doc.text(`: ${this.selectedSupplier.ADD1}`,45,52);
-    doc.text(`  ${this.selectedSupplier.ACCOUNT_CATEGORY_DESC}`,45,62);
-    doc.text('Mobile',10,72);
-    doc.text(`: ${this.selectedSupplier.MOBILE}`,45,72);
-    doc.text('Email',10,82);
-    doc.text(`: ${this.selectedSupplier.EMAIL}`,45,82);
-    doc.text('Period',10,92);
-    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 92)
-    let firstPageStartY = 100; // Start Y position for first page
+    doc.text('Nature',10,52);
+    doc.text(`: ${this.selectedSupplier.Nature}`,45,52);
+    doc.text('Category',10,62);
+    doc.text(`: ${this.selectedSupplier.SupplierCategory}`,45,62);
+    doc.text('Period',10,72);
+    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 72)
+    let firstPageStartY = 80; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
 
@@ -677,7 +671,7 @@ this.spwsoaData = [openingRow, ...filteredPeriodRows]
   }
     // Bilingual footer text
     doc.setFontSize(9);
-    let finalY2 = doc.lastAutoTable?.finalY || 0
+   // let finalY2 = doc.lastAutoTable?.finalY || 0
 /*
     doc.text(`Total Debit (All)`, 10, finalY2 + 15);
     doc.text(`: ${this.totalDebit.toFixed(3)}`, 85, finalY2 + 15);
@@ -695,7 +689,7 @@ this.spwsoaData = [openingRow, ...filteredPeriodRows]
     doc.text(`: ${(this.periodTotalDebit - this.periodTotalCredit).toFixed(3)}`, 325, finalY2 + 35);
 */
     // Now the font is already registered thanks to the JS file!
-    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+ /*   doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
     doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
     // Manually reverse Arabic for basic rendering
     const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
@@ -707,7 +701,7 @@ this.spwsoaData = [openingRow, ...filteredPeriodRows]
     doc.text(engText, 10, finalY2+15);//, { align: 'center' });
     doc.setFont('Amiri-Regular', 'normal')
     doc.text(araText, 435, finalY2+15, { align: 'right' });
-
+*/
     // Add watermark (if necessary)
     doc = this.addWaterMark(doc,'p');
     // Save the PDF
