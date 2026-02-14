@@ -2051,14 +2051,6 @@ this.periodTotalDebit = 0;
     this.openingBalanceData.BALANCE += debit - credit;
   });
 
-    /* Filter based on INV_DATE range
-    this.cpwsoaData = this.cosoaData.filter(row => {
-      const txnDate = new Date(row.INV_DATE);
-      const inRange = txnDate >= start && txnDate <= end;
-      console.log(`Checking INV_DATE: ${txnDate.toISOString()} -> In range: ${inRange}`);
-      return inRange;
-    });*/
-
     // Filter transactions in selected period
 const filteredPeriodRows = this.pwsoaData.filter(row => {
   const txnDate = new Date(row.INV_DATE);

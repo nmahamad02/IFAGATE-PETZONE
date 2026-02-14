@@ -930,7 +930,12 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   }
 
   openCWASL() {
-    let dialogRef = this.dialog.open(this.cwaslLookupDialog);
+    //let dialogRef = this.dialog.open(this.cwaslLookupDialog);
+        this.dialog.open(this.cwaslLookupDialog, {
+        width: '100vw',
+        maxWidth: '100vw',
+    }
+  )
     this.totalDebit = 0;
     this.totalCredit = 0;
     this.closingBalance = 0;
@@ -1158,7 +1163,12 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   }
 
   openPWASL() {
-    let dialogRef = this.dialog.open(this.pwaslLookupDialog);
+    //let dialogRef = this.dialog.open(this.pwaslLookupDialog);
+            this.dialog.open(this.pwaslLookupDialog, {
+        width: '100vw',
+        maxWidth: '100vw',
+    }
+  )
     this.periodTotalDebit = 0;
     this.periodTotalCredit = 0;
     this.periodClosingBalance = 0;

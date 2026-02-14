@@ -21,6 +21,9 @@
                                     <td>
                                         <a class="nav-link" (click)="openSPWSOA()">Period-wise Supplier Statement of Account</a>
                                     </td>
+                                    <td>
+                                        <a class="nav-link" (click)="openSWOUT()">Supplier Outstanding Statement</a>
+                                    </td>
                                 </tr>
                             </table>
                         </mat-card-content>
@@ -48,7 +51,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let cust of (customerList | filterTable:searchText| slice:0:10); let i = index;">
+                        <tr *ngFor="let cust of (supplierList | filterTable:searchText| slice:0:10); let i = index;">
                             <td (click)="getSWSOA(cust)"><small>{{ cust.CUST_NAME }}</small></td>
                         </tr>
                     </tbody>
@@ -90,8 +93,8 @@
                             <td><small>{{ row.DESCRIPTION }}</small></td>
                             <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
                             <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
-                            <td   ><small>{{ row.DEBIT == 0 ? '' : row.DEBIT | number:'1.3-3' }}</small></td>
                             <td   ><small>{{ row.CREDIT  == 0 ? '' : row.CREDIT | number:'1.3-3' }}</small></td>
+                            <td   ><small>{{ row.DEBIT == 0 ? '' : row.DEBIT | number:'1.3-3' }}</small></td>
                             <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
                             <td   ><small>
                                 {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
@@ -105,7 +108,7 @@
                             <td><small>{{ totalDebit | number:'1.3-3' }}</small></td>
                             <td><small>{{ totalCredit | number:'1.3-3' }}</small></td>
                             <td><small>
-                                {{ (totalCredit - totalDebit) < 0 ? '(' + ((totalCredit - totalDebit) | abs | number:'1.3-3') + ')' : ((totalCredit - totalDebit) | number:'1.3-3') }}
+                                {{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')' : ((totalDebit - totalCredit) | number:'1.3-3') }}
                             </small></td>
                             <!--<td><small>
                                 {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
@@ -182,7 +185,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let cust of (customerList | filterTable:searchText| slice:0:10); let i = index;">
+                        <tr *ngFor="let cust of (supplierList | filterTable:searchText| slice:0:10); let i = index;">
                             <td (click)="getSPWSOA(cust)"><small>{{ cust.CUST_NAME }}</small></td>
                         </tr>
                     </tbody>
@@ -223,8 +226,8 @@
                             <th><small>Description</small></th>
                             <th><small>Due Date</small></th>
                             <!--<th><small>Amount</small></th>-->
-                            <th><small>Invoice</small></th>
-                            <th><small>Payment</small></th>
+                            <th><small>Debit</small></th>
+                            <th><small>Credit</small></th>
                             <th><small>Balance</small></th>
                             <!--<th><small>Overdue days</small></th>-->
                         </tr>
@@ -238,10 +241,10 @@
                             <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
                             <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
                             <td   ><small>
-                                {{ row.INV_NO === 'OPENING BALANCE' || row.DEBIT == 0 ? '' : (row.DEBIT | number:'1.3-3') }}
+                                {{ row.INV_NO === 'OPENING BALANCE' || row.CREDIT == 0 ? '' : (row.CREDIT | number:'1.3-3') }}
                             </small></td>
                             <td   ><small>
-                                {{ row.INV_NO === 'OPENING BALANCE' || row.CREDIT == 0 ? '' : (row.CREDIT | number:'1.3-3') }}
+                                {{ row.INV_NO === 'OPENING BALANCE' || row.DEBIT == 0 ? '' : (row.DEBIT | number:'1.3-3') }}
                             </small></td>
                             <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
                             <td   ><small>
@@ -256,7 +259,7 @@
                             <td><small>{{ periodTotalDebit | number:'1.3-3' }}</small></td>
                             <td><small>{{ periodTotalCredit | number:'1.3-3' }}</small></td>
                             <td><small>
-                                {{ (totalCredit - totalDebit) < 0 ? '(' + ((totalCredit - totalDebit) | abs | number:'1.3-3') + ')' : ((totalCredit - totalDebit) | number:'1.3-3') }}
+                                {{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')' : ((totalDebit - totalCredit) | number:'1.3-3') }}
                             </small></td>
                             <!--<td><small>
                                 {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
@@ -308,6 +311,93 @@
         </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printSPWSOA()" style="float: right" title="print">
+                Print Statement
+            </button>
+        </div>
+    </div>
+    <br>
+</ng-template>
+
+<ng-template #swoutLookupDialog>
+    <h3 matDialogTitle>
+        <b>Supplier Outstanding Statement Preview</b>
+    </h3>
+     
+    <div mat-dialog-content style="font-size: small;">
+        <!-- Filters -->
+        <div class="row mb-2">
+            <div class="col-4">
+                <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search supplier..." />      
+            </div>
+                
+            <div class="col-3">
+                <select [(ngModel)]="selectedNature" class="form-select form-select-sm">
+                    <option value="">All Natures</option>
+                    <option *ngFor="let nature of natureList" [value]="nature.nature">{{ nature.nature }}</option>
+                </select>
+            </div>
+            <div class="col-3">
+                <select [(ngModel)]="selectedCategory" class="form-select form-select-sm">
+                    <option value="">All Categories</option>
+                    <option *ngFor="let cat of categoryList" [value]="cat.supplierCategory">{{ cat.supplierCategory }}</option>
+                </select>
+            </div>
+            <div class="col-2">
+                <button class="btn btn-sm btn-primary" (click)="applyFilters()">Filter</button>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="row" *ngIf="getData">
+            <div class="col-4"></div>
+                <div class="col-4">
+                    <mat-spinner></mat-spinner>
+                </div>
+            <div class="col-4"></div>
+        </div>
+
+        <!-- Supplier Table -->
+        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+            <table class="table table-striped table-sm table-bordered table-responsive" id="swOutTable" style="max-height: 300px; overflow-y: auto;">
+                <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">  
+                    <tr>
+                        <th>Supplier Code</th>
+                        <th>Supplier Name</th>
+                        <th>Nature</th>
+                        <th>Category</th>
+                        <th>Payment Term</th>
+                        <th>Current Outstanding</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let s of swoutData">
+                        <td>{{ s.PCODE }}</td>
+                        <td>{{ s.CUST_NAME }}</td>
+                        <td>{{ s.Nature }}</td>
+                        <td>{{ s.SupplierCategory }}</td>
+                        <td>{{ s.REMARKS }}</td>
+                        <td class="text-end">{{ s.CURRENT_OUTSTANDING | number:'1.3-3' }}</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold">
+                        <td colspan="5" class="text-end">Total Outstanding:</td>
+                        <td class="text-end">{{ totalOutstanding | number:'1.3-3' }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    <hr>
+    <div class="row container-fluid">
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportSWOUT()" style="float: right" title="export">
+                Export Raw Excel
+            </button>
+        </div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printSWOUT()" style="float: right" title="print">
                 Print Statement
             </button>
         </div>

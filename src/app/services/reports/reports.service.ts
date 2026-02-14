@@ -34,6 +34,14 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
     return this.http.get(this.url + '/report/get-location-list')
   }
 
+  getSupplierNatureList() {
+    return this.http.get(this.url + '/report/get-supplier-nature')
+  }  
+  
+  getSupplierCategoryList() {
+    return this.http.get(this.url + '/report/get-supplier-category')
+  }
+
   getYearwiseCountrywiseList() {
     return this.http.get(this.url + '/report/get-yearwise-countrywise-list')
   }
