@@ -166,6 +166,7 @@ getSWSOA(customer: any) {
   this.getData = true;
 
   this.reportService.getCustomerSoa('S', customer.PCODE).subscribe((res: any) => {
+    console.log(res.recordset)
     this.getData = false;
     if (res.recordset.length === 0) {
       alert('No data for the selected parameters!');
@@ -180,8 +181,8 @@ getSWSOA(customer: any) {
       let runningBalance = 0;
 
       this.swsoaData = this.swsoaData.map(row => {
-        const debit = Number(row.CREDIT) || 0;
-        const credit = Number(row.DEBIT) || 0;
+        const debit = Number(row.CREDIT*row.EXCHANGERATE) || 0;
+        const credit = Number(row.DEBIT*row.EXCHANGERATE) || 0;
         this.totalDebit += debit;
         this.totalCredit += credit;
 
@@ -320,8 +321,9 @@ getSWSOA(customer: any) {
       'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
       'Description': row.DESCRIPTION,
       'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
-      'Debit': row.CREDIT || '',
-      'Credit': row.DEBIT || '',
+      'Currency': row.JOB,
+      'Debit': row.CREDIT*row.EXCHANGERATE || '',
+      'Credit': row.DEBIT*row.EXCHANGERATE || '',
       'Balance': row.BALANCE
     })));
 
@@ -476,49 +478,33 @@ setSPWSOA() {
       'ABOVE_120_DAYS': 0
     };
 
-    this.spwsoaData = data.map((row: any) => {
-      const debit = Number(row.CREDIT) || 0;
-      const credit = Number(row.DEBIT) || 0;
-
-      this.totalDebit += debit;
-      this.totalCredit += credit;
-
-      runningBalance += debit - credit;
-
-      return {
-        ...row,
-        BALANCE: runningBalance,
-      };
-    });
-
-
   // Reset opening balance
   this.openingBalanceData = { DEBIT: 0, CREDIT: 0, BALANCE: 0 };
 
-  // Calculate opening balance for transactions before startDate
-  const openingData = this.spwsoaData.filter(row => {
-    const txnDate = new Date(row.INV_DATE);
-    txnDate.setHours(0, 0, 0, 0);
-    return txnDate < start;
-  });
+  // Calculate opening balance for transactions before startDat
+  const openingData = data.filter((row: any) => {
+  const txnDate = new Date(row.INV_DATE)
+  txnDate.setHours(0,0,0,0)
+  return txnDate < start
+})
 
-  openingData.forEach(row => {
-    const debit = Number(row.CREDIT) || 0;
-    const credit = Number(row.DEBIT) || 0;
+  openingData.forEach((row: any) => {
+    const debit = Number(row.CREDIT*row.EXCHANGERATE);
+    const credit = Number(row.DEBIT*row.EXCHANGERATE);
     this.openingBalanceData.DEBIT += credit;
     this.openingBalanceData.CREDIT += debit;
-    this.openingBalanceData.BALANCE += debit - credit;
+    this.openingBalanceData.BALANCE += (debit - credit);
   });
 
     // Filter transactions in selected period
-const filteredPeriodRows = this.spwsoaData.filter(row => {
-  const txnDate = new Date(row.INV_DATE);
-  return txnDate >= start && txnDate <= end;
-});
+var filteredPeriodRows = data.filter((row: any) => {
+  const txnDate = new Date(row.INV_DATE)
+  return txnDate >= start && txnDate <= end
+})
 
   for(let i=0; i<filteredPeriodRows.length; i++){
-    const debit = Number(filteredPeriodRows[i].CREDIT) || 0;
-    const credit = Number(filteredPeriodRows[i].DEBIT) || 0;
+    const debit = Number(filteredPeriodRows[i].CREDIT*filteredPeriodRows[i].EXCHANGERATE) || 0;
+    const credit = Number(filteredPeriodRows[i].DEBIT*filteredPeriodRows[i].EXCHANGERATE) || 0;
 
     this.periodTotalDebit += debit;
     this.periodTotalCredit += credit;
@@ -530,28 +516,25 @@ const openingRow = {
   INV_DATE: null,
   DEBIT: this.openingBalanceData.DEBIT,
   CREDIT: this.openingBalanceData.CREDIT,
-  BALANCE: this.openingBalanceData.BALANCE,
+  BALANCE: this.openingBalanceData.CREDIT - this.openingBalanceData.DEBIT,
   DAYS_DIFF: null,
   DUEDATE: null,
   DOC_TYPE: '',
   REMARKS: '',
   VENDOR_REF_NO: '',
   CUST_REF_NO: '',
-  ...this.selectedSupplier // optional: to keep column structure consistent
+  //...this.selectedSupplier // optional: to keep column structure consistent
 };
 
-// Combine into final list
-this.spwsoaData = [openingRow, ...filteredPeriodRows]
-
-    if(this.spwsoaData.length === 0) {
+    if(filteredPeriodRows.length === 0) {
       alert('No data available in selected range!')
     }
 
     // Calculate period-wise balances
     let periodRunningBalance = 0;
-    this.spwsoaData = this.spwsoaData.map(row => {
-      const debit = Number(row.CREDIT) || 0;
-      const credit = Number(row.DEBIT) || 0;
+    filteredPeriodRows = filteredPeriodRows.map((row: any) => {
+      const debit = Number(row.CREDIT*row.EXCHANGERATE) || 0;
+      const credit = Number(row.DEBIT*row.EXCHANGERATE) || 0;
 
       periodRunningBalance += debit - credit;
 
@@ -560,6 +543,10 @@ this.spwsoaData = [openingRow, ...filteredPeriodRows]
         BALANCE: periodRunningBalance
       };
     });
+
+    // Combine into final list
+this.spwsoaData = [openingRow, ...filteredPeriodRows]
+
 
     // 🔹 Apply FIFO + ageing on period data
 const fifoInput = filteredPeriodRows;
@@ -687,8 +674,8 @@ const result = this.applySupplierFifoAndAgeing(fifoInput, this.endDate);
       'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
       'Description': row.DESCRIPTION,
       'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
-      'Debit': row.CREDIT || '',
-      'Credit': row.DEBIT || '',
+      'Debit': row.CREDIT*row.EXCHANGERATE || '',
+      'Credit': row.DEBIT*row.EXCHANGERATE || '',
       'Balance': row.BALANCE
     })));
 
@@ -781,9 +768,9 @@ async applyFilters() {
   // 🔹 Run ALL outstanding calls in parallel
   const results = await Promise.all(
     filtered.map(async supplier => {
-
-      const outstanding = await this.computeOutstanding(supplier.PCODE);
-
+      
+      const outstanding = await this.computeOutstanding(supplier.PCODE, this.endDate ? new Date(this.endDate) : new Date());
+      
       return {
         ...supplier,
         CURRENT_OUTSTANDING: outstanding
@@ -802,16 +789,21 @@ async applyFilters() {
 }
 
 
-async computeOutstanding(supplierCode: string): Promise<number> {
+async computeOutstanding(supplierCode: string, asOfDate: Date): Promise<number>{
   try {
     // Call the same SOA API you use in getSWSOA
     const res: any = await firstValueFrom(this.reportService.getCustomerSoa('S', supplierCode));
-    const txns = res.recordset || [];
+
+const txns = (res.recordset || []).filter((row: any) => {
+  if (!row.INV_DATE) return false;
+  const d = new Date(row.INV_DATE);
+  return d <= asOfDate;
+});
 
     if (!txns.length) return 0;
 
     // Pass transactions to your FIFO + ageing function
-    const { totalBalance } = this.applySupplierFifoAndAgeing(txns, new Date());
+const { totalBalance } = this.applySupplierFifoAndAgeing(txns, asOfDate);
     return totalBalance;
   } catch (err) {
     console.error('Failed to fetch SOA for supplier:', supplierCode, err);
@@ -836,7 +828,9 @@ async computeOutstanding(supplierCode: string): Promise<number> {
     doc.text(`: ${this.selectedNature}`,45,42);
     doc.text('Category',10,52);
     doc.text(`: ${this.selectedCategory}`,45,52);    
-    let firstPageStartY = 60; // Start Y position for first page
+    doc.text('As On Date',10,62);
+    doc.text(`: ${this.formatDate(this.endDate)}`,45,62); 
+    let firstPageStartY = 70; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
 
@@ -882,11 +876,11 @@ async computeOutstanding(supplierCode: string): Promise<number> {
     // Add watermark (if necessary)
     doc = this.addWaterMark(doc,'p');
     // Save the PDF
-    doc.save(`SupplierOutstanding-${this.formatDate(new Date())}.pdf`);
+    doc.save(`SupplierOutstanding-ason-${this.formatDate(this.endDate)}-${this.formatDate(new Date())}.pdf`);
   }
 
     exportSWOUT() {
-    const fileName = `SupplierOutstanding-${this.formatDate(new Date())}.xlsx`;
+    const fileName = `SupplierOutstanding-ason-${this.formatDate(this.endDate)}-${this.formatDate(new Date())}.xlsx`;
     const sheetData = this.filteredSuppliers.map(s => ({
       'Supplier Code': s.SUPPLIER_CODE,
       'Supplier Name': s.SUPPLIER_NAME,
@@ -920,8 +914,8 @@ private applySupplierFifoAndAgeing(data: any[], endDate: Date) {
 
   // 🔹 Separate invoices and payments
   filtered.forEach(row => {
-    const invoice = Number(row.CREDIT) || 0; // supplier invoice
-    const payment = Number(row.DEBIT) || 0;  // your payment
+    const invoice = Number(row.CREDIT*row.EXCHANGERATE) || 0; // supplier invoice
+    const payment = Number(row.DEBIT*row.EXCHANGERATE) || 0;  // your payment
 
     if (invoice > 0 && payment === 0) {
       invoices.push({
