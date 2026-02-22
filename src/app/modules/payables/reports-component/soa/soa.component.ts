@@ -828,9 +828,9 @@ const { totalBalance } = this.applySupplierFifoAndAgeing(txns, asOfDate);
     doc.text(`: ${this.selectedNature}`,45,42);
     doc.text('Category',10,52);
     doc.text(`: ${this.selectedCategory}`,45,52);    
-    doc.text('As On Date',10,62);
-    doc.text(`: ${this.formatDate(this.endDate)}`,45,62); 
-    let firstPageStartY = 70; // Start Y position for first page
+    doc.text('As On Date',330,52);
+    doc.text(`: ${this.formatDate(this.endDate)}`,365,52); 
+    let firstPageStartY = 60; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
 
