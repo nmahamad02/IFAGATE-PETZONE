@@ -416,7 +416,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     this.cwsoaData = []
     this.selectedCustomer = customer
         this.getData = true
-    this.reportService.getCustomerSoa('C', customer.PCODE).subscribe((res: any) => {
+    this.reportService.getCustomerSoa('01','C', customer.PCODE).subscribe((res: any) => {
       if (res.recordset.length === 0) {
         alert('No data for the selected parameters!');
               this.getData = false
@@ -688,7 +688,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     this.pwsoaData = []
     this.selectedParent = parent
         this.getData = true
-    this.reportService.getParentSoa(parent.PARENTNAME).subscribe((res: any) => {
+    this.reportService.getParentSoa(parent.PARENTNAME,'01').subscribe((res: any) => {
       if (res.recordset.length === 0) {
         alert('No data for the selected parameters!');
               this.getData = false
@@ -965,7 +965,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     };
     this.customerAgeingSummaryList = []
     this.customerList.forEach(customer => {
-      this.reportService.getCustomerSoa('C', customer.PCODE).subscribe(
+      this.reportService.getCustomerSoa('01','C', customer.PCODE).subscribe(
         (response: any) => {
           const soaList = response.recordset.map((item: any) => {
             const btdDate = new Date(item.DUEDATE);
@@ -1209,7 +1209,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     this.parentAgeingSummaryList = []
     let daysDiff: number | null = null;
     this.parentList.forEach(parent => {
-      this.reportService.getParentSoa(parent.PARENTNAME).subscribe((resp: any) => {
+      this.reportService.getParentSoa(parent.PARENTNAME,'01').subscribe((resp: any) => {
         const data = resp.recordset;
         let runningBalance = 0;
         let localAgeing = {      
@@ -1466,7 +1466,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     this.parentWiseCustomerAgeingList = []
     this.selectedParent = parent
         this.getData = true
-    this.reportService.getParentSoa(parent.PARENTNAME).subscribe((res: any) => {
+    this.reportService.getParentSoa(parent.PARENTNAME,'01').subscribe((res: any) => {
       if (res.recordset.length === 0) {
         alert('No data for the selected parameters!');
               this.getData = false
@@ -2302,7 +2302,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     return;
   }
     this.getData = true
-  this.reportService.getCustomerSoa('C', this.selectedCustomer.PCODE).subscribe((res: any) => {
+  this.reportService.getCustomerSoa('01','C', this.selectedCustomer.PCODE).subscribe((res: any) => {
     if (res.recordset.length === 0) {
         alert('No data for the selected parameters!');
               this.getData = false
@@ -2734,7 +2734,7 @@ this.periodTotalDebit = 0;
   }
     this.getData = true
 
-  this.reportService.getParentSoa(this.selectedParent.PARENTNAME).subscribe((res: any) => {
+  this.reportService.getParentSoa(this.selectedParent.PARENTNAME,'01').subscribe((res: any) => {
     if (res.recordset.length === 0) {
         alert('No data for the selected parameters!');
               this.getData = false
@@ -3121,7 +3121,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     };
     this.pwoutData = []
     this.getData = true
-  this.reportService.getParentSoa(this.selectedParent.PARENTNAME).subscribe((res: any) => {
+  this.reportService.getParentSoa(this.selectedParent.PARENTNAME,'01').subscribe((res: any) => {
       if (res.recordset.length === 0) {
         alert('No data for the selected parameters!');
         this.getData = false
@@ -3458,7 +3458,7 @@ async setCATOVR() {
       if (!res.recordset.length) continue;
 
       for (const parent of res.recordset) {
-        const resp: any = await firstValueFrom(this.reportService.getParentSoa(parent.PARENTNAMEID));
+        const resp: any = await firstValueFrom(this.reportService.getParentSoa(parent.PARENTNAMEID,'01'));
         const data = (resp.recordset || []).filter((r: any) => new Date(r.INV_DATE) <= end);
         if (!data.length) continue;
 
@@ -4026,7 +4026,7 @@ data.forEach((r: any) => {
   async safeGetParentSoa(parentName: string): Promise<any[]> {
   try {
     const resp: any = await firstValueFrom(
-      this.reportService.getParentSoa(parentName)
+      this.reportService.getParentSoa(parentName,'01')
     );
     return resp?.recordset || [];
   } catch (err: any) {
@@ -4560,7 +4560,7 @@ async setPWMCAS() {
       for (const parent of res.recordset) {
 
         const resp: any = await firstValueFrom(
-          this.reportService.getParentSoa(parent.PARENTNAMEID)
+          this.reportService.getParentSoa(parent.PARENTNAMEID,'01')
         );
 
         const data = (resp.recordset || [])
@@ -4888,7 +4888,7 @@ exportPWMCAS_Raw(): void {
       for (const parent of parentRes.recordset) {
 
         const resp: any = await firstValueFrom(
-          this.reportService.getParentSoa(parent.PARENTNAMEID)
+          this.reportService.getParentSoa(parent.PARENTNAMEID,'01')
         );
 
         const data = (resp.recordset || [])
@@ -5176,7 +5176,7 @@ for (const slp of this.salesPersonList) {
       for (const parent of parents.recordset) {
 
         const resp: any = await firstValueFrom(
-          this.reportService.getParentSoa(parent.PARENTNAMEID)
+          this.reportService.getParentSoa(parent.PARENTNAMEID,'01')
         );
 
         const data = (resp.recordset || [])

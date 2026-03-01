@@ -64,6 +64,24 @@ export class SoaComponent {
 
   selectedSupplier: any
 
+    /*countries = [
+    { name: 'All Countries', code: 'un' },
+    { name: 'Bahrain', code: 'bh' },
+    { name: 'Kuwait', code: 'kw' },
+    { name: 'Saudi Arabia', code: 'sa' },
+    { name: 'United Arab Emirates', code: 'ae' },
+    { name: 'Oman', code: 'om' },
+    { name: 'Qatar', code: 'qa' },
+  ];
+
+  selectedCountry: { name: string; code: string } = this.countries[0];
+  selectedCountryName = '*';
+  selectedCountryCode = 'un';*/
+
+  salesUnits: { id: string; name: string; code: string, country: string }[] = [];
+  selectedUnit!: { id: string; name: string; code: string, country: string };
+  selectedCountryCode = 'un';
+
   supplierList: any[] = [];          // full supplier master list
   filteredSuppliers: any[] = [];     // filtered by nature/category/search
   searchText: string = '';
@@ -108,7 +126,77 @@ export class SoaComponent {
     });
   }
 
-  ngOnInit() {}
+loadSalesUnits() {
+  this.reportService.getSalesUnits().subscribe(
+    (res: any) => {
+      const data = res.recordset;
+
+      // Map backend result to dropdown structure
+      this.salesUnits = [
+        { id: '*', name: 'All Units', code: 'un' }, // optional
+        ...data.map((unit: any) => ({
+          id: unit.salesunitID,
+          name: unit.salesunitname,
+          code: this.mapFlagCode(unit.salesunitname),
+          country: this.mapCountry(unit.salesunitname),
+        }))
+      ];
+
+      this.selectedUnit = this.salesUnits[0];
+    },
+    (err: any) => console.log(err)
+  );
+}
+
+mapCountry(name: string): string {
+  if (name.includes('Kuwait')) return 'Kuwait';
+  if (name.includes('KSA') || name.includes('Saudi')) return 'Saudi Arabia';
+  if (name.includes('Bahrain')) return 'Bahrain';
+  if (name.includes('UAE')) return 'United Arab Emirates';
+  if (name.includes('Oman')) return 'Oman';
+  if (name.includes('Qatar')) return 'Qatar';
+
+  return 'un'; // fallback
+}
+
+mapFlagCode(name: string): string {
+  if (name.includes('Kuwait')) return 'kw';
+  if (name.includes('KSA') || name.includes('Saudi')) return 'sa';
+  if (name.includes('Bahrain')) return 'bh';
+  if (name.includes('UAE')) return 'ae';
+  if (name.includes('Oman')) return 'om';
+  if (name.includes('Qatar')) return 'qa';
+
+  return 'un'; // fallback
+}
+
+updateUnit(unit: { id: string; name: string; code: string, country: string }) {
+
+  this.selectedUnit = unit;
+  this.selectedCountryCode = unit.code;
+
+  /*const compcode = unit.id;
+
+  if (compcode === '*') {
+    this.reportService.getParent('*', 'C').subscribe(
+      (res: any) => {
+        this.parentList = res.recordset;
+      },
+      (err: any) => console.log(err)
+    );
+  } else {
+    this.reportService.getParent(unit.country, 'C').subscribe(
+      (res: any) => {
+        this.parentList = res.recordset;
+      },
+      (err: any) => console.log(err)
+    );
+  }*/
+}
+
+  ngOnInit() {
+      this.loadSalesUnits();
+  }
 
   openSWSOA() {
     //let dialogRef = this.dialog.open(this.cwsoaLookupDialog);
@@ -165,7 +253,7 @@ getSWSOA(customer: any) {
   this.selectedSupplier = customer;
   this.getData = true;
 
-  this.reportService.getCustomerSoa('S', customer.PCODE).subscribe((res: any) => {
+  this.reportService.getCustomerSoa(this.selectedUnit.id,'S', customer.PCODE).subscribe((res: any) => {
     console.log(res.recordset)
     this.getData = false;
     if (res.recordset.length === 0) {
@@ -458,7 +546,7 @@ setSPWSOA() {
 
   this.getData = true;
 
-  this.reportService.getCustomerSoa('S', this.selectedSupplier.PCODE).subscribe((res: any) => {
+  this.reportService.getCustomerSoa(this.selectedUnit.id,'S', this.selectedSupplier.PCODE).subscribe((res: any) => {
     this.getData = false;
     if (res.recordset.length === 0) {
       alert('No data for the selected parameters!');
@@ -792,7 +880,7 @@ async applyFilters() {
 async computeOutstanding(supplierCode: string, asOfDate: Date): Promise<number>{
   try {
     // Call the same SOA API you use in getSWSOA
-    const res: any = await firstValueFrom(this.reportService.getCustomerSoa('S', supplierCode));
+    const res: any = await firstValueFrom(this.reportService.getCustomerSoa(this.selectedUnit.id,'S', supplierCode));
 
 const txns = (res.recordset || []).filter((row: any) => {
   if (!row.INV_DATE) return false;
@@ -881,12 +969,12 @@ const { totalBalance } = this.applySupplierFifoAndAgeing(txns, asOfDate);
 
     exportSWOUT() {
     const fileName = `SupplierOutstanding-ason-${this.formatDate(this.endDate)}-${this.formatDate(new Date())}.xlsx`;
-    const sheetData = this.filteredSuppliers.map(s => ({
-      'Supplier Code': s.SUPPLIER_CODE,
-      'Supplier Name': s.SUPPLIER_NAME,
-      'Nature': s.SUPPLIER_NATURE,
-      'Category': s.CATEGORY,
-      'Payment Term': s.PAYMENT_TERM || '',
+    const sheetData = this.swoutData.map(s => ({
+      'Supplier Code': s.PCODE,
+      'Supplier Name': s.CUST_NAME,
+      'Nature': s.Nature,
+      'Category': s.SupplierCategory,
+      'Payment Term': s.REMARKS || '',
       'Current Outstanding': s.CURRENT_OUTSTANDING?.toFixed(3) || '0.000'
     }));
     const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(sheetData);

@@ -75,7 +75,7 @@ export class CollectionComponent {
   selectedCategories: string[] = []
   selectedLocation: string = 'NULL'
 
-  countries = [
+  /*countries = [
     { name: 'All Countries', code: 'un' },
     { name: 'Bahrain', code: 'bh' },
     { name: 'Kuwait', code: 'kw' },
@@ -87,6 +87,10 @@ export class CollectionComponent {
 
   selectedCountry: { name: string; code: string } = this.countries[0];
   selectedCountryName = '*';
+  selectedCountryCode = 'un';*/
+
+  salesUnits: { id: string; name: string; code: string, country: string }[] = [];
+  selectedUnit!: { id: string; name: string; code: string, country: string };
   selectedCountryCode = 'un';
 
   startDate: Date;
@@ -136,27 +140,72 @@ export class CollectionComponent {
     })
   }
 
-    updateFlag(country: { name: string; code: string }) {
-      this.selectedCountry = country;
-      this.selectedCountryName = country.name;
-  this.selectedCountryCode = country.code;
+    ngOnInit() {
+      this.loadSalesUnits();
+  }
 
-  // Special case
-  if (country.name === 'All Countries') {
-    this.reportService.getParent('*','C').subscribe(
+loadSalesUnits() {
+  this.reportService.getSalesUnits().subscribe(
+    (res: any) => {
+      const data = res.recordset;
+
+      // Map backend result to dropdown structure
+      this.salesUnits = [
+        { id: '*', name: 'All Units', code: 'un' }, // optional
+        ...data.map((unit: any) => ({
+          id: unit.salesunitID,
+          name: unit.salesunitname,
+          code: this.mapFlagCode(unit.salesunitname),
+          country: this.mapCountry(unit.salesunitname),
+        }))
+      ];
+
+      this.selectedUnit = this.salesUnits[0];
+    },
+    (err: any) => console.log(err)
+  );
+}
+
+mapCountry(name: string): string {
+  if (name.includes('Kuwait')) return 'Kuwait';
+  if (name.includes('KSA') || name.includes('Saudi')) return 'Saudi Arabia';
+  if (name.includes('Bahrain')) return 'Bahrain';
+  if (name.includes('UAE')) return 'United Arab Emirates';
+  if (name.includes('Oman')) return 'Oman';
+  if (name.includes('Qatar')) return 'Qatar';
+
+  return 'un'; // fallback
+}
+
+mapFlagCode(name: string): string {
+  if (name.includes('Kuwait')) return 'kw';
+  if (name.includes('KSA') || name.includes('Saudi')) return 'sa';
+  if (name.includes('Bahrain')) return 'bh';
+  if (name.includes('UAE')) return 'ae';
+  if (name.includes('Oman')) return 'om';
+  if (name.includes('Qatar')) return 'qa';
+
+  return 'un'; // fallback
+}
+
+updateUnit(unit: { id: string; name: string; code: string, country: string }) {
+
+  this.selectedUnit = unit;
+  this.selectedCountryCode = unit.code;
+
+  const compcode = unit.id;
+
+  if (compcode === '*') {
+    this.reportService.getParent('*', 'C').subscribe(
       (res: any) => {
         this.parentList = res.recordset;
-        console.log(this.parentList);
       },
       (err: any) => console.log(err)
     );
-  } 
-  // Normal case
-  else {
-    this.reportService.getParent(country.name,'C').subscribe(
+  } else {
+    this.reportService.getParent(unit.country, 'C').subscribe(
       (res: any) => {
         this.parentList = res.recordset;
-        console.log(this.parentList);
       },
       (err: any) => console.log(err)
     );
@@ -242,11 +291,11 @@ async setCATOVR() {
     end.setHours(23, 59, 59, 999);
 
     for (const category of this.selectedCategories) {
-      const res: any = await firstValueFrom(this.reportService.getParentFromOrg(category,this.selectedCountryName,'C'));
+      const res: any = await firstValueFrom(this.reportService.getParentFromOrg(category,this.selectedUnit.country,'C'));
       if (!res.recordset.length) continue;
 
       for (const parent of res.recordset) {
-        const resp: any = await firstValueFrom(this.reportService.getParentSoa(parent.PARENTNAMEID));
+        const resp: any = await firstValueFrom(this.reportService.getParentSoa(parent.PARENTNAMEID,this.selectedUnit.id));
         const data = (resp.recordset || []).filter((r: any) => new Date(r.INV_DATE) <= end);
         if (!data.length) continue;
 
@@ -684,7 +733,7 @@ async setCATANSYS() {
     for (const org of this.organisationList) {
 
       const parents: any = await firstValueFrom(
-        this.reportService.getParentFromOrg(org.ORGANISATION,this.selectedCountryName,'C')
+        this.reportService.getParentFromOrg(org.ORGANISATION,this.selectedUnit.country,'C')
       );
       if (!parents?.recordset?.length) continue;
 
@@ -816,7 +865,7 @@ data.forEach((r: any) => {
   async safeGetParentSoa(parentName: string): Promise<any[]> {
   try {
     const resp: any = await firstValueFrom(
-      this.reportService.getParentSoa(parentName)
+      this.reportService.getParentSoa(parentName,this.selectedUnit.id)
     );
     return resp?.recordset || [];
   } catch (err: any) {
@@ -879,7 +928,7 @@ async setSLPANSYS() {
     for (const slp of this.salesPersonList) {
 
       const parents: any = await firstValueFrom(
-        this.reportService.getParentFromSlp(slp.SALESMANCD,this.selectedCountryName,'C')
+        this.reportService.getParentFromSlp(slp.SALESMANCD,this.selectedUnit.country,'C')
       );
       if (!parents?.recordset?.length) continue;
 
@@ -1347,14 +1396,14 @@ async setPWMCAS() {
     for (const category of this.selectedCategories) {
 
       const res: any = await firstValueFrom(
-        this.reportService.getParentFromOrg(category, this.selectedCountryName,'C')
+        this.reportService.getParentFromOrg(category, this.selectedUnit.country,'C')
       );
       if (!res.recordset?.length) continue;
 
       for (const parent of res.recordset) {
 
         const resp: any = await firstValueFrom(
-          this.reportService.getParentSoa(parent.PARENTNAMEID)
+          this.reportService.getParentSoa(parent.PARENTNAMEID,this.selectedUnit.id)
         );
 
         const data = (resp.recordset || [])
@@ -1679,7 +1728,7 @@ exportPWMCAS_Raw(): void {
 
       /* 🔹 All parents under this category */
       const parentRes: any = await firstValueFrom(
-        this.reportService.getParentFromOrg(category, this.selectedCountryName,'C')
+        this.reportService.getParentFromOrg(category, this.selectedUnit.country,'C')
       );
 
       if (!parentRes.recordset?.length) continue;
@@ -1687,7 +1736,7 @@ exportPWMCAS_Raw(): void {
       for (const parent of parentRes.recordset) {
 
         const resp: any = await firstValueFrom(
-          this.reportService.getParentSoa(parent.PARENTNAMEID)
+          this.reportService.getParentSoa(parent.PARENTNAMEID, this.selectedUnit.id)
         );
 
         const data = (resp.recordset || [])

@@ -69,8 +69,8 @@ export class AgeingComponent {
   selectedParent: any
   selectedCategories: string[] = []
   selectedLocation: string = 'NULL'
-
-  countries = [
+  
+  /*countries = [
     { name: 'All Countries', code: 'un' },
     { name: 'Bahrain', code: 'bh' },
     { name: 'Kuwait', code: 'kw' },
@@ -82,6 +82,10 @@ export class AgeingComponent {
 
   selectedCountry: { name: string; code: string } = this.countries[0];
   selectedCountryName = '*';
+  selectedCountryCode = 'un';*/
+
+  salesUnits: { id: string; name: string; code: string, country: string }[] = [];
+  selectedUnit!: { id: string; name: string; code: string, country: string };
   selectedCountryCode = 'un';
 
   startDate: Date;
@@ -131,32 +135,78 @@ export class AgeingComponent {
     })
   }
 
-    updateFlag(country: { name: string; code: string }) {
-      this.selectedCountry = country;
-      this.selectedCountryName = country.name;
-  this.selectedCountryCode = country.code;
+    ngOnInit() {
+      this.loadSalesUnits();
+  }
 
-  // Special case
-  if (country.name === 'All Countries') {
-    this.reportService.getParent('*','C').subscribe(
+loadSalesUnits() {
+  this.reportService.getSalesUnits().subscribe(
+    (res: any) => {
+      const data = res.recordset;
+
+      // Map backend result to dropdown structure
+      this.salesUnits = [
+        { id: '*', name: 'All Units', code: 'un' }, // optional
+        ...data.map((unit: any) => ({
+          id: unit.salesunitID,
+          name: unit.salesunitname,
+          code: this.mapFlagCode(unit.salesunitname),
+          country: this.mapCountry(unit.salesunitname),
+        }))
+      ];
+
+      this.selectedUnit = this.salesUnits[0];
+    },
+    (err: any) => console.log(err)
+  );
+}
+
+mapCountry(name: string): string {
+  if (name.includes('Kuwait')) return 'Kuwait';
+  if (name.includes('KSA') || name.includes('Saudi')) return 'Saudi Arabia';
+  if (name.includes('Bahrain')) return 'Bahrain';
+  if (name.includes('UAE')) return 'United Arab Emirates';
+  if (name.includes('Oman')) return 'Oman';
+  if (name.includes('Qatar')) return 'Qatar';
+
+  return 'un'; // fallback
+}
+
+mapFlagCode(name: string): string {
+  if (name.includes('Kuwait')) return 'kw';
+  if (name.includes('KSA') || name.includes('Saudi')) return 'sa';
+  if (name.includes('Bahrain')) return 'bh';
+  if (name.includes('UAE')) return 'ae';
+  if (name.includes('Oman')) return 'om';
+  if (name.includes('Qatar')) return 'qa';
+
+  return 'un'; // fallback
+}
+
+updateUnit(unit: { id: string; name: string; code: string, country: string }) {
+
+  this.selectedUnit = unit;
+  this.selectedCountryCode = unit.code;
+
+  const compcode = unit.id;
+
+  if (compcode === '*') {
+    this.reportService.getParent('*', 'C').subscribe(
       (res: any) => {
         this.parentList = res.recordset;
-        console.log(this.parentList);
       },
       (err: any) => console.log(err)
     );
-  } 
-  // Normal case
-  else {
-    this.reportService.getParent(country.name,'C').subscribe(
+  } else {
+    this.reportService.getParent(unit.country, 'C').subscribe(
       (res: any) => {
         this.parentList = res.recordset;
-        console.log(this.parentList);
       },
       (err: any) => console.log(err)
     );
   }
 }
+
 
 
 
@@ -216,7 +266,7 @@ setPCASL(parent: any) {
     };
     this.parentWiseCustomerAgeingList = []
         this.getData = true
-    this.reportService.getParentSoa(this.selectedParent.PARENTNAME).subscribe((res: any) => {
+    this.reportService.getParentSoa(this.selectedParent.PARENTNAME,this.selectedUnit.id).subscribe((res: any) => {
       if (res.recordset.length === 0) {
         alert('No data for the selected parameters!');
               this.getData = false
@@ -511,7 +561,7 @@ getPWOUT() {
   this.pwoutData = [];
   this.getData = true;
 
-  this.reportService.getParentSoa(this.selectedParent.PARENTNAME)
+  this.reportService.getParentSoa(this.selectedParent.PARENTNAME,this.selectedUnit.id)
     .subscribe((res: any) => {
 
       if (!res.recordset || res.recordset.length === 0) {

@@ -50,13 +50,13 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
     return this.http.get(this.url + '/report/get-monthwise-salesdata/' + country)
   }
 
-  getCustomerSoa(type: string,pcode: string) {
-    return this.http.get(this.url + '/report/get-customer-soa/' + type + '/' + pcode)
+  getCustomerSoa(compcode: string, type: string,pcode: string) {
+    return this.http.get(this.url + '/report/get-customer-soa/' + compcode + '/' + type + '/' + pcode)
   }
 
-  getParentSoa(parentcode: string) {
+  getParentSoa(parentcode: string, compcode: string) {
     return this.http.get(this.url + '/report/get-parent-soa', {
-      params: { parentcode }
+      params: { parentcode, compcode }
     })
   }
 
@@ -70,6 +70,10 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
 
   getIndustry() {
     return this.http.get(this.url + '/report/get-industry')
+  }
+
+  getSalesUnits() {
+    return this.http.get(this.url + '/report/get-salesunits')
   }
 
   getOrganisation() {

@@ -3,8 +3,21 @@
         <div class="visualization-heading col-12">
             <div class="heading-info">
                 <div class="row">
-                    <div class="col-12">
+                    <div class="col-6">
                         <h2 class="heading-title">SOA Reports</h2>
+                    </div>
+                    <div class="col-2 flex-1">
+                        <mat-select [(value)]="selectedUnit" (selectionChange)="updateUnit($event.value)">
+                            <mat-select-trigger>
+                                <img [src]="'https://flagcdn.com/w40/' + selectedCountryCode + '.png'" style="width: 24px; margin-right: 8px;" />
+                                {{ selectedUnit?.name }}
+                            </mat-select-trigger>
+
+                            <mat-option *ngFor="let unit of salesUnits" [value]="unit">
+                                <img [src]="'https://flagcdn.com/w40/' + unit.code + '.png'" style="width: 24px; margin-right: 8px;" />
+                                {{ unit.name }}
+                            </mat-option>
+                        </mat-select>
                     </div>
                 </div>
             </div>
