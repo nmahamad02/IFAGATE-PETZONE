@@ -1072,7 +1072,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Customer Open Statement of Accounts', 125, 20);
+    doc.text('Statement of Accounts (Open)', 160, 20);
     doc.roundedRect(5, 32.5, 436, 55, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedCustomer.CUST_NAME}`,10,42);
@@ -1349,7 +1349,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Parent-wise Open Statement of Accounts', 120, 20);
+    doc.text('Statement of Accounts (Open)', 150, 20);
     doc.roundedRect(5, 32.5, 436, 55, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedParent.PARENTNAME}`,10,42);
@@ -1727,7 +1727,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Period-wise Customer Statement of Accounts', 115, 20);
+    doc.text('Statement of Accounts', 115, 20);
     doc.roundedRect(5, 32.5, 436, 65, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedCustomer.CUST_NAME}`,10,42);
@@ -2156,7 +2156,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Period-wise Parent-wise Customer Statement of Accounts', 100, 20);
+    doc.text('Statement of Accounts', 160, 20);
     doc.roundedRect(5, 32.5, 436, 65, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedParent.PARENTNAME}`,10,42);
