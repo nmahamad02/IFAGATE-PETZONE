@@ -37,6 +37,7 @@ export class SoaComponent {
   @ViewChild('posoaLookupDialog', { static: false }) posoaLookupDialog!: TemplateRef<any>;
   @ViewChild('cpwsoaLookupDialog', { static: false }) cpwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('ppwsoaLookupDialog', { static: false }) ppwsoaLookupDialog!: TemplateRef<any>;
+  @ViewChild('ipwsoaLookupDialog', { static: false }) ipwsoaLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
@@ -47,11 +48,13 @@ export class SoaComponent {
   posoaData: any[] = []
   cpwsoaData: any[] = []
   ppwsoaData: any[] = []
+  ipwsoaData: any[] = []
 
   industryList: any[] = [];
   organisationList: any[] = [];
   salesPersonList: any[] = [];
   locationList: any[] = [];
+  intermediariesList: any[] = [];      
 
   catList = ['MM', 'PS', 'VET', 'FBR', 'OTHER'];
 
@@ -126,6 +129,12 @@ export class SoaComponent {
   constructor(private financeService: FinanceService, private route: ActivatedRoute, private dialog: MatDialog, private router: Router, private accountService: AccountsService, private reportService: ReportsService, private dataSharingService: DataSharingService, private sapservice: SapService, private emailService: EmailService) { 
     this.accountService.listOpbal(this.currentYear.toString(),'C').subscribe((res: any) => {
       this.customerList = res.recordset;
+    }, (error: any) => {
+      console.log(error);
+    });
+    this.accountService.listOpbal(this.currentYear.toString(),'G').subscribe((res: any) => {
+      console.log(res)
+      this.intermediariesList = res.recordset;
     }, (error: any) => {
       console.log(error);
     });
@@ -794,7 +803,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Statement of Accounts', 160, 20);
+    doc.text('Statement of Account', 160, 20);
     doc.roundedRect(5, 32.5, 436, 55, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedParent.PARENTNAME}`,10,42);
@@ -1072,7 +1081,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Statement of Accounts (Open)', 160, 20);
+    doc.text('Statement of Account (Open)', 160, 20);
     doc.roundedRect(5, 32.5, 436, 55, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedCustomer.CUST_NAME}`,10,42);
@@ -1349,7 +1358,7 @@ beforeUnloadHandler = (event: BeforeUnloadEvent) => {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Statement of Accounts (Open)', 150, 20);
+    doc.text('Statement of Account (Open)', 150, 20);
     doc.roundedRect(5, 32.5, 436, 55, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedParent.PARENTNAME}`,10,42);
@@ -1727,7 +1736,7 @@ this.cpwsoaData = [openingRow, ...filteredPeriodRows]
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Statement of Accounts', 115, 20);
+    doc.text('Statement of Account', 115, 20);
     doc.roundedRect(5, 32.5, 436, 65, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedCustomer.CUST_NAME}`,10,42);
@@ -2156,7 +2165,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Statement of Accounts', 160, 20);
+    doc.text('Statement of Account', 160, 20);
     doc.roundedRect(5, 32.5, 436, 65, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedParent.PARENTNAME}`,10,42);
@@ -2346,6 +2355,359 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     FileSaver.saveAs(blob, fileName);
   }
 
+
+  openIPWSOA() {
+    //let dialogRef = this.dialog.open(this.spwsoaLookupDialog);
+    this.dialog.open(this.ipwsoaLookupDialog, {
+        width: '100vw',
+        maxWidth: '100vw',
+    }
+  )
+        this.periodTotalDebit = 0;
+  this.periodTotalCredit = 0;
+  this.periodClosingBalance = 0;
+  this.periodAgeingSummary = {
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    'ABOVE_120_DAYS': 0,
+    'CURRENT': 0
+  };
+  this.openingBalanceData = {
+    DEBIT: 0,
+    CREDIT: 0,
+    BALANCE: 0,
+  };
+  this.totalDebit = 0;
+  this.totalCredit = 0;
+  this.openingBalance = 0;
+  this.closingBalance = 0;
+    this.ipwsoaData = []
+  }
+
+  getIPWSOA(customer: any) {
+    this.ipwsoaData = []
+        this.periodTotalDebit = 0;
+  this.periodTotalCredit = 0;
+  this.periodClosingBalance = 0;
+  this.periodAgeingSummary = {
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    'ABOVE_120_DAYS': 0,
+    'CURRENT': 0
+  };
+  this.openingBalanceData = {
+    DEBIT: 0,
+    CREDIT: 0,
+    BALANCE: 0,
+  };
+  this.totalDebit = 0;
+  this.totalCredit = 0;
+  this.openingBalance = 0;
+  this.closingBalance = 0;
+    this.selectedCustomer = customer
+  }
+
+setIPWSOA() {
+  if (!this.startDate || !this.endDate) {
+    alert('Please select both start and end dates.');
+    return;
+  }
+      this.periodTotalDebit = 0;
+  this.periodTotalCredit = 0;
+  this.periodClosingBalance = 0;
+  this.periodAgeingSummary = {
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    'ABOVE_120_DAYS': 0,
+    'CURRENT': 0
+  };
+  this.openingBalanceData = {
+    DEBIT: 0,
+    CREDIT: 0,
+    BALANCE: 0,
+  };
+  this.totalDebit = 0;
+  this.totalCredit = 0;
+  this.openingBalance = 0;
+  this.closingBalance = 0;
+
+  const start = new Date(this.startDate);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(this.endDate);
+  end.setHours(23, 59, 59, 999);
+
+  this.getData = true;
+
+  this.reportService.getCustomerSoa(this.selectedUnit.id,'G', this.selectedCustomer.PCODE).subscribe((res: any) => {
+    this.getData = false;
+    if (res.recordset.length === 0) {
+      alert('No data for the selected parameters!');
+      return;
+    }
+
+ const data = res.recordset;
+        this.getData = false
+
+    let runningBalance = 0;
+    this.ageingSummary = {
+      CURRENT: 0,
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0
+    };
+
+  // Reset opening balance
+  this.openingBalanceData = { DEBIT: 0, CREDIT: 0, BALANCE: 0 };
+
+  // Calculate opening balance for transactions before startDat
+  const openingData = data.filter((row: any) => {
+  const txnDate = new Date(row.INV_DATE)
+  txnDate.setHours(0,0,0,0)
+  return txnDate < start
+})
+
+  openingData.forEach((row: any) => {
+    const debit = Number(row.CREDIT*row.EXCHANGERATE);
+    const credit = Number(row.DEBIT*row.EXCHANGERATE);
+    this.openingBalanceData.DEBIT += credit;
+    this.openingBalanceData.CREDIT += debit;
+    this.openingBalanceData.BALANCE += (debit - credit);
+  });
+
+    // Filter transactions in selected period
+var filteredPeriodRows = data.filter((row: any) => {
+  const txnDate = new Date(row.INV_DATE)
+  return txnDate >= start && txnDate <= end
+})
+
+  for(let i=0; i<filteredPeriodRows.length; i++){
+    const debit = Number(filteredPeriodRows[i].CREDIT*filteredPeriodRows[i].EXCHANGERATE) || 0;
+    const credit = Number(filteredPeriodRows[i].DEBIT*filteredPeriodRows[i].EXCHANGERATE) || 0;
+
+    this.periodTotalDebit += debit;
+    this.periodTotalCredit += credit;
+  }
+
+// Build opening balance row
+const openingRow = {
+  INV_NO: 'OPENING BALANCE',
+  INV_DATE: null,
+  DEBIT: this.openingBalanceData.DEBIT,
+  CREDIT: this.openingBalanceData.CREDIT,
+  BALANCE: this.openingBalanceData.CREDIT - this.openingBalanceData.DEBIT,
+  DAYS_DIFF: null,
+  DUEDATE: null,
+  DOC_TYPE: '',
+  REMARKS: '',
+  VENDOR_REF_NO: '',
+  CUST_REF_NO: '',
+  //...this.selectedCustomer // optional: to keep column structure consistent
+};
+
+    if(filteredPeriodRows.length === 0) {
+      alert('No data available in selected range!')
+    }
+
+    // Calculate period-wise balances
+    let periodRunningBalance = 0;
+    filteredPeriodRows = filteredPeriodRows.map((row: any) => {
+      const debit = Number(row.CREDIT*row.EXCHANGERATE) || 0;
+      const credit = Number(row.DEBIT*row.EXCHANGERATE) || 0;
+
+      periodRunningBalance += debit - credit;
+
+      return {
+        ...row,
+        BALANCE: periodRunningBalance
+      };
+    });
+
+    // Combine into final list
+this.ipwsoaData = [openingRow, ...filteredPeriodRows]
+
+
+    // 🔹 Apply FIFO + ageing on period data
+const fifoInput = filteredPeriodRows;
+const result = this.applyCustomerFifoAndAgeing(fifoInput, this.endDate);
+
+    this.ageingSummary = result.ageing;
+    this.closingBalance = this.openingBalanceData.BALANCE + result.totalBalance;
+
+  }, (err: any) => {
+    this.getData = false;
+    alert('No data for the selected parameters!');
+  });
+}
+
+  printIPWSOA() {
+    if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    } else {
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Statement of Account', 160, 20);
+    doc.roundedRect(5, 32.5, 436, 65, 5, 5);
+    doc.setFontSize(10);
+    doc.text(`${this.selectedCustomer.CUST_NAME}`,10,42);
+    doc.text(`Account ID: ${this.selectedCustomer.PCODE}`,330,42);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,52);
+    doc.text('Nature',10,52);
+    doc.text(`: ${this.selectedCustomer.Nature}`,45,52);
+    doc.text('Category',10,62);
+    doc.text(`: ${this.selectedCustomer.SupplierCategory}`,45,62);
+    doc.text('Period',10,72);
+    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 72)
+    let firstPageStartY = 80; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#ipwSoaTable',
+      tableWidth: 436,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+    /*  columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' }
+      },*/
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      showFoot: 'lastPage', 
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+
+    autoTable(doc, {
+      html: '#ipwsoaAgeingSummaryTable',
+      startY: finalY1 + 5,
+      tableWidth: 436,
+      margin: { left: 5 },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+     /* columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' },
+        6: { halign: 'center' }
+      }*/
+    });
+ 
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc,'p');
+    // Save the PDF
+    doc.save(`${this.selectedCustomer.PCODE}-statement-of-account-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
+    }
+  }
+
+  exportIPWSOA(): void {
+    const fileName = `${this.selectedCustomer.PCODE}-statement-of-account-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
+
+    // 1. Create worksheet from spwsoaData
+    const spwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.ipwsoaData.map(row => ({
+      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
+      'Invoice No': row.INV_NO,
+      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
+      'Description': row.DESCRIPTION,
+      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
+      'Debit': row.CREDIT*row.EXCHANGERATE || '',
+      'Credit': row.DEBIT*row.EXCHANGERATE || '',
+      'Balance': row.BALANCE
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.periodAgeingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.periodAgeingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.periodAgeingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.periodAgeingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.periodAgeingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.periodAgeingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.periodAgeingSummary['CURRENT'] || 0) +
+        (this.periodAgeingSummary['30_DAYS'] || 0) +
+        (this.periodAgeingSummary['60_DAYS'] || 0) +
+        (this.periodAgeingSummary['90_DAYS'] || 0) +
+        (this.periodAgeingSummary['120_DAYS'] || 0) +
+        (this.periodAgeingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': spwsoaSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
 calculateAgeing(data: any[]): any {
   const ageing = {
     CURRENT: 0,
@@ -2372,6 +2734,112 @@ calculateAgeing(data: any[]): any {
   }
 
   return ageing;
+}
+
+private applyCustomerFifoAndAgeing(data: any[], endDate: Date) {
+
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+
+  // 🔹 Filter transactions up to end date
+  const filtered = data.filter(row => {
+    const txnDate = new Date(row.INV_DATE);
+    txnDate.setHours(0, 0, 0, 0);
+    return txnDate <= end;
+  });
+
+  const invoices: any[] = []; // supplier invoices (CREDIT)
+  const payments: any[] = []; // your payments (DEBIT)
+
+  // 🔹 Separate invoices and payments
+  filtered.forEach(row => {
+    const invoice = Number(row.CREDIT*row.EXCHANGERATE) || 0; // supplier invoice
+    const payment = Number(row.DEBIT*row.EXCHANGERATE) || 0;  // your payment
+
+    if (invoice > 0 && payment === 0) {
+      invoices.push({
+        ...row,
+        original: invoice,
+        remaining: invoice,
+        applied: 0
+      });
+    }
+
+    if (payment > 0 && invoice === 0) {
+      payments.push({
+        ...row,
+        remaining: payment
+      });
+    }
+  });
+
+  // 🔹 Sort FIFO (oldest invoices first)
+  invoices.sort((a, b) => new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime());
+  payments.sort((a, b) => new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime());
+
+  // 🔹 Apply payments to invoices
+  payments.forEach(payment => {
+    let remainingPayment = payment.remaining;
+
+    for (const invoice of invoices) {
+      if (remainingPayment <= 0) break;
+      if (invoice.remaining <= 0) continue;
+
+      const applied = Math.min(invoice.remaining, remainingPayment);
+      invoice.remaining -= applied;
+      invoice.applied += applied;
+      remainingPayment -= applied;
+    }
+  });
+
+  // 🔹 Compute ageing
+  const ageing = {
+    CURRENT: 0,
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    'ABOVE_120_DAYS': 0
+  };
+
+  let runningBalance = 0;
+  const resultRows: any[] = [];
+  const today = new Date(endDate);
+  today.setHours(0, 0, 0, 0);
+
+  invoices.forEach(row => {
+    const amt = row.remaining || 0;
+    if (amt <= 0) return;
+
+    runningBalance += amt;
+
+    let daysDiff = 0;
+    if (row.DUEDATE) {
+      const dueDate = new Date(row.DUEDATE);
+      dueDate.setHours(0, 0, 0, 0);
+      daysDiff = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysDiff < 0) ageing.CURRENT += amt;
+      else if (daysDiff <= 30) ageing['30_DAYS'] += amt;
+      else if (daysDiff <= 60) ageing['60_DAYS'] += amt;
+      else if (daysDiff <= 90) ageing['90_DAYS'] += amt;
+      else if (daysDiff <= 120) ageing['120_DAYS'] += amt;
+      else ageing['ABOVE_120_DAYS'] += amt;
+    }
+
+    resultRows.push({
+      ...row,
+      OUTSTANDING: amt,
+      BALANCE: runningBalance,
+      DAYS_DIFF: daysDiff
+    });
+  });
+
+  return {
+    rows: resultRows,
+    ageing,
+    totalBalance: runningBalance
+  };
 }
 
   addWaterMark(doc: any,type: string) {
