@@ -35,6 +35,9 @@ export class SoaComponent {
   @ViewChild('ipwsoaLookupDialog', { static: false }) ipwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('swoutLookupDialog', { static: false }) swoutLookupDialog!: TemplateRef<any>;
   @ViewChild('iwoutLookupDialog', { static: false }) iwoutLookupDialog!: TemplateRef<any>;
+  @ViewChild('swtrnlistLookupDialog', { static: false }) swtrnlistLookupDialog!: TemplateRef<any>;
+  @ViewChild('spwtrnlistLookupDialog', { static: false }) spwtrnlistLookupDialog!: TemplateRef<any>;
+  @ViewChild('swtrnsumLookupDialog', { static: false }) swtrnsumLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
@@ -44,6 +47,9 @@ export class SoaComponent {
   ipwsoaData: any[] = []
   swoutData: any[] = []
   iwoutData: any[] = []
+  swtrnlistData: any[] = []
+  spwtrnlistData: any[] = []
+  swtrnsumData: any[] = []
 
   periodTotalDebit = 0;
   periodTotalCredit = 0;
@@ -141,11 +147,10 @@ export class SoaComponent {
 loadSalesUnits() {
   this.reportService.getSalesUnits().subscribe(
     (res: any) => {
-      const data = res.recordset;
+      const data = res.recordset.filter((u: any) => u.salesunitname);
 
-      // Map backend result to dropdown structure
       this.salesUnits = [
-        { id: '*', name: 'All Units', code: 'un' }, // optional
+        { id: '*', name: 'All Units', code: 'un' },
         ...data.map((unit: any) => ({
           id: unit.salesunitID,
           name: unit.salesunitname,
@@ -265,7 +270,7 @@ getSWSOA(customer: any) {
   this.selectedSupplier = customer;
   this.getData = true;
 
-  this.reportService.getCustomerSoa(this.selectedUnit.id,'S', customer.PCODE).subscribe((res: any) => {
+  this.reportService.getApCustomerSoa(this.selectedUnit.id,'S', customer.PCODE).subscribe((res: any) => {
     console.log(res.recordset)
     this.getData = false;
     if (res.recordset.length === 0) {
@@ -558,7 +563,7 @@ setSPWSOA() {
 
   this.getData = true;
 
-  this.reportService.getCustomerSoa(this.selectedUnit.id,'S', this.selectedSupplier.PCODE).subscribe((res: any) => {
+  this.reportService.getApCustomerSoa(this.selectedUnit.id,'S', this.selectedSupplier.PCODE).subscribe((res: any) => {
     this.getData = false;
     if (res.recordset.length === 0) {
       alert('No data for the selected parameters!');
@@ -896,7 +901,7 @@ async computeOutstanding(
   try {
 
     const res: any = await firstValueFrom(
-      this.reportService.getCustomerSoa(this.selectedUnit.id, type, supplierCode)
+      this.reportService.getApCustomerSoa(this.selectedUnit.id, type, supplierCode)
     );
 
     const end = new Date(asOfDate);
@@ -926,11 +931,6 @@ async computeOutstanding(
     return 0;
   }
 }
-
-  onFilterChange() {
-    this.applySupplierFilters();
-    this.applyIntermediaryFilters();
-  }
 
   printSWOUT() {
     var doc = new jsPDF('portrait', 'px', 'a4');
@@ -1102,7 +1102,7 @@ setIPWSOA() {
 
   this.getData = true;
 
-  this.reportService.getCustomerSoa(this.selectedUnit.id,'G', this.selectedSupplier.PCODE).subscribe((res: any) => {
+  this.reportService.getApCustomerSoa(this.selectedUnit.id,'G', this.selectedSupplier.PCODE).subscribe((res: any) => {
     this.getData = false;
     if (res.recordset.length === 0) {
       alert('No data for the selected parameters!');
@@ -1650,6 +1650,797 @@ private applySupplierFifoAndAgeing(data: any[], endDate: Date) {
   };
 }
 
+
+  openSWTRNLIST() {
+    //let dialogRef = this.dialog.open(this.cwsoaLookupDialog);
+    this.dialog.open(this.swtrnlistLookupDialog, {
+        width: '100vw',
+        maxWidth: '100vw',
+    }
+  )
+    this.periodTotalDebit = 0;
+  this.periodTotalCredit = 0;
+  this.periodClosingBalance = 0;
+  this.periodAgeingSummary = {
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    'ABOVE_120_DAYS': 0,
+    'CURRENT': 0
+  };
+  this.openingBalanceData = {
+    DEBIT: 0,
+    CREDIT: 0,
+    BALANCE: 0,
+  };
+  this.totalDebit = 0;
+  this.totalCredit = 0;
+  this.openingBalance = 0;
+  this.closingBalance = 0;
+    this.swtrnlistData = []
+  }
+
+getSWTRNLIST(customer: any) {
+      this.periodTotalDebit = 0;
+  this.periodTotalCredit = 0;
+  this.periodClosingBalance = 0;
+  this.periodAgeingSummary = {
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    'ABOVE_120_DAYS': 0,
+    'CURRENT': 0
+  };
+  this.openingBalanceData = {
+    DEBIT: 0,
+    CREDIT: 0,
+    BALANCE: 0,
+  };
+  this.totalDebit = 0;
+  this.totalCredit = 0;
+  this.openingBalance = 0;
+  this.closingBalance = 0;
+  this.swtrnlistData = [];
+  this.selectedSupplier = customer;
+  this.getData = true;
+
+  this.reportService.getApCustomerTrnList(this.selectedUnit.id,'S', customer.PCODE).subscribe((res: any) => {
+    console.log(res.recordset)
+    this.getData = false;
+    if (res.recordset.length === 0) {
+      alert('No data for the selected parameters!');
+      return;
+    }
+
+    const today = new Date(); 
+    today.setHours(0, 0, 0, 0);
+
+    this.swtrnlistData = res.recordset;
+          this.getData = false
+      let runningBalance = 0;
+
+      this.swtrnlistData = this.swtrnlistData.map(row => {
+        const debit = Number(row.REFAMOUNT ) || 0;
+        const credit = Number(row.INV_AMOUNT ) || 0;
+        this.totalDebit += debit;
+        this.totalCredit += credit;
+
+        runningBalance += debit - credit;
+
+        let daysDiff: number | null = null;
+
+          const dueDate = new Date(row.DUEDATE);
+          const today = new Date();
+
+          dueDate.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+
+          const diffTime = today.getTime() - dueDate.getTime()
+          daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));    
+        
+        return {
+          ...row,
+          BALANCE: runningBalance,
+          DAYS_DIFF: daysDiff // could be null if not applicable
+        };
+      });
+
+    //const result = this.applySupplierFifoAndAgeing(res.recordset,today);
+
+   // this.ageingSummary = result.ageing;
+    //this.closingBalance = result.totalBalance;
+  }, (err: any) => {
+    alert('No data for the selected parameters!');
+    this.getData = false;
+  });
+}
+
+  printSWTRNLIST() {
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Supplier Transaction Listing', 150, 20);
+    doc.roundedRect(5, 32.5, 436, 55, 5, 5);
+    doc.setFontSize(10);
+    doc.text(`${this.selectedSupplier.CUST_NAME}`,10,42);
+    doc.text(`Account ID: ${this.selectedSupplier.PCODE}`,330,42);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,52);
+    doc.text('Nature',10,52);
+    doc.text(`: ${this.selectedSupplier.Nature}`,45,52);
+    doc.text('Category',10,62);
+    doc.text(`: ${this.selectedSupplier.SupplierCategory}`,45,62);
+    let firstPageStartY = 70; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#swTrnListTable',
+      tableWidth: 436,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      /*columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' }
+      },*/
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      showFoot: 'lastPage', 
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    /*let finalY1 = doc.lastAutoTable?.finalY || 0
+    autoTable(doc, {
+      html: '#swTrnListAgeingSummaryTable',
+      startY: finalY1 + 5,
+      tableWidth: 436,
+      margin: { left: 5 },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      /*columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' },
+        6: { halign: 'center' }
+      }*/
+    //});
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc,'p');
+    // Save the PDF
+    doc.save(`${this.selectedSupplier.PCODE}-transaction-listing-${this.mCurDate}.pdf`);
+  }
+
+  exportSWTRNLIST(): void {
+    const fileName = `${this.selectedSupplier.PCODE}-transaction-listing-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.swtrnlistData.map(row => ({
+      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
+      'Invoice No': row.INV_NO,
+      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
+      'Description': row.DESCRIPTION,
+      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
+      'Currency': row.JOB,
+      'Debit': row.REFAMOUNT  || '',
+      'Credit': row.INV_AMOUNT  || '',
+      'Balance': row.BALANCE
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    /*const ageingData = [{
+      'Current': this.ageingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.ageingSummary['CURRENT'] || 0) +
+        (this.ageingSummary['30_DAYS'] || 0) +
+        (this.ageingSummary['60_DAYS'] || 0) +
+        (this.ageingSummary['90_DAYS'] || 0) +
+        (this.ageingSummary['120_DAYS'] || 0) +
+        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);*/
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwsoaSheet,
+        //'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement']//, 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
+    openSPWTRNLIST() {
+    //let dialogRef = this.dialog.open(this.spwsoaLookupDialog);
+    this.dialog.open(this.spwtrnlistLookupDialog, {
+        width: '100vw',
+        maxWidth: '100vw',
+    }
+  )
+        this.periodTotalDebit = 0;
+  this.periodTotalCredit = 0;
+  this.periodClosingBalance = 0;
+  this.periodAgeingSummary = {
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    'ABOVE_120_DAYS': 0,
+    'CURRENT': 0
+  };
+  this.openingBalanceData = {
+    DEBIT: 0,
+    CREDIT: 0,
+    BALANCE: 0,
+  };
+  this.totalDebit = 0;
+  this.totalCredit = 0;
+  this.openingBalance = 0;
+  this.closingBalance = 0;
+    this.spwtrnlistData = []
+  }
+
+  getSPWTRNLIST(customer: any) {
+    this.spwtrnlistData = []
+        this.periodTotalDebit = 0;
+  this.periodTotalCredit = 0;
+  this.periodClosingBalance = 0;
+  this.periodAgeingSummary = {
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    'ABOVE_120_DAYS': 0,
+    'CURRENT': 0
+  };
+  this.openingBalanceData = {
+    DEBIT: 0,
+    CREDIT: 0,
+    BALANCE: 0,
+  };
+  this.totalDebit = 0;
+  this.totalCredit = 0;
+  this.openingBalance = 0;
+  this.closingBalance = 0;
+    this.selectedSupplier = customer
+  }
+
+setSPWTRNLIST() {
+  if (!this.startDate || !this.endDate) {
+    alert('Please select both start and end dates.');
+    return;
+  }
+      this.periodTotalDebit = 0;
+  this.periodTotalCredit = 0;
+  this.periodClosingBalance = 0;
+  this.periodAgeingSummary = {
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    'ABOVE_120_DAYS': 0,
+    'CURRENT': 0
+  };
+  this.openingBalanceData = {
+    DEBIT: 0,
+    CREDIT: 0,
+    BALANCE: 0,
+  };
+  this.totalDebit = 0;
+  this.totalCredit = 0;
+  this.openingBalance = 0;
+  this.closingBalance = 0;
+
+  const start = new Date(this.startDate);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(this.endDate);
+  end.setHours(23, 59, 59, 999);
+
+  this.getData = true;
+
+  this.reportService.getApCustomerTrnList(this.selectedUnit.id,'S', this.selectedSupplier.PCODE).subscribe((res: any) => {
+    this.getData = false;
+    if (res.recordset.length === 0) {
+      alert('No data for the selected parameters!');
+      return;
+    }
+
+ const data = res.recordset;
+        this.getData = false
+
+    let runningBalance = 0;
+    this.ageingSummary = {
+      CURRENT: 0,
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0
+    };
+
+  // Reset opening balance
+  this.openingBalanceData = { DEBIT: 0, CREDIT: 0, BALANCE: 0 };
+
+  // Calculate opening balance for transactions before startDat
+  const openingData = data.filter((row: any) => {
+  const txnDate = new Date(row.INV_DATE)
+  txnDate.setHours(0,0,0,0)
+  return txnDate < start
+})
+
+console.log(openingData)
+
+  openingData.forEach((row: any) => {
+    const debit = Number(row.REFAMOUNT );
+    const credit = Number(row.INV_AMOUNT );
+    this.openingBalanceData.DEBIT += credit;
+    this.openingBalanceData.CREDIT += debit;
+    this.openingBalanceData.BALANCE += (debit - credit);
+  });
+
+    // Filter transactions in selected period
+var filteredPeriodRows = data.filter((row: any) => {
+  const txnDate = new Date(row.INV_DATE)
+  return txnDate >= start && txnDate <= end
+})
+
+console.log(filteredPeriodRows)
+
+
+  for(let i=0; i<filteredPeriodRows.length; i++){
+    const debit = Number(filteredPeriodRows[i].REFAMOUNT) || 0;
+    const credit = Number(filteredPeriodRows[i].INV_AMOUNT) || 0;
+
+    this.periodTotalDebit += debit;
+    this.periodTotalCredit += credit;
+  }
+
+// Build opening balance row
+const openingRow = {
+  INV_NO: 'OPENING BALANCE',
+  INV_DATE: null,
+  REFAMOUNT: this.openingBalanceData.DEBIT,
+  INV_AMOUNT: this.openingBalanceData.CREDIT,
+  BALANCE: this.openingBalanceData.CREDIT - this.openingBalanceData.DEBIT,
+  DAYS_DIFF: null,
+  DUEDATE: null,
+  DOC_TYPE: '',
+  REMARKS: '',
+  VENDOR_REF_NO: '',
+  CUST_REF_NO: '',
+  //...this.selectedSupplier // optional: to keep column structure consistent
+};
+
+    if(filteredPeriodRows.length === 0) {
+      alert('No data available in selected range!')
+    }
+
+    // Calculate period-wise balances
+    let periodRunningBalance = this.openingBalanceData.CREDIT - this.openingBalanceData.DEBIT;
+    filteredPeriodRows = filteredPeriodRows.map((row: any) => {
+      const debit = Number(row.REFAMOUNT ) || 0;
+      const credit = Number(row.INV_AMOUNT ) || 0;
+
+      periodRunningBalance += debit - credit;
+
+      return {
+        ...row,
+        BALANCE: periodRunningBalance
+      };
+    });
+
+    // Combine into final list
+this.spwtrnlistData = [openingRow, ...filteredPeriodRows]
+
+
+    // 🔹 Apply FIFO + ageing on period data
+//const fifoInput = filteredPeriodRows;
+//const result = this.applySupplierFifoAndAgeing(fifoInput, this.endDate);
+
+  //  this.ageingSummary = result.ageing;
+    //this.closingBalance = this.openingBalanceData.BALANCE + result.totalBalance;
+
+  }, (err: any) => {
+    this.getData = false;
+    alert('No data for the selected parameters!');
+  });
+}
+
+  printSPWTRNLIST() {
+    if (!this.startDate || !this.endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    } else {
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Supplier Transaction Listing', 150, 20);
+    doc.roundedRect(5, 32.5, 436, 65, 5, 5);
+    doc.setFontSize(10);
+    doc.text(`${this.selectedSupplier.CUST_NAME}`,10,42);
+    doc.text(`Account ID: ${this.selectedSupplier.PCODE}`,330,42);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,52);
+    doc.text('Nature',10,52);
+    doc.text(`: ${this.selectedSupplier.Nature}`,45,52);
+    doc.text('Category',10,62);
+    doc.text(`: ${this.selectedSupplier.SupplierCategory}`,45,62);
+    doc.text('Period',10,72);
+    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 72)
+    let firstPageStartY = 80; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#spwTrnListTable',
+      tableWidth: 436,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+    /*  columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' }
+      },*/
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      showFoot: 'lastPage', 
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    /*let finalY1 = doc.lastAutoTable?.finalY || 0
+
+    autoTable(doc, {
+      html: '#spwsoaAgeingSummaryTable',
+      startY: finalY1 + 5,
+      tableWidth: 436,
+      margin: { left: 5 },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+     /* columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' },
+        6: { halign: 'center' }
+      }*/
+    //});*/
+ 
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc,'p');
+    // Save the PDF
+    doc.save(`${this.selectedSupplier.PCODE}-transaction-listing-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
+    }
+  }
+
+  exportSPWTRNLIST(): void {
+    const fileName = `${this.selectedSupplier.PCODE}-transaction-listing-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
+
+    // 1. Create worksheet from spwsoaData
+    const spwsoaSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.spwsoaData.map(row => ({
+      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
+      'Invoice No': row.INV_NO,
+      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
+      'Description': row.DESCRIPTION,
+      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
+      'Debit': row.REFAMOUNT  || '',
+      'Credit': row.INV_AMOUNT  || '',
+      'Balance': row.BALANCE
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+   /*const ageingData = [{
+      'Current': this.periodAgeingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.periodAgeingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.periodAgeingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.periodAgeingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.periodAgeingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.periodAgeingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.periodAgeingSummary['CURRENT'] || 0) +
+        (this.periodAgeingSummary['30_DAYS'] || 0) +
+        (this.periodAgeingSummary['60_DAYS'] || 0) +
+        (this.periodAgeingSummary['90_DAYS'] || 0) +
+        (this.periodAgeingSummary['120_DAYS'] || 0) +
+        (this.periodAgeingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);*/
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': spwsoaSheet,
+        //'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement']//, 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
+    openSWTRNSUM() {
+    this.dialog.open(this.swtrnsumLookupDialog, {
+      width: '100vw',
+      maxWidth: '100vw'
+    });
+    this.loadSuppliers();
+  }
+
+
+async applySupplierTranFilters() {
+
+  this.getData = true;
+  this.swtrnsumData = [];
+  this.totalOutstanding = 0;
+
+  const filtered = this.supplierList.filter(supplier => {
+    const matchesSearch = this.searchText
+      ? supplier.CUST_NAME.toLowerCase().includes(this.searchText.toLowerCase())
+      : true;
+
+    const matchesNature = this.selectedNature
+      ? supplier.Nature === this.selectedNature
+      : true;
+
+    const matchesCategory = this.selectedCategory
+      ? supplier.SupplierCategory === this.selectedCategory
+      : true;
+
+    return matchesSearch && matchesNature && matchesCategory;
+  });
+
+  // 🔹 Run ALL outstanding calls in parallel
+  const results = await Promise.all(
+    filtered.map(async supplier => {
+      
+      const outstanding = await this.computeTranOutstanding(supplier.PCODE, this.endDate ? new Date(this.endDate) : new Date(), 'S');
+      
+      return {
+        ...supplier,
+        CURRENT_OUTSTANDING: outstanding
+      };
+    })
+  );
+
+  // 🔹 Now assign everything at once
+  this.swtrnsumData = results;
+
+  this.totalOutstanding = results.reduce((sum, s) => {
+    return sum + (Number(s.CURRENT_OUTSTANDING) || 0);
+  }, 0);
+
+  this.getData = false;
+}
+
+async computeTranOutstanding(
+  supplierCode: string,
+  asOfDate: Date,
+  type: string
+): Promise<number> {
+  try {
+
+    const res: any = await firstValueFrom(
+      this.reportService.getApCustomerTrnList(this.selectedUnit.id, type, supplierCode)
+    );
+
+    const end = new Date(asOfDate);
+    end.setHours(23, 59, 59, 999);
+
+    const txns = (res.recordset || []).filter((row: any) => {
+      if (!row.INV_DATE) return false;
+      return new Date(row.INV_DATE) <= end;
+    });
+
+    if (!txns.length) return 0;
+
+    let balance = 0;
+
+    for (const row of txns) {
+      const credit = Number((row.INV_AMOUNT ?? 0).toString().replace(/,/g, '')) || 0;
+      const debit  = Number((row.REFAMOUNT ?? 0).toString().replace(/,/g, '')) || 0;
+
+      balance += credit;
+      balance -= debit;
+    }
+
+    return balance;
+
+  } catch (err) {
+    console.error('Failed to fetch SOA for supplier:', supplierCode, err);
+    return 0;
+  }
+}
+
+  printSWTRNSUM() {
+    var doc = new jsPDF('portrait', 'px', 'a4');
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.text('Supplier Transaction Summary Report', 150, 20);
+    doc.setFontSize(10);
+    doc.setFont('Helvetica', 'normal');
+    doc.roundedRect(5, 32.5, 436, 25, 5, 5);
+    doc.text(`Date: ${this.mCurDate}`,330,42);
+    doc.text('Nature',10,42);
+    doc.text(`: ${this.selectedNature}`,45,42);
+    doc.text('Category',10,52);
+    doc.text(`: ${this.selectedCategory}`,45,52);    
+    doc.text('As On Date',330,52);
+    doc.text(`: ${this.formatDate(this.endDate)}`,365,52); 
+    let firstPageStartY = 60; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
+
+    autoTable(doc, {
+      html: '#swTrnSumTable',
+      tableWidth: 436,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+    /*  columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' }
+      },*/
+      margin: { 
+        top: firstPage ? firstPageStartY : nextPagesStartY,
+        left: 5
+      },
+      showFoot: 'lastPage', 
+      didDrawPage: function () {
+        firstPage = false;
+      }
+    });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc,'p');
+    // Save the PDF
+    doc.save(`Supplier-transaction-summary-ason-${this.formatDate(this.endDate)}-${this.formatDate(new Date())}.pdf`);
+  }
+
+    exportSWTRNSUM() {
+    const fileName = `Supplier-transaction-summary-ason-${this.formatDate(this.endDate)}-${this.formatDate(new Date())}.xlsx`;
+    const sheetData = this.swtrnsumData.map(s => ({
+      'Supplier Code': s.PCODE,
+      'Supplier Name': s.CUST_NAME,
+      'Nature': s.Nature,
+      'Category': s.SupplierCategory,
+      'Payment Term': s.REMARKS || '',
+      'Current Outstanding': s.CURRENT_OUTSTANDING?.toFixed(3) || '0.000'
+    }));
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(sheetData);
+    const workbook: XLSX.WorkBook = { Sheets: { 'SupplierOutstanding': worksheet }, SheetNames: ['SupplierOutstanding'] };
+    const excelBuffer: any = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+    FileSaver.saveAs(blob, fileName);
+  }
 
 
   addWaterMark(doc: any,type: string) {
