@@ -19,25 +19,14 @@
                                         <a class="nav-link" (click)="openLOCMOS()">Location-wise Monthly Sales</a>
                                     </td>
                                     <td>
-                                        <a class="nav-link" (click)="openLOCPOS()">Location-wise Period Sales</a>
+                                        <a class="nav-link" (click)="openLWPS()">Location-wise Period Profit</a>
                                     </td>
                                     <td>
+                                        <a class="nav-link" (click)="openIWPDPF()">Customer-wise Period Profit</a>
+                                    </td>
+                                    <!--<td>
                                         <a class="nav-link" (click)="openMOSSUM()">Monthwise Sales Summary</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <a class="nav-link" (click)="openIWPDSL()">Item-wise Period Sales</a>
-                                    </td>
-                                    <td>
-                                        <a class="nav-link" (click)="openIWPDCS()">Item-wise Period Cost of Sales</a>
-                                    </td>
-                                    <td>
-                                        <a class="nav-link" (click)="openIWPDPF()">Item-wise Period Profit</a>
-                                    </td>
-                                    <td>
-                                        <a class="nav-link" (click)="openVWPDPF()">Voucher-wise Period Profit</a>
-                                    </td>
+                                    </td>-->
                                 </tr>
                             </table>
                         </mat-card-content>
@@ -56,28 +45,40 @@
     <div mat-dialog-content style="font-size: small;">
         <div class="col-12">
             <div class="row">
-                <div class="col-9">
+                <div class="col-4">
+                    <select [(ngModel)]="selectedYear" class="form-control form-control-sm">
+                        <option *ngFor="let y of yearList" [value]="y">
+                            {{ y }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-5">
                     <select [(ngModel)]="selectedLocation" class="form-control form-control-sm">
                         <option value="NULL">--- All Locations ---</option>
                         <option *ngFor="let loc of locationList" [value]="loc.locationCode">
                             {{ loc.locationName }}
                         </option>
-                    </select>                    
+                    </select>
                 </div>
+
                 <div class="col-3">
-                    <button class="btn btn-sm btn-primary" (click)="getLOCMOS(selectedLocation)" >Filter</button>
-                </div>
+                    <button class="btn btn-sm btn-primary"
+                    (click)="getLOCMOS(selectedLocation)">
+                    Filter
+                </button>
             </div>
-            <br>
-            <div class="row" *ngIf="locGroupedData.length === 0 && getData === true">
-                <div class="col-4"></div>
-                <div class="col-4">
-                    <mat-spinner></mat-spinner>
-                </div>
-                <div class="col-4"></div>
+        </div>
+        <br>
+        <div class="row" *ngIf="locGroupedData.length === 0 && getData === true">
+            <div class="col-4"></div>
+            <div class="col-4">
+                <mat-spinner></mat-spinner>
             </div>
-            <table class="table table-striped table-sm table-bordered" id="locMosTable">
-                <thead class="table-dark">
+            <div class="col-4"></div>
+        </div>
+        <table class="table table-striped table-sm table-bordered" id="locMosTable">
+            <thead class="table-dark">
                     <tr>
                         <th>Month</th>
                         <th colspan="2">Location</th>
@@ -126,105 +127,23 @@
     <br>
 </ng-template>
 
-<ng-template #locposLookupDialog>
-    <h3 matDialogTitle>
-        <b>Location-wise Period Sales Preview</b>
-    </h3>
-    <hr>
-    <div mat-dialog-content style="font-size: small;">
-        <div class="col-12">
-            <div class="row">
-                <div class="col-3">
-                    <select [(ngModel)]="selectedLocation" class="form-control form-control-sm">
-                        <option value="NULL">--- All Locations ---</option>
-                        <option *ngFor="let loc of locationList" [value]="loc.locationCode">
-                            {{ loc.locationName }}
-                        </option>
-                    </select>                    
-                </div>
-                <div class="col-3">
-                            <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" placeholder="Start Date">
-                        </div>
-                        <div class="col-3">
-                            <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" placeholder="End Date">
-                        </div>
-                <div class="col-3">
-                    <button class="btn btn-sm btn-primary" (click)="getLOCPOS(selectedLocation)" >Filter</button>
-                </div>
-            </div>
-            <br>
-            <div class="row" *ngIf="locGroupedData.length === 0 && getData === true">
-                <div class="col-4"></div>
-                <div class="col-4">
-                    <mat-spinner></mat-spinner>
-                </div>
-                <div class="col-4"></div>
-            </div>
-<table class="table table-striped table-sm table-bordered" id="locPosTable">
-  <thead class="table-dark">
-    <tr>
-      <th>Period</th>
-      <th colspan="2">Location</th>
-      <th>Amount</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    <ng-container *ngFor="let group of groupedData">
-      <tr *ngFor="let row of group.rows">
-        <td>{{ row.MonthYear }}</td>
-        <td>{{ row.SALESUNITID }}</td>
-        <td>{{ row.LOCATIONNAME }}</td>
-        <td class="text-end">
-          {{ row.Sales_KWD | number:'1.3-3' }}
-        </td>
-      </tr>
-
-      <tr class="fw-bold bg-light">
-        <td colspan="3" class="text-end">
-          {{ group.location }} Subtotal
-        </td>
-        <td class="text-end">
-          {{ group.subtotal | number:'1.3-3' }}
-        </td>
-      </tr>
-    </ng-container>
-  </tbody>
-
-  <tfoot>
-    <tr class="fw-bold table-secondary text-end">
-      <td colspan="3">Grand Total</td>
-      <td>{{ grandTotal | number:'1.3-3' }}</td>
-    </tr>
-  </tfoot>
-</table>
-
-        </div>
-        <br>
-    </div>
-    <hr>
-    <div class="row container-fluid">
-        <div class="col-4"></div>
-        <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportLOCMOS()" style="float: right" title="export">
-                Export to Excel
-            </button>
-        </div>
-        <div class="col-4">
-            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printLOCMOS()" style="float: right" title="print">
-                Print Statement
-            </button>
-        </div>
-    </div>
-    <br>
-</ng-template>
-
 <ng-template #mossumLookupDialog>
     <h3 matDialogTitle>
         <b>Month-wise Sales Summary Preview</b>
     </h3>
     <hr>
     <div mat-dialog-content style="font-size: small;">
+        <div class="row mb-2">
+  <div class="col-3">
+    <select [(ngModel)]="selectedYear"
+            class="form-control form-control-sm"
+            (change)="getMOSSUM()">
+      <option *ngFor="let y of yearList" [value]="y">
+        {{ y }}
+      </option>
+    </select>
+  </div>
+</div>
         <div class="row" *ngIf="mossumData.length === 0 && getData === true">
             <div class="col-4"></div>
             <div class="col-4">
@@ -289,265 +208,9 @@
     <br>
 </ng-template>
 
-<ng-template #iwpdslLookupDialog style="width: 100%;">
-    <h3 matDialogTitle>
-        <b>Item-wise Period Sales Preview</b>
-    </h3>
-    <hr>
-    <div mat-dialog-content style="font-size: small;">
-        <div class="col-12">
-            <div class="row">
-                <div class="col-4">
-                    <div class="mb-3">
-                        <input type="text" [(ngModel)]="selectedCustomer" class="form-control" placeholder="Search customers..." (keydown)="searchCustomer(selectedCustomer)" />
-                    </div>
-                    <table class="table table-hover table-responsive-xxl">
-                        <thead class="table-dark">
-                            <tr class="table-reflow">
-                                <th>CODE</th>
-                                <th>NAME</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let cust of customerList; let i = index;" (click)="selectCustomer(cust.CUSTOMERID)">
-                                <td>{{ cust.CUSTOMERID }}</td>
-                                <td>{{ cust.CUSTOMERNAME }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="col-8">
-                    <div class="row">
-                        <div class="col-4">
-                            <select [(ngModel)]="selectedLocation" class="form-control form-control-sm">
-                                <option value="NULL">--- All Locations ---</option>
-                                <option *ngFor="let loc of locationList" [value]="loc.locationCode">
-                                    {{ loc.locationName }}
-                                </option>
-                            </select>                    
-                        </div>
-                        <div class="col-3">
-                            <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" placeholder="Start Date">
-                        </div>
-                        <div class="col-3">
-                            <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" placeholder="End Date">
-                        </div>
-                        <div class="col-2">
-                            <button class="btn btn-sm btn-primary" (click)="getIWPDSL()" >Filter</button>
-                        </div>
-                    </div>
-                    <br>
-                    <div class="row" *ngIf="groupedData.length === 0 && getData === true">
-                        <div class="col-4"></div>
-                        <div class="col-4">
-                            <mat-spinner></mat-spinner>
-                        </div>
-                        <div class="col-4"></div>
-                    </div>
-                    <table class="table table-striped table-sm table-bordered" id="iwpdslTable">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Voucher Number</th>
-                                <th>Date</th>
-                                <th>Customer ID</th>
-                                <th>Customer Name</th>
-                                <th>Location</th>
-                                <th>Product ID</th>
-                                <th>Product Name</th>
-                                <th>Brand</th>
-                                <th>Supplier</th>
-                                <th>Unit</th>
-                                <th>Unit Price</th>
-                                <th>Quantity</th>
-                                <th>Gross Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <ng-container *ngFor="let group of groupedData">
-                                <tr *ngFor="let row of group.rows">
-                                    <td>{{ group.docNumber }}</td>
-                                    <td>{{ row.DOCDATE | date:'dd-MMM-yyyy' }}</td>
-                                    <td>{{ group.customerId }}</td>
-                                    <td>{{ group.customerName }}</td>
-                                    <td>{{ row.LOCATIONNAME }}</td>
-                                    <td>{{ row.PRODUCTID }}</td>
-                                    <td>{{ row.material_name }}</td>
-                                    <td>{{ row.brand }}</td>
-                                    <td>{{ row.supplier }}</td>
-                                    <td>PCS</td>
-                                    <td class="text-end">{{ row.UnitPrice | number:'1.3-3' }}</td>
-                                    <td class="text-end">{{ row.UNITQTY | number:'1.0-0' }}</td>
-                                    <td class="text-end">{{ row.GROSSAMOUNT | number:'1.3-3' }}</td>
-                                </tr>
-                                <!-- Subtotal row per document/customer -->
-                                <tr class="fw-bold bg-light">
-                                    <td colspan="12" class="text-end">
-                                        Voucher {{ group.docNumber }} Subtotal
-                                    </td>
-                                    <td class="text-end">{{ group.subtotal | number:'1.3-3' }}</td>
-                                </tr>
-                            </ng-container>
-                        </tbody>
-                        <!---<tfoot>
-                            <tr class="fw-bold text-end table-secondary">
-                                <td colspan="12">Grand Total</td>
-                                <td>{{ grandTotal | number:'1.3-3' }}</td>
-                            </tr>
-                        </tfoot>-->
-                    </table>
-                </div>
-            </div>
-            <br>
-        </div>
-    </div>
-    <hr>
-    <div class="row container-fluid">
-        <div class="col-4"></div>
-        <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportIWPDSL()" style="float: right" title="export">
-                Export to Excel
-            </button>
-        </div>
-        <div class="col-4">
-            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printIWPDSL()" style="float: right" title="print">
-                Print Statement
-            </button>
-        </div>
-    </div>
-    <br>
-</ng-template>
-
-<ng-template #iwpdcsLookupDialog style="width: 100%;">
-    <h3 matDialogTitle>
-        <b>Item-wise Period Cost of Sales Preview</b>
-    </h3>
-    <hr>
-    <div mat-dialog-content style="font-size: small;">
-        <div class="col-12">
-            <div class="row">
-                <div class="col-4">
-                    <div class="mb-3">
-                        <input type="text" [(ngModel)]="selectedCustomer" class="form-control" placeholder="Search customers..." (keydown)="searchCustomer(selectedCustomer)" />
-                    </div>
-                    <table class="table table-hover table-responsive-xxl">
-                        <thead class="table-dark">
-                            <tr class="table-reflow">
-                                <th>CODE</th>
-                                <th>NAME</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let cust of customerList; let i = index;" (click)="selectCustomer(cust.CUSTOMERID)">
-                                <td>{{ cust.CUSTOMERID }}</td>
-                                <td>{{ cust.CUSTOMERNAME }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="col-8">
-                    <div class="row">
-                        <div class="col-4">
-                            <select [(ngModel)]="selectedLocation" class="form-control form-control-sm">
-                                <option value="NULL">--- All Locations ---</option>
-                                <option *ngFor="let loc of locationList" [value]="loc.locationCode">
-                                    {{ loc.locationName }}
-                                </option>
-                            </select>                    
-                        </div>
-                        <div class="col-3">
-                            <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" placeholder="Start Date">
-                        </div>
-                        <div class="col-3">
-                            <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" placeholder="End Date">
-                        </div>
-                        <div class="col-2">
-                            <button class="btn btn-sm btn-primary" (click)="getIWPDCS()" >Filter</button>
-                        </div>
-                    </div>
-                    <br>
-                    <div class="row" *ngIf="groupedData.length === 0 && getData === true">
-                        <div class="col-4"></div>
-                        <div class="col-4">
-                            <mat-spinner></mat-spinner>
-                        </div>
-                        <div class="col-4"></div>
-                    </div>
-                    <table class="table table-striped table-sm table-bordered" id="iwpdcsTable">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Voucher Number</th>
-                                <th>Date</th>
-                                <th>Customer ID</th>
-                                <th>Customer Name</th>
-                                <th>Location</th>
-                                <th>Product ID</th>
-                                <th>Product Name</th>
-                                <th>Brand</th>
-                                <th>Supplier</th>
-                                <th>Unit</th>
-                                <th>Unit Cost</th>
-                                <th>Quantity</th>
-                                <th>Cost of Sale</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <ng-container *ngFor="let group of groupedData">
-                                <tr *ngFor="let row of group.rows">
-                                    <td>{{ group.docNumber }}</td>
-                                    <td>{{ row.DOCDATE | date:'dd-MMM-yyyy' }}</td>
-                                    <td>{{ group.customerId }}</td>
-                                    <td>{{ group.customerName }}</td>
-                                    <td>{{ row.LOCATIONNAME }}</td>
-                                    <td>{{ row.PRODUCTID }}</td>
-                                    <td>{{ row.material_name }}</td>
-                                    <td>{{ row.brand }}</td>
-                                    <td>{{ row.supplier }}</td>
-                                    <td>PCS</td>
-                                    <td class="text-end">{{ row.COSTAMOUNT | number:'1.3-3' }}</td>
-                                    <td class="text-end">{{ row.UNITQTY | number:'1.0' }}</td>
-                                    <td class="text-end">{{ row.CostOfSale | number:'1.3-3' }}</td>
-                                </tr>
-                                <!-- Subtotal row per document/customer -->
-                                <tr class="fw-bold bg-light">
-                                    <td colspan="12" class="text-end">
-                                        Voucher {{ group.docNumber }} Subtotal
-                                    </td>
-                                    <td class="text-end">{{ group.subtotal | number:'1.3-3' }}</td>
-                                </tr>
-                            </ng-container>
-                        </tbody>
-                       <!---- <tfoot>
-                            <tr class="fw-bold text-end table-secondary">
-                                <td colspan="12">Grand Total</td>
-                                <td>{{ grandTotal | number:'1.3-3' }}</td>
-                            </tr>
-                        </tfoot>-->
-                    </table>
-                </div>
-            </div>
-            <br>
-        </div>
-    </div>
-    <hr>
-    <div class="row container-fluid">
-        <div class="col-4"></div>
-        <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportIWPDCS()" style="float: right" title="export">
-                Export to Excel
-            </button>
-        </div>
-        <div class="col-4">
-            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printIWPDCS()" style="float: right" title="print">
-                Print Statement
-            </button>
-        </div>
-    </div>
-    <br>
-</ng-template>
-
 <ng-template #iwpdpfLookupDialog style="width: 100%;">
     <h3 matDialogTitle>
-        <b>Item-wise Period Profit Preview</b>
+        <b>Customer-wise Period Profit Preview</b>
     </h3>
     <hr>
     <div mat-dialog-content style="font-size: small;">
@@ -688,115 +351,113 @@
     <br>
 </ng-template>
 
-<ng-template #vwpdpfLookupDialog style="width: 100%;">
-    <h3 matDialogTitle>
-        <b>Voucher-wise Period Profit Preview</b>
-    </h3>
-    <hr>
-    <div mat-dialog-content style="font-size: small;">
-        <div class="col-12">
-            <div class="row">
-                <div class="col-4">
-                    <div class="mb-3">
-                        <input type="text" [(ngModel)]="selectedCustomer" class="form-control" placeholder="Search customers..." (keydown)="searchCustomer(selectedCustomer)" />
-                    </div>
-                    <table class="table table-hover table-responsive-xxl">
-                        <thead class="table-dark">
-                            <tr class="table-reflow">
-                                <th>CODE</th>
-                                <th>NAME</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let cust of customerList; let i = index;" (click)="selectCustomer(cust.CUSTOMERID)">
-                                <td>{{ cust.CUSTOMERID }}</td>
-                                <td>{{ cust.CUSTOMERNAME }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="col-8">
-                    <div class="row">
-                        <div class="col-4">
-                            <select [(ngModel)]="selectedLocation" class="form-control form-control-sm">
-                                <option value="NULL">--- All Locations ---</option>
-                                <option *ngFor="let loc of locationList" [value]="loc.locationCode">
-                                    {{ loc.locationName }}
-                                </option>
-                            </select>                    
-                        </div>
-                        <div class="col-3">
-                            <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" placeholder="Start Date">
-                        </div>
-                        <div class="col-3">
-                            <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" placeholder="End Date">
-                        </div>
-                        <div class="col-2">
-                            <button class="btn btn-sm btn-primary" (click)="getVWPDPF()" >Filter</button>
-                        </div>
-                    </div>
-                    <br>
-                    <div class="row" *ngIf="groupedData.length === 0 && getData === true">
-                        <div class="col-4"></div>
-                        <div class="col-4">
-                            <mat-spinner></mat-spinner>
-                        </div>
-                        <div class="col-4"></div>
-                    </div>
-                    <table class="table table-striped table-sm table-bordered" id="vwpdpfTable">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Voucher Number</th>
-                                <th>Date</th>
-                                <th>Customer ID</th>
-                                <th>Customer Name</th>
-                                <th>Location</th>
-                                <th>Total Quantity</th>
-                                <th>Total Cost of Sale</th>
-                                <th>Gross Amount</th>
-                                <th>Gross Profit</th>
-                                <th>Profit Margin</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let row of vwpdpfData">
-                                <td>{{ row.DOCNUMBER }}</td>
-                                <td>{{ row.DOCDATE | date:'dd-MMM-yyyy' }}</td>
-                                <td>{{ row.CUSTOMERID }}</td>
-                                <td>{{ row.CUSTOMERNAME }}</td>
-                                <td>{{ row.LOCATIONNAME }}</td>
-                                <td class="text-end">{{ row.TotalQty | number:'1.0-0' }}</td>
-                                <td class="text-end">{{ row.TotalCostOfSale | number:'1.3-3' }}</td>
-                                <td class="text-end">{{ row.TotalGrossAmount | number:'1.3-3' }}</td>
-                                <td class="text-end">{{ row.GrossProfit | number:'1.3-3' }}</td>
-                                <td class="text-end">{{ row.ProfitPercent | number:'1.0-0' }}%</td>
-                            </tr>
-                        </tbody>
-                       <!---- <tfoot>
-                            <tr class="fw-bold text-end table-secondary">
-                                <td colspan="9">Grand Total</td>
-                                <td>{{ grandTotal | number:'1.3-3' }}</td>
-                            </tr>
-                        </tfoot>-->
-                    </table>
-                </div>
-            </div>
-            <br>
-        </div>
+<ng-template #lwpsLookupDialog style="width: 100%;">
+  <h3 matDialogTitle>
+    <b>Location-wise Profit Statement</b>
+  </h3>
+  <hr>
+
+  <div mat-dialog-content style="font-size: small">
+    <div class="row mb-2">
+      <div class="col-4">
+        <select [(ngModel)]="selectedLocation" class="form-control form-control-sm">
+          <option value="NULL">All Locations</option>
+          <option *ngFor="let loc of locationList" [value]="loc.locationCode">
+            {{ loc.locationName }}
+          </option>
+        </select>
+      </div>
+
+      <div class="col-3">
+        <input type="date" [(ngModel)]="startDate" class="form-control form-control-sm">
+      </div>
+
+      <div class="col-3">
+        <input type="date" [(ngModel)]="endDate" class="form-control form-control-sm">
+      </div>
+
+      <div class="col-2">
+        <button class="btn btn-sm btn-primary" (click)="getLWPS()">
+          Filter
+        </button>
+      </div>
     </div>
-    <hr>
-    <div class="row container-fluid">
+    <div class="row" *ngIf="lwpsGroupedData.length === 0 && getData === true">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportVWPDPF()" style="float: right" title="export">
-                Export to Excel
-            </button>
+            <mat-spinner></mat-spinner>
         </div>
-        <div class="col-4">
-            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printVWPDPF()" style="float: right" title="print">
-                Print Statement
-            </button>
-        </div>
+        <div class="col-4"></div>
     </div>
-    <br>
+    <table class="table table-bordered table-sm" id="lwpsTable">
+      <thead class="table-dark">
+        <tr>
+          <th>Voucher</th>
+          <th>Date</th>
+          <th>Customer</th>
+          <th>Location</th>
+          <th>Product</th>
+          <th>Unit</th>
+          <th>Qty</th>
+          <th>Unit Cost</th>
+          <th>Unit Price</th>
+          <th>Cost of Sale</th>
+          <th>Gross Amount</th>
+          <th>Gross Profit</th>
+          <th>Profit %</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <ng-container *ngFor="let group of lwpsGroupedData">
+          <tr *ngFor="let r of group.rows">
+            <td>{{ r.VoucherNo }}</td>
+            <td>{{ r.VoucherDate | date:'dd-MMM-yyyy' }}</td>
+            <td>{{ r.CustomerName }}</td>
+            <td>{{ r.Location }}</td>
+            <td>{{ r.ProductName }}</td>
+            <td>{{ r.Unit }}</td>
+            <td class="text-end">{{ r.Quantity }}</td>
+            <td class="text-end">{{ r.UnitCost | number:'1.3-3' }}</td>
+            <td class="text-end">{{ r.UnitPrice | number:'1.3-3' }}</td>
+            <td class="text-end">{{ r.CostOfSale | number:'1.3-3' }}</td>
+            <td class="text-end">{{ r.GrossAmount | number:'1.3-3' }}</td>
+            <td class="text-end">{{ r.GrossProfit | number:'1.3-3' }}</td>
+            <td class="text-end">{{ r.ProfitMarginPercent | number:'1.2-2' }}%</td>
+          </tr>
+
+          <!-- Location subtotal -->
+          <tr class="fw-bold bg-light">
+            <td colspan="9" class="text-end">
+              {{ group.location }} Subtotal
+            </td>
+            <td class="text-end">{{ group.totalCost | number:'1.3-3' }}</td>
+            <td class="text-end">{{ group.totalSales | number:'1.3-3' }}</td>
+            <td class="text-end">{{ group.totalProfit | number:'1.3-3' }}</td>
+            <td class="text-end">{{ group.margin | number:'1.2-2' }}%</td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+  <hr>
+
+  <div class="row container-fluid">
+    <div class="col-4"></div>
+    <div class="col-4">
+      <button mat-raised-button class="bg-warning btn btn-block"
+              (click)="exportLWPS()">
+        Export to Excel
+      </button>
+    </div>
+    <div class="col-4">
+      <button mat-raised-button class="bg-success text-white btn btn-block"
+              (click)="printLWPS()">
+        Print Statement
+      </button>
+    </div>
+  </div>
+
+  <br>
 </ng-template>

@@ -148,6 +148,10 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
     return this.http.get(this.url + '/report/get-customerwise-period-sales/' + startDate + '/' + endDate + '/' + location);
   }
 
+  getLocationwiseProfit( startDate: string, endDate: string, location: string) {
+    return this.http.get(this.url + '/report/get-locationwise-profit/' + startDate + '/' + endDate + '/' + location);
+  }
+
   getFastMovingBrand(period: string) {
     return this.http.get(this.url + '/report/get-fast-moving-brand/'  + period)
   }  
