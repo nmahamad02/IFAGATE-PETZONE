@@ -31,6 +31,8 @@ export class AgeingComponent {
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
 
+  customerAgeingSummaryList: any[] = [];
+  parentAgeingSummaryList: any[] = [];
   parentWiseCustomerAgeingList: any[] = [];
   pwoutData: any[] = []
 
@@ -209,6 +211,465 @@ updateUnit(unit: { id: string; name: string; code: string, country: string }) {
 
 
 
+  openCWASL() {
+    //let dialogRef = this.dialog.open(this.cwaslLookupDialog);
+        this.dialog.open(this.cwaslLookupDialog, {
+        width: '100vw',
+        maxWidth: '100vw',
+    }
+  )
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.customerAgeingSummaryList = []
+  }
+
+async getCWASL() {
+
+  if (!this.startDate || !this.endDate) {
+    alert('Please select start and end dates');
+    return;
+  }
+
+  this.customerAgeingSummaryList = [];
+  this.resetAgeing();
+
+  for (const customer of this.customerList) {
+
+    const res: any = await firstValueFrom(
+      this.reportService.getCustomerSoa(
+        this.selectedUnit.id,
+        'C',
+        customer.PCODE
+      )
+    );
+
+    if (!res.recordset?.length) continue;
+
+    const result = this.applyFifoAndAgeing(
+      res.recordset,
+      this.endDate
+    );
+
+    if (result.totalBalance <= 0) continue;
+
+    this.customerAgeingSummaryList.push({
+      pcode: customer.PCODE,
+      customerName: customer.CUST_NAME,
+      ageingSummary: result.ageing,
+      total: result.totalBalance
+    });
+
+    this.addToGrandAgeing(result.ageing);
+  }
+}
+
+
+  printCWASL() {
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Customer Ageing Statement', 150, 20);
+    let firstPageStartY = 30; // Start Y position for first page
+
+    autoTable(doc, {
+      html: '#cwAslTable',
+      tableWidth: 435,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+      /*columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' },
+        8: { halign: 'right' }
+      },*/
+      margin: { 
+        top: firstPageStartY,
+        left: 5
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+  
+    autoTable(doc, {
+      html: '#cwaslAgeingSummaryTable',
+      startY: finalY1 + 5,
+      tableWidth: 435,
+      margin: { left: 5 },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      /*columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' },
+        6: { halign: 'center' }
+      }*/
+    });
+
+    let finalY2 = doc.lastAutoTable?.finalY || 0
+
+    // Bilingual footer text
+    doc.setFontSize(8);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.setFont('Helvetica', 'normal')
+    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 435, finalY2+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc,'p');
+    // Save the PDF
+    doc.save(`customer-ageing-statement-${this.mCurDate}.pdf`);
+  }
+
+  exportCWASL(): void {
+    const fileName = `customer-ageing-statement-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const cwaslSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.customerAgeingSummaryList.map(row => ({
+      'Customer Code': row.pcode,
+      'Name': row.customerName,
+      'Current': row.ageingSummary['CURRENT'],
+      '30 Days': row.ageingSummary['30_DAYS'],
+      '60 Days': row.ageingSummary['60_DAYS'],
+      '90 Days': row.ageingSummary['90_DAYS'],
+      '120 Days': row.ageingSummary['120_DAYS'],
+      'Above 20 Days': row.ageingSummary['ABOVE_120_DAYS'],
+      'Total': row.total,
+      
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.ageingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.ageingSummary['CURRENT'] || 0) +
+        (this.ageingSummary['30_DAYS'] || 0) +
+        (this.ageingSummary['60_DAYS'] || 0) +
+        (this.ageingSummary['90_DAYS'] || 0) +
+        (this.ageingSummary['120_DAYS'] || 0) +
+        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': cwaslSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
+
+  openPWASL() {
+    //let dialogRef = this.dialog.open(this.pwaslLookupDialog);
+            this.dialog.open(this.pwaslLookupDialog, {
+        width: '100vw',
+        maxWidth: '100vw',
+    }
+  )
+    this.periodTotalDebit = 0;
+    this.periodTotalCredit = 0;
+    this.periodClosingBalance = 0;
+    this.periodAgeingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.totalDebit = 0;
+    this.totalCredit = 0;
+    this.closingBalance = 0;
+    this.ageingSummary = {
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0,
+      'CURRENT': 0
+    };
+    this.parentAgeingSummaryList = []
+  }
+
+async getPWASL() {
+
+  if (!this.endDate) {
+    alert('Please select end date');
+    return;
+  }
+
+  this.parentAgeingSummaryList = [];
+  this.resetAgeing();
+
+  for (const parent of this.parentList) {
+
+    const res: any = await firstValueFrom(
+      this.reportService.getParentSoa(
+        parent.PARENTNAME,
+        this.selectedUnit.id
+      )
+    );
+
+    if (!res.recordset?.length) continue;
+
+    const result = this.applyFifoAndAgeing(
+      res.recordset,
+      this.endDate
+    );
+
+    if (result.totalBalance <= 0) continue;
+
+    this.parentAgeingSummaryList.push({
+      pcode: parent.pcode,
+      parentName: parent.PARENTNAME,
+      ageingSummary: result.ageing,
+      total: result.totalBalance
+    });
+
+    this.addToGrandAgeing(result.ageing);
+  }
+}
+
+
+  printPWASL() {
+    var doc = new jsPDF("portrait", "px", "a4");
+    doc.setFontSize(16);
+    doc.setFont('Helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Parent Ageing Statement', 145, 20);
+    let firstPageStartY = 30; // Start Y position for first page
+
+    autoTable(doc, {
+      html: '#pwAslTable',
+      tableWidth: 435,
+      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+     /* columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right' },
+        8: { halign: 'right' }
+      },*/
+      margin: { 
+        top: firstPageStartY,
+        left: 5
+      }
+    });
+
+    let finalY1 = doc.lastAutoTable?.finalY || 0
+  
+    autoTable(doc, {
+      html: '#pwaslAgeingSummaryTable',
+      startY: finalY1 + 5,
+      tableWidth: 435,
+      margin: { left: 5 },
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+     /* columnStyles: {
+        0: { halign: 'center' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' },
+        5: { halign: 'center' },
+        6: { halign: 'center' }
+      }*/
+    });
+
+    let finalY2 = doc.lastAutoTable?.finalY || 0
+
+    // Bilingual footer text
+    doc.setFontSize(8);
+    // Now the font is already registered thanks to the JS file!
+    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
+    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
+    // Manually reverse Arabic for basic rendering
+    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
+    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
+    const pageWidth = doc.internal.pageSize.getWidth();
+    // Calculate X to center
+    const centerX = pageWidth / 2;
+    doc.setFontSize(10)
+    doc.setFont('Helvetica', 'normal')
+    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
+    doc.setFont('Amiri-Regular', 'normal')
+    doc.text(araText, 435, finalY2+15, { align: 'right' });
+
+    // Add watermark (if necessary)
+    doc = this.addWaterMark(doc,'p');
+    // Save the PDF
+    doc.save(`parent-ageing-statement-${this.mCurDate}.pdf`);
+  }
+
+  exportPWASL(): void {
+    const fileName = `parent-ageing-statement-${this.mCurDate}.xlsx`;
+
+    // 1. Create worksheet from cwsoaData
+    const pwaslSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.parentAgeingSummaryList.map(row => ({
+      'Parent Code': row.pcode,
+      'Name': row.parentName,
+      'Current': row.ageingSummary['CURRENT'],
+      '30 Days': row.ageingSummary['30_DAYS'],
+      '60 Days': row.ageingSummary['60_DAYS'],
+      '90 Days': row.ageingSummary['90_DAYS'],
+      '120 Days': row.ageingSummary['120_DAYS'],
+      'Above 20 Days': row.ageingSummary['ABOVE_120_DAYS'],
+      'Total': row.total,
+      
+    })));
+
+    // 2. Create another sheet for Ageing Summary
+    const ageingData = [{
+      'Current': this.ageingSummary['CURRENT'] || 0,
+      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
+      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
+      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
+      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
+      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
+      'Total Outstanding': (
+        (this.ageingSummary['CURRENT'] || 0) +
+        (this.ageingSummary['30_DAYS'] || 0) +
+        (this.ageingSummary['60_DAYS'] || 0) +
+        (this.ageingSummary['90_DAYS'] || 0) +
+        (this.ageingSummary['120_DAYS'] || 0) +
+        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
+      )
+    }];
+
+    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
+
+    // 3. Create a workbook and add the sheets
+    const workbook: XLSX.WorkBook = {
+      Sheets: {
+        'Statement': pwaslSheet,
+        'Ageing Summary': ageingSheet
+      },
+      SheetNames: ['Statement', 'Ageing Summary']
+    };
+
+    // 4. Generate buffer
+    const excelBuffer: any = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    // 5. Save to file
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+    });
+
+    FileSaver.saveAs(blob, fileName);
+  }
 
   openPCASL() {
     //let dialogRef = this.dialog.open(this.pcaslLookupDialog);
@@ -949,6 +1410,27 @@ private applyFifoAndAgeing(data: any[], endDate: Date) {
     }
     return [day, month, year].join('-');
   }
+
+private resetAgeing() {
+  this.ageingSummary = {
+    CURRENT: 0,
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    'ABOVE_120_DAYS': 0
+  };
+}
+
+private addToGrandAgeing(ageing: any) {
+  this.ageingSummary.CURRENT += ageing.CURRENT;
+  this.ageingSummary['30_DAYS'] += ageing['30_DAYS'];
+  this.ageingSummary['60_DAYS'] += ageing['60_DAYS'];
+  this.ageingSummary['90_DAYS'] += ageing['90_DAYS'];
+  this.ageingSummary['120_DAYS'] += ageing['120_DAYS'];
+  this.ageingSummary['ABOVE_120_DAYS'] += ageing['ABOVE_120_DAYS'];
+}
+
 
   getDate(date: any) {
     var d = new Date(date), day = '' + d.getDate(), month = '' + (d.getMonth() + 1), year = d.getFullYear();
