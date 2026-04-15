@@ -26,7 +26,6 @@ export class AgeingComponent {
   @ViewChild('cwaslLookupDialog', { static: false }) cwaslLookupDialog!: TemplateRef<any>;
   @ViewChild('pwaslLookupDialog', { static: false }) pwaslLookupDialog!: TemplateRef<any>;
   @ViewChild('pcaslLookupDialog', { static: false }) pcaslLookupDialog!: TemplateRef<any>;
-  @ViewChild('pwoutLookupDialog', { static: false }) pwoutLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
@@ -34,7 +33,6 @@ export class AgeingComponent {
   customerAgeingSummaryList: any[] = [];
   parentAgeingSummaryList: any[] = [];
   parentWiseCustomerAgeingList: any[] = [];
-  pwoutData: any[] = []
 
   industryList: any[] = [];
   organisationList: any[] = [];
@@ -209,8 +207,6 @@ updateUnit(unit: { id: string; name: string; code: string, country: string }) {
   }
 }
 
-
-
   openCWASL() {
     //let dialogRef = this.dialog.open(this.cwaslLookupDialog);
         this.dialog.open(this.cwaslLookupDialog, {
@@ -232,9 +228,8 @@ updateUnit(unit: { id: string; name: string; code: string, country: string }) {
     this.customerAgeingSummaryList = []
   }
 
-async getCWASL() {
-
-  if (!this.startDate || !this.endDate) {
+  async getCWASL() {
+    if (!this.startDate || !this.endDate) {
     alert('Please select start and end dates');
     return;
   }
@@ -254,10 +249,10 @@ async getCWASL() {
 
     if (!res.recordset?.length) continue;
 
-    const result = this.applyFifoAndAgeing(
+    const result: any = this.calculateSimpleAgeing(
       res.recordset,
       this.endDate
-    );
+    )
 
     if (result.totalBalance <= 0) continue;
 
@@ -270,8 +265,7 @@ async getCWASL() {
 
     this.addToGrandAgeing(result.ageing);
   }
-}
-
+  }
 
   printCWASL() {
     var doc = new jsPDF("portrait", "px", "a4");
@@ -489,7 +483,7 @@ async getPWASL() {
 
     if (!res.recordset?.length) continue;
 
-    const result = this.applyFifoAndAgeing(
+    const result: any = this.calculateSimpleAgeing(
       res.recordset,
       this.endDate
     );
@@ -506,7 +500,6 @@ async getPWASL() {
     this.addToGrandAgeing(result.ageing);
   }
 }
-
 
   printPWASL() {
     var doc = new jsPDF("portrait", "px", "a4");
@@ -709,32 +702,36 @@ setPCASL(parent: any) {
   CREDIT: 0,
   BALANCE: 0
 };
-    this.pwoutData = []
+    this.parentWiseCustomerAgeingList = []
     this.selectedParent = parent
   }
 
-    getPCASL() {
-    this.totalDebit = 0;
-    this.totalCredit = 0;
-    this.closingBalance = 0;
-    this.ageingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.parentWiseCustomerAgeingList = []
-        this.getData = true
-    this.reportService.getParentSoa(this.selectedParent.PARENTNAME,this.selectedUnit.id).subscribe((res: any) => {
-      if (res.recordset.length === 0) {
-        alert('No data for the selected parameters!');
-              this.getData = false
-        return;
-      }
-        const data = res.recordsets[0]; // assuming the actual data is in recordsets[0]
-            this.getData = false
+async getPCASL() {
+
+  if (!this.endDate) {
+    alert('Please select end date');
+    return;
+  }
+
+  this.parentWiseCustomerAgeingList = [];
+  this.resetAgeing();
+  this.getData = true;
+
+  this.reportService
+    .getParentSoa(this.selectedParent.PARENTNAME, this.selectedUnit?.id || '*')
+    .subscribe(
+      (res: any) => {
+
+        this.getData = false;
+
+        if (!res.recordset || res.recordset.length === 0) {
+          alert('No data for the selected parameters!');
+          return;
+        }
+
+        const data = res.recordset;
+
+        // 1️⃣ Group by customer
         const groupedByCustomer = new Map<string, any[]>();
 
         data.forEach((entry: any) => {
@@ -742,37 +739,38 @@ setPCASL(parent: any) {
           if (!groupedByCustomer.has(code)) {
             groupedByCustomer.set(code, []);
           }
-          groupedByCustomer.get(code)?.push(entry);
+          groupedByCustomer.get(code)!.push(entry);
         });
 
+        // 2️⃣ Apply same ageing logic as CWASL / PWASL
         groupedByCustomer.forEach((entries, custCode) => {
+
           const custName = entries[0].CUST_NAME;
-const result = this.applyFifoAndAgeing(entries, this.endDate);
 
-this.parentWiseCustomerAgeingList.push({
-  custCode,
-  custName,
-  ageingSummary: result.ageing,
-  total: result.totalBalance
-});
+          const result = this.calculateSimpleAgeing(entries, this.endDate);
 
+          if (result.totalOutstanding <= 0) return;
 
-          // Also add to the running total if you want a grand summary
-          this.ageingSummary.CURRENT += result.ageing['CURRENT'];
-          this.ageingSummary['30_DAYS'] += result.ageing['30_DAYS'];
-          this.ageingSummary['60_DAYS'] += result.ageing['60_DAYS'];
-          this.ageingSummary['90_DAYS'] += result.ageing['90_DAYS'];
-          this.ageingSummary['120_DAYS'] += result.ageing['120_DAYS'];
-          this.ageingSummary.ABOVE_120_DAYS += result.ageing['ABOVE_120_DAYS'];
+          this.parentWiseCustomerAgeingList.push({
+            custCode,
+            custName,
+            ageingSummary: result.ageing,
+            total: result.totalOutstanding
+          });
+
+          // 3️⃣ Build parent‑level summary
+          this.addToGrandAgeing(result.ageing);
         });
-
       },
       error => {
-        console.error(`Failed to fetch parent SOA for ${this.selectedParent.PARENTNAME}`, error);
+        this.getData = false;
+        console.error(
+          `Failed to fetch parent SOA for ${this.selectedParent.PARENTNAME}`,
+          error
+        );
       }
-      
     );
-  }
+}
 
   printPCASL(){
     var doc = new jsPDF("portrait", "px", "a4");
@@ -959,271 +957,6 @@ this.parentWiseCustomerAgeingList.push({
     FileSaver.saveAs(blob, fileName);
   }
 
-  openPWOUT() {
-    //let dialogRef = this.dialog.open(this.pwoutLookupDialog);
-        this.dialog.open(this.pwoutLookupDialog, {
-        width: '100vw',
-        maxWidth: '100vw',
-    }
-  )
-    this.totalDebit = 0;
-    this.totalCredit = 0;
-    this.closingBalance = 0;
-    this.ageingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.pwoutData = []
-
-    this.startDate = new Date(`${this.currentYear}-01-01`)
-  }
-
-  setPWOUT(parent: any) {
-    this.totalDebit = 0;
-    this.totalCredit = 0;
-    this.closingBalance = 0;
-    this.ageingSummary = {
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0,
-      'CURRENT': 0
-    };
-    this.pwoutData = []
-    this.selectedParent = parent
-  }
-getPWOUT() {
-
-  this.totalDebit = 0;
-  this.totalCredit = 0;
-  this.closingBalance = 0;
-  this.ageingSummary = {
-    '30_DAYS': 0,
-    '60_DAYS': 0,
-    '90_DAYS': 0,
-    '120_DAYS': 0,
-    'ABOVE_120_DAYS': 0,
-    'CURRENT': 0
-  };
-
-  if (!this.endDate) {
-    alert('Please select end date.');
-    return;
-  }
-
-  const end = new Date(this.endDate);
-  end.setHours(23, 59, 59, 999);
-
-  this.pwoutData = [];
-  this.getData = true;
-
-  this.reportService.getParentSoa(this.selectedParent.PARENTNAME,this.selectedUnit.id)
-    .subscribe((res: any) => {
-
-      if (!res.recordset || res.recordset.length === 0) {
-        alert('No data for the selected parameters!');
-        this.getData = false;
-        return;
-      }
-
-      this.getData = false;
-
-      const result = this.applyFifoAndAgeing(res.recordset, this.endDate);
-
-this.pwoutData = result.rows;
-this.ageingSummary = result.ageing;
-this.closingBalance = result.totalBalance;
-this.totalDebit = result.totalBalance;
-
-
-
-    });
-}
-
-
-  printPWOUT() {
-    var doc = new jsPDF("portrait", "px", "a4");
-    doc.setFontSize(16);
-    doc.setFont('Helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('Parent-wise Outstanding', 150, 20);
-    doc.roundedRect(5, 32.5, 436, 65, 5, 5);
-    doc.setFontSize(10);
-    doc.text(`${this.selectedParent.PARENTNAME}`,10,42);
-    doc.text(`Group Acc ID: ${this.selectedParent.pcode}`,330,42);// (${this.selectedParent.customertype})`,330,42);
-    doc.setFont('Helvetica', 'normal');
-    doc.text(`Date: ${this.mCurDate}`,330,52);
-    doc.text('Address',10,52);
-    doc.text(`: ${this.selectedParent.add1}`,45,52);
-    doc.text(`  ${this.selectedParent.country}`,45,62);
-    doc.text('Mobile',10,72);
-    doc.text(`: ${this.selectedParent.mobile}`,45,72);
-    doc.text('Email',10,82);
-    doc.text(`: ${this.selectedParent.email}`,45,82);
-    doc.text('Period',10,92);
-    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 92)
-    let firstPageStartY = 100; // Start Y position for first page
-    let nextPagesStartY = 35; // Start Y position for subsequent pages
-    let firstPage = true;      // Flag to check if it's the first page
-
-    autoTable(doc, {
-      html: '#pwOutTable',
-      tableWidth: 435,
-      theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'left',
-        valign: 'middle'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255], // White background
-        textColor: [0, 0, 0],       // Black text
-        fontStyle: 'bold',
-        halign: 'left'
-      },
-      footStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        halign: 'right'
-      },
-     /* columnStyles: {
-        6: { halign: 'right' },
-        7: { halign: 'right' },
-        8: { halign: 'right' }
-      },*/
-      margin: { 
-        top: firstPage ? firstPageStartY : nextPagesStartY,
-        left: 5
-      },
-      showFoot: 'lastPage', 
-      didDrawPage: function () {
-        firstPage = false;
-      }
-    });
-
-    let finalY1 = doc.lastAutoTable?.finalY || 0
-        if(this.selectedParent?.orgnisation != 'MM-COOP') {
-
-    autoTable(doc, {
-      html: '#pwoutAgeingSummaryTable',
-      startY: finalY1 + 5,
-      tableWidth: 435,
-      margin: { left: 5 },
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
-        halign: 'center'
-      },
-      headStyles: {
-        fillColor: [255, 255, 255],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold'
-      },
-      /*columnStyles: {
-        0: { halign: 'center' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' },
-        5: { halign: 'center' },
-        6: { halign: 'center' }
-      }*/
-    });
-  }
-    let finalY2 = doc.lastAutoTable?.finalY || 0
-
-    // Bilingual footer text
-    doc.setFontSize(8);
-    // Now the font is already registered thanks to the JS file!
-    doc.addFileToVFS('Amiri-Regular-normal.ttf', this.myFont);
-    doc.addFont('Amiri-Regular-normal.ttf', 'Amiri-Regular', 'normal');        
-    // Manually reverse Arabic for basic rendering
-    const araText = ":تصدر الشيكات بإسم\n شركة سوق بت زون المركزي لغير المواد الغذائية";
-    const engText = "Kindly issue cheques in the name of: \nPetzone Central Market company For Non Food Items W.L.L";
-    const pageWidth = doc.internal.pageSize.getWidth();
-    // Calculate X to center
-    const centerX = pageWidth / 2;
-    doc.setFontSize(10)
-    doc.text(engText, 10, finalY2+15);//, { align: 'center' });
-    doc.setFont('Amiri-Regular', 'normal')
-    doc.text(araText, 435, finalY2+15, { align: 'right' });
-
-    // Add watermark (if necessary)
-    doc = this.addWaterMark(doc,'p');
-    // Save the PDF
-    doc.save(`${this.selectedParent.pcode}-outstanding-${this.mCurDate}.pdf`);
-  }
-
-  exportPWOUT(): void {
-    const fileName = `${this.selectedParent.pcode}-outstanding-${this.mCurDate}.xlsx`;
-
-    // 1. Create worksheet from cwsoaData
-    const pwoutSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(this.pwoutData.map(row => ({
-      'Branch Name': row.CUST_NAME,
-      'Invoice Date': row.INV_DATE ? new Date(row.INV_DATE).toLocaleDateString() : '',
-      'Invoice No': row.INV_NO,
-      'Reference': row.INV_NO === row.REMARKS ? '' : row.REMARKS,
-      'Description': row.DESCRIPTION,
-      'Due Date': row.DUEDATE ? new Date(row.DUEDATE).toLocaleDateString() : '',
-      'Debit': row.DEBIT || '',
-      'Credit': row.CREDIT || '',
-      'Balance': row.BALANCE
-    })));
-
-    // 2. Create another sheet for Ageing Summary
-    const ageingData = [{
-      'Current': this.ageingSummary['CURRENT'] || 0,
-      '0 - 30 days': this.ageingSummary['30_DAYS'] || 0,
-      '31 - 60 days': this.ageingSummary['60_DAYS'] || 0,
-      '61 - 90 days': this.ageingSummary['90_DAYS'] || 0,
-      '91 - 120 days': this.ageingSummary['120_DAYS'] || 0,
-      'Above 120 days': this.ageingSummary['ABOVE_120_DAYS'] || 0,
-      'Total Outstanding': (
-        (this.ageingSummary['CURRENT'] || 0) +
-        (this.ageingSummary['30_DAYS'] || 0) +
-        (this.ageingSummary['60_DAYS'] || 0) +
-        (this.ageingSummary['90_DAYS'] || 0) +
-        (this.ageingSummary['120_DAYS'] || 0) +
-        (this.ageingSummary['ABOVE_120_DAYS'] || 0)
-      )
-    }];
-
-    const ageingSheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(ageingData);
-
-    // 3. Create a workbook and add the sheets
-    const workbook: XLSX.WorkBook = {
-      Sheets: {
-        'Statement': pwoutSheet,
-        'Ageing Summary': ageingSheet
-      },
-      SheetNames: ['Statement', 'Ageing Summary']
-    };
-
-    // 4. Generate buffer
-    const excelBuffer: any = XLSX.write(workbook, {
-      bookType: 'xlsx',
-      type: 'array'
-    });
-
-    // 5. Save to file
-    const blob = new Blob([excelBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
-    });
-
-    FileSaver.saveAs(blob, fileName);
-  }
 
 private applyFifoAndAgeing(data: any[], endDate: Date) {
 
@@ -1343,6 +1076,168 @@ private applyFifoAndAgeing(data: any[], endDate: Date) {
     rows: resultRows,
     ageing,
     totalBalance: runningBalance
+  };
+}
+
+private applyBucketAgeing(data: any[], endDate: Date) {
+
+    const asOn = new Date(endDate);
+    asOn.setHours(0, 0, 0, 0);
+
+    const ageing: any = {
+      CURRENT: 0,
+      '30_DAYS': 0,
+      '60_DAYS': 0,
+      '90_DAYS': 0,
+      '120_DAYS': 0,
+      'ABOVE_120_DAYS': 0
+    };
+
+    // 1️⃣ classify rows
+    data.forEach(row => {
+
+      const debit = Number(row.DEBIT) || 0;
+      const credit = Number(row.CREDIT) || 0;
+      const net = debit - credit;
+
+if (net === 0) return;
+
+      // due date
+      let dueDate: Date | null = null;
+      if (row.DUEDATE) {
+        const d = new Date(row.DUEDATE);
+        if (!isNaN(d.getTime())) {
+          d.setHours(0, 0, 0, 0);
+          dueDate = d;
+        }
+      }
+
+      // ✅ CURRENT
+      if (dueDate && dueDate > asOn) {
+        ageing.CURRENT += net;
+        return;
+      }
+
+      // ✅ overdue → invoice-date ageing
+      if (!row.INV_DATE) {
+        ageing['ABOVE_120_DAYS'] += net;
+        return;
+      }
+
+      const invDate = new Date(row.INV_DATE);
+      if (isNaN(invDate.getTime())) {
+        ageing['ABOVE_120_DAYS'] += net;
+        return;
+      }
+
+      invDate.setHours(0, 0, 0, 0);
+
+      const age = Math.floor(
+        (asOn.getTime() - invDate.getTime()) / 86400000
+      );
+
+      if (age <= 30) ageing['30_DAYS'] += net;
+      else if (age <= 60) ageing['60_DAYS'] += net;
+      else if (age <= 90) ageing['90_DAYS'] += net;
+      else if (age <= 120) ageing['120_DAYS'] += net;
+      else ageing['ABOVE_120_DAYS'] += net;
+    });
+
+    // 2️⃣ normalize credits (youngest → oldest)
+    const buckets = ['30_DAYS', '60_DAYS', '90_DAYS', '120_DAYS', 'ABOVE_120_DAYS'];
+
+    for (let i = 0; i < buckets.length - 1; i++) {
+      if (ageing[buckets[i]] < 0) {
+        ageing[buckets[i + 1]] += ageing[buckets[i]];
+        ageing[buckets[i]] = 0;
+      }
+    }
+
+    if (ageing['ABOVE_120_DAYS'] < 0) {
+      ageing['ABOVE_120_DAYS'] = 0;
+    }
+
+    const ageingTotal =
+      ageing['30_DAYS'] +
+      ageing['60_DAYS'] +
+      ageing['90_DAYS'] +
+      ageing['120_DAYS'] +
+      ageing['ABOVE_120_DAYS'];
+
+    const totalOutstanding = ageingTotal// + ageing.CURRENT;
+
+    return {
+      ageing,
+      totalOutstanding
+    };
+
+}
+
+private calculateSimpleAgeing(data: any[], endDate: Date) {
+
+  const asOn = new Date(endDate);
+  asOn.setHours(0, 0, 0, 0);
+
+  const ageing = {
+    '30_DAYS': 0,
+    '60_DAYS': 0,
+    '90_DAYS': 0,
+    '120_DAYS': 0,
+    'ABOVE_120_DAYS': 0,
+    'CURRENT': 0
+  };
+
+  let totalOutstanding = 0;
+
+  data.forEach(row => {
+
+    if (!row.INV_DATE) return;
+
+    const invDate = new Date(row.INV_DATE);
+    invDate.setHours(0, 0, 0, 0);
+
+    // ❌ Ignore future transactions
+    if (invDate > asOn) return;
+
+    const debit = Number(row.DEBIT) || 0;
+    const credit = Number(row.CREDIT) || 0;
+    const net = debit - credit;
+
+    if (net === 0) return;
+
+    totalOutstanding += net;
+
+    // ✅ Check CURRENT (not yet due)
+    if (row.DUEDATE) {
+      const dueDate = new Date(row.DUEDATE);
+      dueDate.setHours(0, 0, 0, 0);
+
+      if (dueDate > asOn) {
+        ageing.CURRENT += net;
+       // return;
+      }
+    }
+
+    // ✅ Age calculation
+    const age = Math.floor(
+      (asOn.getTime() - invDate.getTime()) / 86400000
+    );
+
+    console.log(row)
+    console.log(age)
+    console.log(ageing)
+
+    if (age <= 30) ageing['30_DAYS'] += net;
+    else if (age <= 60) ageing['60_DAYS'] += net;
+    else if (age <= 90) ageing['90_DAYS'] += net;
+    else if (age <= 120) ageing['120_DAYS'] += net;
+    else ageing['ABOVE_120_DAYS'] += net;
+
+  });
+
+  return {
+    ageing,
+    totalOutstanding
   };
 }
 
