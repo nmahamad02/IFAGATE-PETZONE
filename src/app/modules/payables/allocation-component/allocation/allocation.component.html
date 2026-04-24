@@ -1,0 +1,274 @@
+<div class="container-fluid">
+    <div class="row no-gutters">
+        <div class="visualization-heading col-12">
+            <div class="heading-info">
+                <div class="row">
+                    <div class="col-3">
+                        <h2 class="heading-title">Payment Allocation</h2>
+                    </div>
+                    <div class="col-2">
+                        <mat-select [(value)]="mode" (selectionChange)="onModeChange()" class="mode-select">
+                            <mat-select-trigger>
+                                <span class="mode-trigger">
+                                    {{ mode.label }}
+                                </span>
+                            </mat-select-trigger>
+
+                            <mat-option *ngFor="let m of modes" [value]="m">
+                                {{ m.label }}
+                            </mat-option>
+                        </mat-select>
+                    </div>
+                    <div class="col-2 position-relative">
+                            <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" [placeholder]="mode.value === 'SUPPLIER' ? 'Search suppliers...' : 'Search intermediaries...'" (focus)="isSearching = true"  autocomplete="off"/>
+                        <!-- Search Results Dropdown -->
+                        <div class="search-dropdown" *ngIf="isSearching && searchText">
+                            <div class="search-item" *ngFor="let cust of (activeList | filterTable: searchText | slice: 0:10)" (mousedown)="selectEntity(cust)">
+                                {{ cust.CUST_NAME }} ({{ cust.PCODE }})
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="row" *ngIf="selectedSupplier">
+                            <div class="col-6">
+                                {{ selectedSupplier.CUST_NAME }}
+                            </div>
+                            <div class="col-2">
+                                {{ selectedSupplier.PCODE }}
+                            </div>
+                            <div class="col-4">
+                                {{ selectedSupplier.GLNAME || '-' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="row" *ngIf="selectedSupplier">
+                <div class="col-12">
+                    <div class="row  ">
+                        <div class="col-6 text-center">
+                            <br>
+                            <button class="btn btn-primary btn-sm" (click)="addAllocations()" [disabled]="!selectedInvoices.length || !selectedReceipts.length">
+                                + Add Allocation
+                            </button>
+                        </div>
+                        <div class="col-6 text-center">
+                            <br>
+                            <button class="btn btn-warning btn-sm" (click)="viewAllocations()">
+                                View Allocation
+                            </button>
+                        </div>
+                    </div>
+                    <hr /> 
+                    <div class="row">                        
+                        <div class="col-6">
+                            <h3><b>Payments</b></h3>
+                            <mat-card>
+                                <div *ngIf="payments.length === 0" class="text-muted small">
+                                    No payments available
+                                </div>
+                                <table class="table table-sm table-hover table-striped mt-2" *ngIf="payments.length">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th><small>Receipt No</small></th>
+                                            <th><small>Date</small></th>
+                                            <th class="text-right"><small>Receipt Amount</small></th>
+                                            <th class="text-right"><small>Used Amount</small></th>
+                                            <th class="text-right"><small>Balance</small></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let p of payments">
+                                            <td>
+                                                <input type="checkbox" (change)="toggleReceipt(p, $event)">
+                                            </td>
+                                            <td><small>{{ p.REFNO }}</small></td>
+                                            <td><small>{{ p.REFDT | date:'mediumDate' }}</small></td>
+                                            <td class="text-right">
+                                                <small>{{ formatAmount(p.REFAMOUNT) }}</small>
+                                            </td>
+                                            <td class="text-right">
+                                                <small>{{ formatAmount(p.USED_AMOUNT) }}</small>
+                                            </td>
+                                            <td class="text-right">
+                                                <small>{{ formatAmount(p.BALANCE) }}</small>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </mat-card>
+                        </div>
+                        <div class="col-6">
+                            <h3><b>Bills</b></h3>
+                            <mat-card>
+                                <div *ngIf="invoices.length === 0" class="text-muted small">
+                                    No invoices available
+                                </div>
+                                <table class="table table-sm table-hover table-striped mt-2" *ngIf="invoices.length">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th><small>Invoice No</small></th>
+                                            <th><small>Date</small></th>
+                                            <th class="text-right"><small>Invoice amount</small></th>
+                                            <th class="text-right"><small>Allocated</small></th>
+                                            <th class="text-right"><small>Balance</small></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let inv of invoices">
+                                            <td>
+                                                <input type="checkbox" (change)="toggleInvoice(inv,$event)">
+                                            </td>
+                                            <td><small>{{ inv.INV_NO }}</small></td>
+                                            <td><small>{{ inv.INV_DATE | date:'mediumDate'  }}</small></td>
+                                            <td class="text-right">
+                                                <small>{{ formatAmount(inv.INV_AMOUNT) }}</small>
+                                            </td>
+                                            <td class="text-right">
+                                                <small>{{ formatAmount(inv.ALLOCATED) }}</small>
+                                            </td>
+                                            <td class="text-right">
+                                                <small>{{ formatAmount(inv.BALANCE) }}</small>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </mat-card>
+                        </div>
+                    </div>
+                                            
+                    <h3><b>Allocation Details</b></h3>
+                    <table class="table table-sm table-bordered" *ngIf="allocationLines.length">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Invoice No</th>
+                                <th>Receipt No</th>
+                                <th class="text-end">Allocated</th>
+                                <th class="text-end">Invoice Bal After</th>
+                                <th class="text-end">Receipt Bal After</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let a of allocationLines; let i=index">
+                                <td>{{ a.INV_NO }}</td>
+                                <td>{{ a.REFNO }}</td>
+                                <td class="text-end">
+                                    <input type="number" class="form-control form-control-sm text-end" [(ngModel)]="a.ALLOC_AMOUNT" (ngModelChange)="recalculateAllocation(i)" [min]="0" [step]="0.001">
+                                </td>
+                                <td class="text-end">{{ formatAmount(a.INV_REMAINING_AFTER) }}</td>
+                                <td class="text-end">{{ formatAmount(a.RCPT_REMAINING_AFTER) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div *ngIf="!allocationLines.length" class="text-muted">
+                        No allocations generated yet.
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-6 text-end fw-bold">Total Allocated:</div>
+                        <div class="col-6">{{ formatAmount(totalAllocated()) }}</div>
+                    </div>
+
+                    <div class="row  ">
+                        <div class="col-6 text-center">
+                            <br>
+                            <button class="btn btn-secondary btn-sm" (click)="reset()">
+                                Reset Selection
+                            </button>
+                        </div>
+                        <div class="col-6 text-center">
+                            <br>
+                            <button class="btn btn-success btn-sm" [disabled]="!allocationLines.length" (click)="saveAllocation()"> 
+                                Save Allocation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<ng-template #viewAllocationLookupDialog>
+    <h3 matDialogTitle>
+        <b>View Allocation</b>
+    </h3>
+     
+    <div mat-dialog-content style="font-size: small;">
+        <div class="row">
+            <div class="col-6">
+                <h3><b>Allocated Payments</b></h3>  
+                <mat-card>
+                    <div *ngIf="allocatedReceipts.length === 0" class="text-muted small">
+                        No payments available
+                    </div>
+                    <table class="table table-sm table-hover table-striped mt-2" *ngIf="allocatedReceipts.length">
+                        <thead>
+                            <tr>
+                                <th><small>Receipt No</small></th>
+                                <th><small>Date</small></th>
+                                <th class="text-right"><small>Receipt Amount</small></th>
+                                <th class="text-right"><small>Used Amount</small></th>
+                                <th class="text-right"><small>Balance</small></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let p of allocatedReceipts" (click)="getAllocatedInvoices(p.REFNO)">
+                                <td><small>{{ p.REFNO }}</small></td>
+                                <td><small>{{ p.REFDT | date:'mediumDate' }}</small></td>
+                                <td class="text-right">
+                                    <small>{{ formatAmount(p.REFAMOUNT) }}</small>
+                                </td>
+                                <td class="text-right">
+                                    <small>{{ formatAmount(p.USED_AMOUNT) }}</small>
+                                </td>
+                                <td class="text-right">
+                                    <small>{{ formatAmount(p.BALANCE) }}</small>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </mat-card>
+            </div>
+            <div class="col-6">
+                <h3><b>Bills</b></h3>
+                <mat-card>
+                    <div *ngIf="allocatedInvoices.length === 0" class="text-muted small">
+                        No invoices available
+                    </div>
+                    <table class="table table-sm table-hover table-striped mt-2" *ngIf="allocatedInvoices.length">
+                        <thead>
+                            <tr>
+                                <th><small>Invoice No</small></th>
+                                <th><small>Receipt No</small></th>
+                                <th><small>Allocated Date</small></th>
+                                <th class="text-right"><small>Allocated amount</small></th>
+                                <th>Deallocate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let inv of allocatedInvoices">
+                                <td><small>{{ inv.INV_NO }}</small></td>
+                                <td><small>{{ inv.REFNO }}</small></td>
+                                <td><small>{{ inv.ALLOC_DATE | date:'mediumDate' }}</small></td>
+                                <td class="text-right">
+                                    <small>{{ formatAmount(inv.ALLOC_AMOUNT) }}</small>
+                                </td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" (click)="deAllocate(inv.ID)"> 
+                                        X
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </mat-card>
+            </div>
+        </div>
+    </div>
+    <br>
+</ng-template>

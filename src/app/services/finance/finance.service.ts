@@ -295,4 +295,45 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
     return this.http.post(this.url + '/finance/outstanding/update', JSON.stringify(newTran), { headers: headers })
   }
 
+  getAllReceiptPayments(pcode: string) {
+    return this.http.get(this.url + '/coa/getAllReceiptPayments/' + pcode + '/01')
+  }  
+
+  getSelectedCustomerBills(pcode: string) {
+    return this.http.get(this.url + '/coa/getSelectedCustomerBills/' + pcode + '/01')
+  } 
+
+  getAllocatedReceipts(pcode: string) {
+    return this.http.get(this.url + '/coa/getAllocatedReceipts/' + pcode + '/01')
+  }  
+
+getAllocatedInvoices(refno: string) {
+  return this.http.get(
+    this.url + '/coa/getAllocatedInvoices',
+    {
+      params: { refno }
+    }
+  );
+}
+
+  saveInvoiceReceiptAllocation(invno: string, refno: string, cardno: string, alloc_amount: string) {
+    const headers = new HttpHeaders().set('Content-Type', 'application/json');
+
+    const newTran = {
+      invno: invno,
+      refno: refno, 
+      cardno: cardno,
+      alloc_amount: alloc_amount
+    }
+    return this.http.post(this.url + '/finance/InvoiceReceiptAllocation', JSON.stringify(newTran), { headers: headers })
+  }
+
+  
+deleteInvoiceReceiptAllocation(id: number) {
+  return this.http.post(this.url + 
+    '/finance/deleteInvoiceReceiptAllocation',
+    { id }
+  );
+}
+
 }

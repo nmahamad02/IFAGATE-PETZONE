@@ -252,80 +252,53 @@ updateUnit(unit: { id: string; name: string; code: string, country: string }) {
   }
 
 getSWSOA(customer: any) {
-      this.periodTotalDebit = 0;
-  this.periodTotalCredit = 0;
-  this.periodClosingBalance = 0;
-  this.periodAgeingSummary = {
-    '30_DAYS': 0,
-    '60_DAYS': 0,
-    '90_DAYS': 0,
-    '120_DAYS': 0,
-    'ABOVE_120_DAYS': 0,
-    'CURRENT': 0
-  };
-  this.openingBalanceData = {
-    DEBIT: 0,
-    CREDIT: 0,
-    BALANCE: 0,
-  };
-  this.totalDebit = 0;
-  this.totalCredit = 0;
-  this.openingBalance = 0;
-  this.closingBalance = 0;
-  this.swsoaData = [];
   this.selectedSupplier = customer;
   this.getData = true;
+  this.swsoaData = [];
 
-  this.reportService.getApCustomerSoa(this.selectedUnit.id,'S', customer.PCODE).subscribe((res: any) => {
-    console.log(res.recordset)
-    this.getData = false;
-    if (res.recordset.length === 0) {
-      alert('No data for the selected parameters!');
-      return;
-    }
+  this.reportService
+    .getSupplierSOA(this.selectedUnit.id, customer.PCODE)
+    .subscribe({
+      next: (res: any) => {
+        this.getData = false;
 
-    const today = new Date(); 
-    today.setHours(0, 0, 0, 0);
+        const rows = res.recordsets?.[0] || [];
+        if (!rows.length) {
+          alert('No data found!');
+          return;
+        }
 
-    this.swsoaData = res.recordset;
-          this.getData = false
-      let runningBalance = 0;
+        this.swsoaData = rows;
 
-      this.swsoaData = this.swsoaData.map(row => {
-        const debit = Number(row.CREDIT ) || 0;
-        const credit = Number(row.DEBIT ) || 0;
-        this.totalDebit += debit;
-        this.totalCredit += credit;
+        // ✅ Totals now come from API fields
+        this.totalOutstanding = rows.reduce(
+          (s: number, r: any) => s + (Number(r.BALANCE) || 0),
+          0
+        );
 
-        runningBalance += debit - credit;
-
-        let daysDiff: number | null = null;
-
-          const dueDate = new Date(row.DUEDATE);
-          const today = new Date();
-
-          dueDate.setHours(0, 0, 0, 0);
-          today.setHours(0, 0, 0, 0);
-
-          const diffTime = today.getTime() - dueDate.getTime()
-          daysDiff = Math.floor(diffTime / (1000 * 60 * 60 * 24));    
-        
-        return {
-          ...row,
-          BALANCE: runningBalance,
-          DAYS_DIFF: daysDiff // could be null if not applicable
-        };
-      });
-
-    const result = this.applySupplierFifoAndAgeing(res.recordset,today);
-
-    this.ageingSummary = result.ageing;
-    this.closingBalance = result.totalBalance;
-  }, (err: any) => {
-    alert('No data for the selected parameters!');
-    this.getData = false;
-  });
+        // ✅ Ageing summary directly from buckets
+        this.ageingSummary = rows.reduce((acc: any, r: any) => {
+          acc.CURRENT += r.CURRENT || 0;
+          acc['30_DAYS'] += r['1_30'] || 0;
+          acc['60_DAYS'] += r['31_60'] || 0;
+          acc['90_DAYS'] += r['61_90'] || 0;
+          acc['ABOVE_120_DAYS'] += r['90_PLUS'] || 0;
+          return acc;
+        }, {
+          CURRENT: 0,
+          '30_DAYS': 0,
+          '60_DAYS': 0,
+          '90_DAYS': 0,
+          'ABOVE_120_DAYS': 0
+        });
+      },
+      error: () => {
+        this.getData = false;
+        alert('Failed to load supplier SOA');
+      }
+    });
 }
+
 
   printSWSOA() {
     var doc = new jsPDF("portrait", "px", "a4");

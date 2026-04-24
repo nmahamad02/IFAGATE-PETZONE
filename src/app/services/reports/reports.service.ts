@@ -62,6 +62,10 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
     return this.http.get(this.url + '/report/get-ap-customer-transaction-listing/' + compcode + '/' + type + '/' + pcode)
   }
 
+  getSupplierSOA(compcode: string,pcode: string) {
+    return this.http.get(this.url + '/report/get-supplier-soa/' + compcode + '/' + pcode)
+  }
+
   getParentSoa(parentcode: string, compcode: string) {
     return this.http.get(this.url + '/report/get-parent-soa', {
       params: { parentcode, compcode }
