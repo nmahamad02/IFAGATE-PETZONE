@@ -74,10 +74,10 @@
                                 <tr>
                                     <td></td>
                                     <td>
-                                        <a class="nav-link" ><!--</a>(click)="openIPWSOA()" -->Period-wise Intermediary Statement of Account</a>
+                                        <a class="nav-link"(click)="openIPWSOA()">Period-wise Intermediary Statement of Account</a>
                                     </td>
                                     <td>
-                                        <a class="nav-link" ><!--</a>(click)="openIWOUT()" -->Intermediary Outstanding Statement</a>
+                                        <a class="nav-link"(click)="openIWOUT()">Intermediary Outstanding Statement</a>
                                     </td>
                                 </tr>
                             </table>
@@ -133,58 +133,43 @@
                             <th><small>Reference</small></th>
                             <th><small>Description</small></th>
                             <th><small>Due Date</small></th>
-                            <!--<th><small>Amount</small></th>-->
                             <th><small>Currency</small></th>
                             <th><small>Debit</small></th>
                             <th><small>Credit</small></th>
                             <th><small>Balance</small></th>
-                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let row of swsoaData">
-                            <td><small>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</small></td>
-                            <td><small>{{ row.INV_NO }}</small></td>
-                            <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
-                            <td><small>{{ row.DESCRIPTION }}</small></td>
-                            <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
-                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
-                            <td><small>{{ row.JOB }}</small></td>
-                            <td>
-                                <small *ngIf="row.CREDIT != 0">{{ (row.CREDIT/row.EXCHANGERATE) | number:'1.3-3' }}
-                                    <div *ngIf="row.JOB !== 'KWD'">
-                                        [{{ (row.CREDIT) | number:'1.3-3' }}]
-                                    </div>
-                                </small>      
-                            </td>                      
-                            <td>
-                                <small *ngIf="row.DEBIT != 0">{{ (row.DEBIT/row.EXCHANGERATE) | number:'1.3-3' }}
-                                    <div *ngIf="row.JOB !== 'KWD'">
-                                        [{{ (row.DEBIT) | number:'1.3-3' }}]
-                                    </div>
-                                </small>      
-                            </td>                            <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
-                            <td   ><small>
-                                {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
+                             <td><small>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</small></td>
+                             <td><small>{{ row.INV_NO }}</small></td>
+                             <td><small>{{ row.VENDOR_REF_NO }}</small></td>
+                             <td><small>{{ row.DESCRIPTION }}</small></td>
+                             <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
+                             <td><small>{{ row.LPO_NO }}</small></td>
+                            <td class="text-end">
+                                <small *ngIf="row.INV_AMOUNT>0">
+                                {{ (row.INV_AMOUNT / row.EXCHANGERATE) | number:'1.3-3' }}
+                                <div *ngIf="row.EXCHANGERATE !== 1">
+                                    [{{ row.INV_AMOUNT | number:'1.3-3' }}]
+                                </div>
                             </small></td>
-                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
+                            <td class="text-end">
+                                <small *ngIf="row.PAID>0">
+                                {{ (row.PAID / row.EXCHANGERATE) | number:'1.3-3' }}
+                                <div *ngIf="row.EXCHANGERATE !== 1">
+                                    [{{ row.PAID | number:'1.3-3' }}]
+                                </div>
+                            </small></td>
+                            <td class="text-end">
+                                <small *ngIf="row.BALANCE>0">
+                                {{ (row.BALANCE / row.EXCHANGERATE) | number:'1.3-3' }}
+                                <div *ngIf="row.EXCHANGERATE !== 1">
+                                    [{{ row.BALANCE | number:'1.3-3' }}]
+                                </div>
+                            </small></td>
                         </tr>
                     </tbody>
-                    <tfoot>
-                        <tr class="fw-bold   ">
-                            <td colspan="6" class="text-start"><small>Total</small></td>
-                            <td><small>{{ totalDebit | number:'1.3-3' }}</small></td>
-                            <td><small>{{ totalCredit | number:'1.3-3' }}</small></td>
-                            <td><small>
-                                {{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')' : ((totalDebit - totalCredit) | number:'1.3-3') }}
-                            </small></td>
-                            <!--<td><small>
-                                {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
-                                {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
-                                {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </small></td>-->
-                        </tr>
-                    </tfoot>
                 </table>
                 </div>
                 <table id="swsoaAgeingSummaryTable" class="table table-sm table-bordered">
@@ -208,9 +193,9 @@
                             <td><small>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
                             <td><small>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
                             <td><small>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
+                            <!--<td><small>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>  + ageingSummary['120_DAYS']-->
                             <td><small>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
+                            <td><small>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS']  + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
                         </tr>
                     </tbody>
                 </table>  
@@ -222,7 +207,7 @@
     <div class="row container-fluid">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportSWSOA()" style="float: right" title="export">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportTable(swsoaData,'download')" style="float: right" title="export">
                 Export Raw Excel
             </button>
         </div>
@@ -254,7 +239,7 @@
                     </thead>
                     <tbody>
                         <tr *ngFor="let cust of (supplierList | filterTable:searchText| slice:0:10); let i = index;">
-                            <td (click)="getSPWSOA(cust)"><small>{{ cust.CUST_NAME }} ({{ cust.PCODE }})</small></td>
+                            <td (click)="setSPWSOA()"><small>{{ cust.CUST_NAME }} ({{ cust.PCODE }})</small></td>
                         </tr>
                     </tbody>
                 </table>
@@ -293,44 +278,41 @@
                             <th><small>Reference</small></th>
                             <th><small>Description</small></th>
                             <th><small>Due Date</small></th>
-                            <!--<th><small>Amount</small></th>-->
                             <th><small>Currency</small></th>
                             <th><small>Debit</small></th>
                             <th><small>Credit</small></th>
                             <th><small>Balance</small></th>
-                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let row of spwsoaData; let i = index">
-                            <td><small>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</small></td>
-                            <td><small>{{ row.INV_NO }}</small></td>
-                            <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
-                            <td><small>{{ row.DESCRIPTION }}</small></td>
-                            <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
-                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
-                            <td><small>{{ row.JOB }}</small></td>
-                            <td>
-                                <small *ngIf="row.INV_NO !== 'OPENING BALANCE' &&  row.CREDIT != 0"> 
-                                    {{ (row.CREDIT/row.EXCHANGERATE) | number:'1.3-3' }}
-                                    <div *ngIf="row.JOB?.trim()?.toUpperCase() !== 'KWD'">
-                                        [{{ (row.CREDIT) | number:'1.3-3' }}]
-                                    </div>
-                                </small>
-                            </td>
-                            <td>
-                                <small *ngIf="row.INV_NO !== 'OPENING BALANCE' &&  row.DEBIT != 0">
-                                    {{ (row.DEBIT/row.EXCHANGERATE) | number:'1.3-3' }}
-                                    <div *ngIf="row.JOB?.trim()?.toUpperCase() !== 'KWD'">
-                                        [{{ (row.DEBIT) | number:'1.3-3' }}]
-                                    </div>
-                                </small>
-                            </td>
-                            <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
-                            <td   ><small>
-                                {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
+                        <tr *ngFor="let row of spwsoaData">
+                             <td><small>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</small></td>
+                             <td><small>{{ row.INV_NO }}</small></td>
+                             <td><small>{{ row.VENDOR_REF_NO }}</small></td>
+                             <td><small>{{ row.DESCRIPTION }}</small></td>
+                             <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
+                             <td><small>{{ row.LPO_NO }}</small></td>
+                            <td class="text-end">
+                                <small *ngIf="row.INV_AMOUNT>0">
+                                {{ (row.INV_AMOUNT / row.EXCHANGERATE) | number:'1.3-3' }}
+                                <div *ngIf="row.EXCHANGERATE !== 1">
+                                    [{{ row.INV_AMOUNT | number:'1.3-3' }}]
+                                </div>
                             </small></td>
-                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
+                            <td class="text-end">
+                                <small *ngIf="row.PAID>0">
+                                {{ (row.PAID / row.EXCHANGERATE) | number:'1.3-3' }}
+                                <div *ngIf="row.EXCHANGERATE !== 1">
+                                    [{{ row.PAID | number:'1.3-3' }}]
+                                </div>
+                            </small></td>
+                            <td class="text-end">
+                                <small *ngIf="row.BALANCE>0">
+                                {{ (row.BALANCE / row.EXCHANGERATE) | number:'1.3-3' }}
+                                <div *ngIf="row.EXCHANGERATE !== 1">
+                                    [{{ row.BALANCE | number:'1.3-3' }}]
+                                </div>
+                            </small></td>
                         </tr>
                     </tbody>
                     <tfoot>
@@ -341,11 +323,6 @@
                             <td><small>
                                 {{ (openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) < 0 ? '(' + ((openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) | abs | number:'1.3-3') + ')' : ((openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) | number:'1.3-3') }}
                             </small></td>
-                            <!--<td><small>
-                                {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
-                                {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
-                                {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </small></td>-->
                         </tr>
                     </tfoot>
                 </table>
@@ -367,13 +344,13 @@
                     </thead>
                     <tbody>
                         <tr   >
-                            <td><small>{{ periodAgeingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
+                            <!--<td><small>{{ periodAgeingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
                             <td><small>{{ periodAgeingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
                             <td><small>{{ periodAgeingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
                             <td><small>{{ periodAgeingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
                             <td><small>{{ periodAgeingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
                             <td><small>{{ periodAgeingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ (periodAgeingSummary['CURRENT'] + periodAgeingSummary['30_DAYS'] + periodAgeingSummary['60_DAYS'] + periodAgeingSummary['90_DAYS'] + periodAgeingSummary['120_DAYS'] + periodAgeingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
+                            <td><small>{{ (periodAgeingSummary['CURRENT'] + periodAgeingSummary['30_DAYS'] + periodAgeingSummary['60_DAYS'] + periodAgeingSummary['90_DAYS'] + periodAgeingSummary['120_DAYS'] + periodAgeingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>-->
                         </tr>
                     </tbody>
                 </table>
@@ -385,7 +362,7 @@
     <div class="row container-fluid">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportSPWSOA()" style="float: right" title="export">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportTable(spwsoaData,'download')" style="float: right" title="export">
                 Export Raw Excel
             </button>
         </div>
@@ -404,7 +381,6 @@
     </h3>
      
     <div mat-dialog-content style="font-size: small;">
-        <!-- Filters -->
         <div class="row mb-2">
             <div class="col-3">
                 <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search supplier..." />      
@@ -426,11 +402,10 @@
                 <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" placeholder="End Date">
             </div>
             <div class="col-1">
-                <button class="btn btn-sm btn-primary" (click)="applySupplierFilters()">Filter</button>
+                <button class="btn btn-sm btn-primary" >Filter</button> <!--(click)="applySupplierFilters()"-->
             </div>
         </div>
 
-        <!-- Loading Spinner -->
         <div class="row" *ngIf="getData">
             <div class="col-4"></div>
                 <div class="col-4">
@@ -439,7 +414,6 @@
             <div class="col-4"></div>
         </div>
 
-        <!-- Supplier Table -->
         <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
             <table class="table table-striped table-sm table-bordered table-responsive" id="swOutTable" style="max-height: 300px; overflow-y: auto;">
                 <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">  
@@ -454,11 +428,11 @@
                 </thead>
                 <tbody>
                     <tr *ngFor="let s of swoutData">
-                        <td>{{ s.PCODE }}</td>
-                        <td>{{ s.CUST_NAME }}</td>
-                        <td>{{ s.Nature }}</td>
-                        <td>{{ s.SupplierCategory }}</td>
-                        <td>{{ s.REMARKS }}</td>
+                         <td><small>{{ s.PCODE }}</small></td>
+                         <td><small>{{ s.CUST_NAME }}</small></td>
+                         <td><small>{{ s.Nature }}</small></td>
+                         <td><small>{{ s.SupplierCategory }}</small></td>
+                         <td><small>{{ s.REMARKS }}</small></td>
                         <td class="text-end"><small>
                             {{ s.CURRENT_OUTSTANDING ? '(' + (s.CURRENT_OUTSTANDING | abs | number:'1.3-3') + ')' : (s.CURRENT_OUTSTANDING | number:'1.3-3') }}
                         </small></td>
@@ -466,7 +440,7 @@
                 </tbody>
                 <tfoot>
                     <tr class="fw-bold">
-                        <td colspan="5" class="text-end">Total Outstanding:</td>
+                        <td colspan="5" class="text-end"><small>Total Outstanding:</small></td>
                         <td class="text-end"><small>
                             {{ totalOutstanding ? '(' + (totalOutstanding | abs | number:'1.3-3') + ')' : (totalOutstanding | number:'1.3-3') }}
                         </small></td>
@@ -479,7 +453,7 @@
     <div class="row container-fluid">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportSWOUT()" style="float: right" title="export">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportTable(swoutData,'download')" style="float: right" title="export">
                 Export Raw Excel
             </button>
         </div>
@@ -511,7 +485,7 @@
                     </thead>
                     <tbody>
                         <tr *ngFor="let cust of (intermediariesList | filterTable:searchText| slice:0:10); let i = index;">
-                            <td (click)="getIPWSOA(cust)"><small>{{ cust.CUST_NAME }} ({{ cust.PCODE }})</small></td>
+                            <td (click)="setIPWSOA()"><small>{{ cust.CUST_NAME }} ({{ cust.PCODE }})</small></td>
                         </tr>
                     </tbody>
                 </table>
@@ -550,12 +524,10 @@
                             <th><small>Reference</small></th>
                             <th><small>Description</small></th>
                             <th><small>Due Date</small></th>
-                            <!--<th><small>Amount</small></th>-->
                             <th><small>Currency</small></th>
                             <th><small>Debit</small></th>
                             <th><small>Credit</small></th>
                             <th><small>Balance</small></th>
-                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
@@ -565,7 +537,6 @@
                             <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
                             <td><small>{{ row.DESCRIPTION }}</small></td>
                             <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
-                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
                             <td><small>{{ row.JOB }}</small></td>
                             <td>
                                 <small *ngIf="row.INV_NO !== 'OPENING BALANCE' &&  row.CREDIT != 0"> 
@@ -583,11 +554,9 @@
                                     </div>
                                 </small>
                             </td>
-                            <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
                             <td   ><small>
                                 {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
                             </small></td>
-                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
                         </tr>
                     </tbody>
                     <tfoot>
@@ -598,11 +567,6 @@
                             <td><small>
                                 {{ (openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) < 0 ? '(' + ((openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) | abs | number:'1.3-3') + ')' : ((openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) | number:'1.3-3') }}
                             </small></td>
-                            <!--<td><small>
-                                {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
-                                {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
-                                {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </small></td>-->
                         </tr>
                     </tfoot>
                 </table>
@@ -624,13 +588,13 @@
                     </thead>
                     <tbody>
                         <tr   >
-                            <td><small>{{ periodAgeingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
+                            <!--<td><small>{{ periodAgeingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
                             <td><small>{{ periodAgeingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
                             <td><small>{{ periodAgeingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
                             <td><small>{{ periodAgeingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
                             <td><small>{{ periodAgeingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
                             <td><small>{{ periodAgeingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ (periodAgeingSummary['CURRENT'] + periodAgeingSummary['30_DAYS'] + periodAgeingSummary['60_DAYS'] + periodAgeingSummary['90_DAYS'] + periodAgeingSummary['120_DAYS'] + periodAgeingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
+                            <td><small>{{ (periodAgeingSummary['CURRENT'] + periodAgeingSummary['30_DAYS'] + periodAgeingSummary['60_DAYS'] + periodAgeingSummary['90_DAYS'] + periodAgeingSummary['120_DAYS'] + periodAgeingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>-->
                         </tr>
                     </tbody>
                 </table>
@@ -642,7 +606,7 @@
     <div class="row container-fluid">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportIPWSOA()" style="float: right" title="export">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportTable(ipwsoaData,'download')" style="float: right" title="export">
                 Export Raw Excel
             </button>
         </div>
@@ -661,7 +625,6 @@
     </h3>
      
     <div mat-dialog-content style="font-size: small;">
-        <!-- Filters -->
         <div class="row mb-2">
             <div class="col-6">
                 <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search intermediary." />      
@@ -670,11 +633,10 @@
                 <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" placeholder="End Date">
             </div>
             <div class="col-3">
-                <button class="btn btn-sm btn-primary" (click)="applyIntermediaryFilters()">Filter</button>
+                <button class="btn btn-sm btn-primary" >Filter</button> <!--(click)="applyIntermediaryFilters()"-->
             </div>
         </div>
 
-        <!-- Loading Spinner -->
         <div class="row" *ngIf="getData">
             <div class="col-4"></div>
                 <div class="col-4">
@@ -683,7 +645,6 @@
             <div class="col-4"></div>
         </div>
 
-        <!-- Supplier Table -->
         <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
             <table class="table table-striped table-sm table-bordered table-responsive" id="iwOutTable" style="max-height: 300px; overflow-y: auto;">
                 <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">  
@@ -698,18 +659,18 @@
                 </thead>
                 <tbody>
                     <tr *ngFor="let s of iwoutData">
-                        <td>{{ s.PCODE }}</td>
-                        <td>{{ s.CUST_NAME }}</td>
-                        <td>{{ s.Nature }}</td>
-                        <td>{{ s.SupplierCategory }}</td>
-                        <td>{{ s.REMARKS }}</td>
-                        <td class="text-end">{{ s.CURRENT_OUTSTANDING | number:'1.3-3' }}</td>
+                         <td><small>{{ s.PCODE }}</small></td>
+                         <td><small>{{ s.CUST_NAME }}</small></td>
+                         <td><small>{{ s.Nature }}</small></td>
+                         <td><small>{{ s.SupplierCategory }}</small></td>
+                         <td><small>{{ s.REMARKS }}</small></td>
+                        <td class="text-end"><small>{{ s.CURRENT_OUTSTANDING | number:'1.3-3' }}</small></td>
                     </tr>
                 </tbody>
                 <tfoot>
                     <tr class="fw-bold">
-                        <td colspan="5" class="text-end">Total Outstanding:</td>
-                        <td class="text-end">{{ totalOutstanding | number:'1.3-3' }}</td>
+                        <td colspan="5" class="text-end"><small>Total Outstanding:</small></td>
+                        <td class="text-end"><small>{{ totalOutstanding | number:'1.3-3' }}</small></td>
                     </tr>
                 </tfoot>
             </table>
@@ -719,7 +680,7 @@
     <div class="row container-fluid">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportIWOUT()" style="float: right" title="export">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportTable(iwoutData,'download')" style="float: right" title="export">
                 Export Raw Excel
             </button>
         </div>
@@ -776,12 +737,10 @@
                             <th><small>Reference</small></th>
                             <th><small>Description</small></th>
                             <th><small>Due Date</small></th>
-                            <!--<th><small>Amount</small></th>-->
                             <th><small>Currency</small></th>
                             <th><small>Debit</small></th>
                             <th><small>Credit</small></th>
                             <th><small>Balance</small></th>
-                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
@@ -791,7 +750,6 @@
                             <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
                             <td><small>{{ row.DESCRIPTION }}</small></td>
                             <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
-                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
                             <td><small>{{ row.LPO_NO }}</small></td>                  
                             <td>
                                 <small *ngIf="row.INV_AMOUNT != 0">{{ (row.INV_AMOUNT/row.EXCHANGERATE) | number:'1.3-3' }}
@@ -799,7 +757,7 @@
                                         [{{ (row.INV_AMOUNT) | number:'1.3-3' }}]
                                     </div>
                                 </small>      
-                            </td>                            <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
+                            </td>                           
                             <td>
                                 <small *ngIf="row.REFAMOUNT != 0">{{ (row.REFAMOUNT/row.EXCHANGERATE) | number:'1.3-3' }}
                                     <div *ngIf="row.LPO_NO !== 'KWD'">
@@ -810,53 +768,10 @@
                             <td   ><small>
                                 {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
                             </small></td>
-                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
                         </tr>
                     </tbody>
-                    <tfoot>
-                        <tr class="fw-bold   ">
-                            <td colspan="6" class="text-start"><small>Total</small></td>
-                            <td><small>{{ totalDebit | number:'1.3-3' }}</small></td>
-                            <td><small>{{ totalCredit | number:'1.3-3' }}</small></td>
-                            <td><small>
-                                {{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')' : ((totalDebit - totalCredit) | number:'1.3-3') }}
-                            </small></td>
-                            <!--<td><small>
-                                {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
-                                {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
-                                {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </small></td>-->
-                        </tr>
-                    </tfoot>
                 </table>
                 </div>
-                <!--<table id="swsoaAgeingSummaryTable" class="table table-sm table-bordered">
-                    <thead>
-                        <tr class="table-primary">
-                            <th colspan="7" class="text-start"><small>Ageing Summary</small></th>
-                        </tr>
-                        <tr class="table-secondary">
-                            <th><small>Current</small></th>
-                            <th><small>0 - 30 days</small></th>
-                            <th><small>31 - 60 days</small></th>
-                            <th><small>61 - 90 days</small></th>
-                            <th><small>91 - 120 days</small></th>
-                            <th><small>Above 120 days</small></th>
-                            <th><small>Total Outstanding</small></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr   >
-                            <td><small>{{ ageingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ ageingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ ageingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ ageingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ ageingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ ageingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ (ageingSummary['CURRENT'] + ageingSummary['30_DAYS'] + ageingSummary['60_DAYS'] + ageingSummary['90_DAYS'] + ageingSummary['120_DAYS'] + ageingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
-                        </tr>
-                    </tbody>
-                </table>  -->
             </div>
         </div>
         <br>
@@ -865,7 +780,7 @@
     <div class="row container-fluid">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportSWTRNLIST()" style="float: right" title="export">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportTable(swtrnlistData,'download')" style="float: right" title="export">
                 Export Raw Excel
             </button>
         </div>
@@ -936,12 +851,10 @@
                             <th><small>Reference</small></th>
                             <th><small>Description</small></th>
                             <th><small>Due Date</small></th>
-                            <!--<th><small>Amount</small></th>-->
                             <th><small>Currency</small></th>
                             <th><small>Debit</small></th>
                             <th><small>Credit</small></th>
                             <th><small>Balance</small></th>
-                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
@@ -951,7 +864,6 @@
                             <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
                             <td><small>{{ row.DESCRIPTION }}</small></td>
                             <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
-                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
                             <td><small>{{ row.LPO_NO }}</small></td>
                             <td>
                                 <small *ngIf="row.INV_NO !== 'OPENING BALANCE' &&  row.INV_AMOUNT != 0"> 
@@ -969,11 +881,9 @@
                                     </div>
                                 </small>
                             </td>
-                            <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
                             <td   ><small>
                                 {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
                             </small></td>
-                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
                         </tr>
                     </tbody>
                     <tfoot>
@@ -984,42 +894,10 @@
                             <td><small>
                                 {{ (openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) < 0 ? '(' + ((openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) | abs | number:'1.3-3') + ')' : ((openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) | number:'1.3-3') }}
                             </small></td>
-                            <!--<td><small>
-                                {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
-                                {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
-                                {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </small></td>-->
                         </tr>
                     </tfoot>
                 </table>
             </div>
-                <!--<table id="spwsoaAgeingSummaryTable" class="table table-sm table-bordered">
-                    <thead>
-                        <tr class="table-primary">
-                            <th colspan="7" class="text-start"><small>Period-wise Ageing Summary</small></th>
-                        </tr>
-                        <tr class="table-secondary"  >
-                            <th><small>Current</small></th>
-                            <th><small>0 - 30 days</small></th>
-                            <th><small>31 - 60 days</small></th>
-                            <th><small>61 - 90 days</small></th>
-                            <th><small>91 - 120 days</small></th>
-                            <th><small>Above 120 days</small></th>
-                            <th><small>Total Outstanding</small></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr   >
-                            <td><small>{{ periodAgeingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ periodAgeingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ periodAgeingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ periodAgeingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ periodAgeingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ periodAgeingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ (periodAgeingSummary['CURRENT'] + periodAgeingSummary['30_DAYS'] + periodAgeingSummary['60_DAYS'] + periodAgeingSummary['90_DAYS'] + periodAgeingSummary['120_DAYS'] + periodAgeingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
-                        </tr>
-                    </tbody>
-                </table>-->
             </div>
         </div>
         <br>
@@ -1028,7 +906,7 @@
     <div class="row container-fluid">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportSPWTRNLIST()" style="float: right" title="export">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportTable(spwtrnlistData,'download')" style="float: right" title="export">
                 Export Raw Excel
             </button>
         </div>
@@ -1047,7 +925,6 @@
     </h3>
      
     <div mat-dialog-content style="font-size: small;">
-        <!-- Filters -->
         <div class="row mb-2">
             <div class="col-3">
                 <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search supplier..." />      
@@ -1073,7 +950,6 @@
             </div>
         </div>
 
-        <!-- Loading Spinner -->
         <div class="row" *ngIf="getData">
             <div class="col-4"></div>
                 <div class="col-4">
@@ -1082,7 +958,6 @@
             <div class="col-4"></div>
         </div>
 
-        <!-- Supplier Table -->
         <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
             <table class="table table-striped table-sm table-bordered table-responsive" id="swTrnSumTable" style="max-height: 300px; overflow-y: auto;">
                 <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">  
@@ -1122,7 +997,7 @@
     <div class="row container-fluid">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportSWTRNSUM()" style="float: right" title="export">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportTable(swtrnsumData,'download')" style="float: right" title="export">
                 Export Raw Excel
             </button>
         </div>
@@ -1180,12 +1055,10 @@
                             <th><small>Reference</small></th>
                             <th><small>Description</small></th>
                             <th><small>Due Date</small></th>
-                            <!--<th><small>Amount</small></th>-->
                             <th><small>Currency</small></th>
                             <th><small>Debit</small></th>
                             <th><small>Credit</small></th>
                             <th><small>Balance</small></th>
-                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
@@ -1195,7 +1068,6 @@
                             <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
                             <td><small>{{ row.DESCRIPTION }}</small></td>
                             <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
-                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
                             <td><small>{{ row.LPO_NO }}</small></td>                  
                             <td>
                                 <small *ngIf="row.INV_AMOUNT != 0">{{ (row.INV_AMOUNT/row.EXCHANGERATE) | number:'1.3-3' }}
@@ -1203,7 +1075,7 @@
                                         [{{ (row.INV_AMOUNT) | number:'1.3-3' }}]
                                     </div>
                                 </small>      
-                            </td>                            <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
+                            </td>                           
                             <td>
                                 <small *ngIf="row.REFAMOUNT != 0">{{ (row.REFAMOUNT/row.EXCHANGERATE) | number:'1.3-3' }}
                                     <div *ngIf="row.LPO_NO !== 'KWD'">
@@ -1214,24 +1086,8 @@
                             <td   ><small>
                                 {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
                             </small></td>
-                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
                         </tr>
                     </tbody>
-                    <tfoot>
-                        <tr class="fw-bold   ">
-                            <td colspan="6" class="text-start"><small>Total</small></td>
-                            <td><small>{{ totalDebit | number:'1.3-3' }}</small></td>
-                            <td><small>{{ totalCredit | number:'1.3-3' }}</small></td>
-                            <td><small>
-                                {{ (totalDebit - totalCredit) < 0 ? '(' + ((totalDebit - totalCredit) | abs | number:'1.3-3') + ')' : ((totalDebit - totalCredit) | number:'1.3-3') }}
-                            </small></td>
-                            <!--<td><small>
-                                {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
-                                {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
-                                {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </small></td>-->
-                        </tr>
-                    </tfoot>
                 </table>
                 </div>
             </div>
@@ -1242,7 +1098,7 @@
     <div class="row container-fluid">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportIWTRNLIST()" style="float: right" title="export">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportTable(iwtrnlistData,'download')" style="float: right" title="export">
                 Export Raw Excel
             </button>
         </div>
@@ -1313,12 +1169,10 @@
                             <th><small>Reference</small></th>
                             <th><small>Description</small></th>
                             <th><small>Due Date</small></th>
-                            <!--<th><small>Amount</small></th>-->
                             <th><small>Currency</small></th>
                             <th><small>Debit</small></th>
                             <th><small>Credit</small></th>
                             <th><small>Balance</small></th>
-                            <!--<th><small>Overdue days</small></th>-->
                         </tr>
                     </thead>
                     <tbody>
@@ -1328,7 +1182,6 @@
                             <td><small>{{ row.INV_NO === row.REMARKS ? '' : row.REMARKS }}</small></td>
                             <td><small>{{ row.DESCRIPTION }}</small></td>
                             <td><small>{{ row.DUEDATE | date:'dd-MM-yyyy' }}</small></td>
-                            <!--<td   >{{ row.AMOUNT | number:'1.3-3' }}</small></td>-->
                             <td><small>{{ row.LPO_NO }}</small></td>
                             <td>
                                 <small *ngIf="row.INV_NO !== 'OPENING BALANCE' &&  row.INV_AMOUNT != 0"> 
@@ -1346,11 +1199,9 @@
                                     </div>
                                 </small>
                             </td>
-                            <!-- <td   >{{ (row.BALANCE | abs) | number:'1.3-3' }} {{ row.BALANCE > 0 ? '(D)' : '(C)' }}</small></td> -->
                             <td   ><small>
                                 {{ row.BALANCE < 0 ? '(' + (row.BALANCE | abs | number:'1.3-3') + ')' : (row.BALANCE | number:'1.3-3') }}
                             </small></td>
-                            <!--<td   >{{ row.DAYS_DIFF === null ? '-' : row.DAYS_DIFF + (row.DAYS_DIFF > 0 ? ' overdue' : ' left') }}</small></td>   -->                 
                         </tr>
                     </tbody>
                     <tfoot>
@@ -1361,11 +1212,6 @@
                             <td><small>
                                 {{ (openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) < 0 ? '(' + ((openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) | abs | number:'1.3-3') + ')' : ((openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) | number:'1.3-3') }}
                             </small></td>
-                            <!--<td><small>
-                                {{ (totalDebit-totalCredit) < 0 ? '-' : '' }}
-                                {{ ((totalDebit-totalCredit) | number:'1.3-3') }} 
-                                {{ (totalDebit-totalCredit) > 0 ? '(D)' : (totalDebit-totalCredit) < 0 ? '(C)' : '' }}
-                            </small></td>-->
                         </tr>
                     </tfoot>
                 </table>
@@ -1378,7 +1224,7 @@
     <div class="row container-fluid">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportIPWTRNLIST()" style="float: right" title="export">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportTable(ipwtrnlistData,'download')" style="float: right" title="export">
                 Export Raw Excel
             </button>
         </div>
@@ -1397,7 +1243,6 @@
     </h3>
      
     <div mat-dialog-content style="font-size: small;">
-        <!-- Filters -->
         <div class="row mb-2">
             <div class="col-3">
                 <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search intermediaries..." />      
@@ -1423,7 +1268,6 @@
             </div>
         </div>
 
-        <!-- Loading Spinner -->
         <div class="row" *ngIf="getData">
             <div class="col-4"></div>
                 <div class="col-4">
@@ -1432,7 +1276,6 @@
             <div class="col-4"></div>
         </div>
 
-        <!-- Supplier Table -->
         <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
             <table class="table table-striped table-sm table-bordered table-responsive" id="iwTrnSumTable" style="max-height: 300px; overflow-y: auto;">
                 <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">  
@@ -1472,7 +1315,7 @@
     <div class="row container-fluid">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportIWTRNSUM()" style="float: right" title="export">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportTable(iwtrnsumData,'download')" style="float: right" title="export">
                 Export Raw Excel
             </button>
         </div>
