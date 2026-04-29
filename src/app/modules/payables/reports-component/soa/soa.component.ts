@@ -312,25 +312,36 @@ async applyIntermediaryFilters() {
     this.resetSOA();
   }
 
-  getSWSOA(customer: any) {
-    this.selectedSupplier = customer;
-    this.getData = true;
-    this.resetSOA();
+getSWSOA(customer: any) {
+  this.selectedSupplier = customer;
+  this.getData = true;
+  this.resetSOA();
 
-    this.reportService
-      .getSupplierSOA(this.selectedUnit.id, customer.PCODE)
-      .subscribe({
-        next: (res: any) => {
-          this.getData = false;
-          this.processSupplierSOA(res);
-          this.swsoaData = res.recordsets?.[0] || [];
-        },
-        error: () => {
-          this.getData = false;
-          alert('Failed to load Supplier SOA');
-        }
-      });
-  }
+  this.reportService
+    .getSupplierSOA(this.selectedUnit.id, customer.PCODE)
+    .subscribe({
+      next: (res: any) => {
+        this.getData = false;
+
+        const rows = res.recordsets?.[0] || [];
+
+        let running = 0;
+        this.swsoaData = rows.map((r: any) => {
+          running += r.BALANCE; // +invoice, -receipt
+          return {
+            ...r,
+            RUNNING_BALANCE: running
+          };
+        });
+
+        this.processSupplierSOA(this.swsoaData);
+      },
+      error: () => {
+        this.getData = false;
+        alert('Failed to load Supplier SOA');
+      }
+    });
+}
 
   printSWSOA() {
     var doc = new jsPDF("portrait", "px", "a4");
@@ -437,14 +448,18 @@ async applyIntermediaryFilters() {
     this.resetSOA();
   }
 
+
+getSPWSOA(customer: any) {
+  this.selectedSupplier = customer;
+  this.getData = true;
+  this.resetSOA();
+}
+  
   setSPWSOA() {
     if (!this.selectedSupplier || !this.startDate || !this.endDate) {
       alert('Please select supplier and date range');
       return;
     }
-
-    this.getData = true;
-    this.resetSOA();
 
     this.reportService
       .getSupplierSOA(this.selectedUnit.id, this.selectedSupplier.PCODE)

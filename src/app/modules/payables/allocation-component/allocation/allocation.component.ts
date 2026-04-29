@@ -71,33 +71,39 @@ export class AllocationComponent {
 
   getAllocationData(pcode: string) {
     this.financeService.getAllReceiptPayments(pcode).subscribe((res: any) => {
-      this.payments = res.recordset || []
+      this.payments = (res.recordset || []).map((p: any) => ({
+        ...p,
+        selected: false
+      }));
+    }, (err: any) => {
+      this.payments = []
     });
 
     this.financeService.getSelectedCustomerBills(pcode).subscribe((res: any) => {
-      this.invoices = res.recordset || []
+      this.invoices = (res.recordset || []).map((i: any) => ({
+        ...i,
+        selected: false
+      }));
+    }, (err: any) => {
+      this.invoices = []
     });
   }
 
-  toggleReceipt(r: any, event: Event) {
-    const checked = (event.target as HTMLInputElement).checked;
-
-    if (checked) {
+  toggleReceipt(r: any) {
+    if (r.selected) {
       this.selectedReceipts.push({ ...r, REMAINING: r.BALANCE });
     } else {
-      this.selectedReceipts = this.selectedReceipts
-        .filter(x => x.REFNO !== r.REFNO);
+      this.selectedReceipts =
+      this.selectedReceipts.filter(x => x.REFNO !== r.REFNO);
     }
   }
 
-  toggleInvoice(i: any, event: Event) {
-    const checked = (event.target as HTMLInputElement).checked;
-
-    if (checked) {
+  toggleInvoice(i: any) {
+    if (i.selected) {
       this.selectedInvoices.push({ ...i, REMAINING: i.BALANCE });
     } else {
-      this.selectedInvoices = this.selectedInvoices
-        .filter(x => x.INV_NO !== i.INV_NO);
+      this.selectedInvoices =
+      this.selectedInvoices.filter(x => x.INV_NO !== i.INV_NO);
     }
   }
 
@@ -202,7 +208,7 @@ viewAllocations(){
 }
 
 getAllocatedInvoices(refno: string){
-this.financeService.getAllocatedInvoices(refno).subscribe((res: any) => {
+this.financeService.getAllocatedInvoices(refno,this.selectedSupplier.PCODE).subscribe((res: any) => {
     this.allocatedInvoices = res.recordset || []
   })
 }
@@ -238,10 +244,16 @@ reloadPage() {
     return this.allocationLines.reduce((s, a) => s + a.ALLOC_AMOUNT, 0);
   }
 
+
   reset() {
-    this.selectedInvoices = [];
-    this.selectedReceipts = [];
-    this.allocationLines = [];
+    this.selectedInvoices = []
+    this.selectedReceipts = []
+    this.allocationLines = []
+    // ✅ deselect receipts
+    this.payments.forEach(p => (p.selected = false));
+
+    // ✅ deselect invoices
+    this.invoices.forEach(i => (i.selected = false));
   }
   
   formatAmount(v: number) {

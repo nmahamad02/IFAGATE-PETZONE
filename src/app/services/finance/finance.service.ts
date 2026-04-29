@@ -307,15 +307,17 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
     return this.http.get(this.url + '/coa/getAllocatedReceipts/' + pcode + '/01')
   }  
 
-getAllocatedInvoices(refno: string) {
+getAllocatedInvoices(refno: string, custcode: string) {
   return this.http.get(
     this.url + '/coa/getAllocatedInvoices',
     {
-      params: { refno }
+      params: {
+        refno: refno,
+        custcode: custcode
+      }
     }
   );
 }
-
   saveInvoiceReceiptAllocation(invno: string, refno: string, cardno: string, alloc_amount: string) {
     const headers = new HttpHeaders().set('Content-Type', 'application/json');
 
