@@ -318,12 +318,14 @@ getAllocatedInvoices(refno: string, custcode: string) {
     }
   );
 }
-  saveInvoiceReceiptAllocation(invno: string, refno: string, cardno: string, alloc_amount: string) {
+  saveInvoiceReceiptAllocation(invno: string, refno: string, cardno: string, alloc_amount: string, inv_opflag: string, ref_opflag: string) {
     const headers = new HttpHeaders().set('Content-Type', 'application/json');
 
     const newTran = {
       invno: invno,
       refno: refno, 
+      inv_opflag: inv_opflag,
+      ref_opflag: ref_opflag, 
       cardno: cardno,
       alloc_amount: alloc_amount
     }

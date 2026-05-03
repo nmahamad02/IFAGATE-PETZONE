@@ -168,8 +168,14 @@
                                 <td><small>{{ a.INV_NO }}</small></td>
                                 <td><small>{{ a.REFNO }}</small></td>
                                 <td class="text-end">
-                                    <input type="number" class="form-control form-control-sm text-end" [(ngModel)]="a.ALLOC_AMOUNT" (ngModelChange)="recalculateAllocation(i)" [min]="0" [step]="0.001">
-                                </td>
+<input
+  type="number"
+  class="form-control form-control-sm text-end"
+  [(ngModel)]="a.ALLOC_AMOUNT"
+  (ngModelChange)="recalculateAllocation(i)"
+  [min]="0"
+  step="0.0001"
+/>                                 </td>
                                 <td class="text-end"><small>{{ formatAmount(a.INV_REMAINING_AFTER) }}</small></td>
                                 <td class="text-end"><small>{{ formatAmount(a.RCPT_REMAINING_AFTER) }}</small></td>
                             </tr>
@@ -207,6 +213,7 @@
                         <thead>
                             <tr>
                                 <th><small>Receipt No</small></th>
+                                <th><small>Internal Reference</small></th>
                                 <th><small>Date</small></th>
                                 <th align="end"><small>Receipt Amount</small></th>
                                 <th align="end"><small>Used Amount</small></th>
@@ -214,8 +221,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let p of allocatedReceipts" (click)="getAllocatedInvoices(p.REFNO)">
+                            <tr *ngFor="let p of allocatedReceipts" (click)="getAllocatedInvoices(p.REF_OPFLAG)">
                                 <td><small>{{ p.REFNO }}</small></td>
+                                <td><small>{{ p.REF_OPFLAG }}</small></td>
                                 <td><small>{{ p.REFDT | date:'mediumDate' }}</small></td>
                                 <td align="end">
                                     <small>{{ formatAmount(p.REFAMOUNT) }}</small>
@@ -241,8 +249,9 @@
                         <thead>
                             <tr>
                                 <th><small>Invoice No</small></th>
+                                <th><small>Internal Reference</small></th>
                                 <th><small>Receipt No</small></th>
-                                <th><small>Allocated Date</small></th>
+                                <th><small>Internal Reference</small></th>
                                 <th align="end"><small>Allocated amount</small></th>
                                 <th>Deallocate</th>
                             </tr>
@@ -250,8 +259,9 @@
                         <tbody>
                             <tr *ngFor="let inv of allocatedInvoices">
                                 <td><small>{{ inv.INV_NO }}</small></td>
+                                <td><small>{{ inv.INV_OPFLAG }}</small></td>
                                 <td><small>{{ inv.REFNO }}</small></td>
-                                <td><small>{{ inv.ALLOC_DATE | date:'mediumDate' }}</small></td>
+                                <td><small>{{ inv.REF_OPFLAG }}</small></td>
                                 <td align="end">
                                     <small>{{ formatAmount(inv.ALLOC_AMOUNT) }}</small>
                                 </td>

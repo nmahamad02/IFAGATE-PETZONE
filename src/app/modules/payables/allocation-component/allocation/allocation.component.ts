@@ -94,7 +94,8 @@ export class AllocationComponent {
       this.selectedReceipts.push({ ...r, REMAINING: r.BALANCE });
     } else {
       this.selectedReceipts =
-      this.selectedReceipts.filter(x => x.REFNO !== r.REFNO);
+      //this.selectedReceipts.filter(x => x.REFNO !== r.REFNO);
+      this.selectedReceipts.filter(x => x.REF_OPFLAG !== r.REF_OPFLAG);
     }
   }
 
@@ -103,7 +104,8 @@ export class AllocationComponent {
       this.selectedInvoices.push({ ...i, REMAINING: i.BALANCE });
     } else {
       this.selectedInvoices =
-      this.selectedInvoices.filter(x => x.INV_NO !== i.INV_NO);
+      //this.selectedInvoices.filter(x => x.INV_NO !== i.INV_NO);
+      this.selectedInvoices.filter(x => x.INV_OPFLAG !== i.INV_OPFLAG);
     }
   }
 
@@ -119,9 +121,12 @@ export class AllocationComponent {
       for (const inv of invoices) {
         if (rBal <= 0 || inv.REMAINING <= 0) continue;
 
-        const amt = Math.min(inv.REMAINING, rBal);
+        //const amt = Math.min(inv.REMAINING, rBal);
+        const amt = this.r4(Math.min(inv.REMAINING, rBal));
 
         this.allocationLines.push({
+          INV_OPFLAG: inv.INV_OPFLAG,
+          REF_OPFLAG: rcpt.REF_OPFLAG,
           INV_NO: inv.INV_NO,
           REFNO: rcpt.REFNO,
           ALLOC_AMOUNT: amt,          // default
@@ -138,29 +143,18 @@ export class AllocationComponent {
     }
   }
 
-  recalculateAllocation(index: number) {
-    const row = this.allocationLines[index];
+recalculateAllocation(index: number) {
+  const row = this.allocationLines[index];
 
-    // Ensure numeric
-    let newAmount = Number(row.ALLOC_AMOUNT) || 0;
+  let value = Number(row.ALLOC_AMOUNT);
+  if (isNaN(value) || value < 0) value = 0;
 
-    // ✅ Prevent negative
-    if (newAmount < 0) {
-      newAmount = 0;
-    }
+  value = this.r4(Math.min(value, row.MAX_ALLOC));
+  row.ALLOC_AMOUNT = value;
 
-    // ✅ Prevent over-allocation
-    if (newAmount > row.MAX_ALLOC) {
-      newAmount = row.MAX_ALLOC;
-    }
-
-    // Apply corrected value
-    row.ALLOC_AMOUNT = newAmount;
-
-    // ✅ Recalculate balances
-    row.INV_REMAINING_AFTER = row.INV_REMAINING_BEFORE - newAmount;
-    row.RCPT_REMAINING_AFTER = row.RCPT_REMAINING_BEFORE - newAmount;
-  }
+  row.INV_REMAINING_AFTER = this.r4(row.INV_REMAINING_BEFORE - value);
+  row.RCPT_REMAINING_AFTER = this.r4(row.RCPT_REMAINING_BEFORE - value);
+}
 
   saveAllocation() {
   if (!this.allocationLines.length || !this.selectedSupplier) {
@@ -175,7 +169,7 @@ export class AllocationComponent {
   for (const line of this.allocationLines) {
 
     this.financeService
-      .saveInvoiceReceiptAllocation(line.INV_NO, line.REFNO,cardNo, line.ALLOC_AMOUNT)
+      .saveInvoiceReceiptAllocation(line.INV_NO, line.REFNO,cardNo, line.ALLOC_AMOUNT,line.INV_OPFLAG, line.REF_OPFLAG)
       .subscribe({
         next: () => {
           completed++;
@@ -203,12 +197,14 @@ viewAllocations(){
   })
 
   this.financeService.getAllocatedReceipts(this.selectedSupplier.PCODE).subscribe((res: any) => {
+    console.log(res)
     this.allocatedReceipts = res.recordset || []
   })
 }
 
 getAllocatedInvoices(refno: string){
 this.financeService.getAllocatedInvoices(refno,this.selectedSupplier.PCODE).subscribe((res: any) => {
+      console.log(res)
     this.allocatedInvoices = res.recordset || []
   })
 }
@@ -240,9 +236,12 @@ reloadPage() {
   this.dialog.closeAll()
 }
 
-  totalAllocated(): number {
-    return this.allocationLines.reduce((s, a) => s + a.ALLOC_AMOUNT, 0);
-  }
+totalAllocated(): number {
+  return this.allocationLines.reduce(
+    (s, a) => this.r4(s + a.ALLOC_AMOUNT),
+    0
+  );
+}
 
 
   reset() {
@@ -259,4 +258,8 @@ reloadPage() {
   formatAmount(v: number) {
     return (v || 0).toFixed(3);
   }
+
+  private r4(v: number): number {
+  return Number((v ?? 0).toFixed(4));
+}
 }
