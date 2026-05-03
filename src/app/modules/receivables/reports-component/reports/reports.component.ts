@@ -118,8 +118,8 @@ export class ReportsComponent {
   selectedCountryName = '*';
   selectedCountryCode = 'un';
 
-  startDate: Date;
-  endDate: Date;
+  startDate = '2025-01-01'
+  endDate = '2025-12-31'
 
   ageingSummary = {
     '30_DAYS': 0,
@@ -3088,7 +3088,7 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     };
     this.pwoutData = []
 
-    this.startDate = new Date(`${this.currentYear}-01-01`)
+    this.startDate = `${this.currentYear}-01-01`
   }
 
   setPWOUT(parent: any) {

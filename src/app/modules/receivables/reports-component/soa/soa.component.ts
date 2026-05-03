@@ -105,8 +105,8 @@ export class SoaComponent {
   selectedUnit!: { id: string; name: string; code: string, country: string };
   selectedCountryCode = 'un';
 
-  startDate: Date;
-  endDate: Date;
+  startDate = '2025-01-01'
+  endDate = '2025-12-31'
 
   ageingSummary = {
     '30_DAYS': 0,
@@ -158,27 +158,19 @@ export class SoaComponent {
     })
   }
 
-loadSalesUnits() {
-  this.reportService.getSalesUnits().subscribe(
-    (res: any) => {
-      const data = res.recordset;
-
-      // Map backend result to dropdown structure
-      this.salesUnits = [
-        { id: '*', name: 'All Units', code: 'un' }, // optional
-        ...data.map((unit: any) => ({
-          id: unit.salesunitID,
-          name: unit.salesunitname,
-          code: this.mapFlagCode(unit.salesunitname),
-          country: this.mapCountry(unit.salesunitname),
+  loadSalesUnits() {
+    this.reportService.getSalesUnits().subscribe((res: any) => {
+      const data = res.recordset || [];
+      this.salesUnits = 
+        data.map((u: any) => ({
+          id: u.salesunitID,
+          name: u.salesunitname,
+          code: this.mapFlagCode(u.salesunitname),
+          country: this.mapCountry(u.salesunitname)
         }))
-      ];
-
-      this.selectedUnit = this.salesUnits[0];
-    },
-    (err: any) => console.log(err)
-  );
-}
+        this.updateUnit(this.salesUnits[0]);
+    });
+  }
 
 mapCountry(name: string): string {
   if (name.includes('Kuwait')) return 'Kuwait';
@@ -2536,7 +2528,8 @@ this.ipwsoaData = [openingRow, ...filteredPeriodRows]
 
     // 🔹 Apply FIFO + ageing on period data
 const fifoInput = filteredPeriodRows;
-const result = this.applyCustomerFifoAndAgeing(fifoInput, this.endDate);
+const asondate = new Date(this.endDate)
+const result = this.applyCustomerFifoAndAgeing(fifoInput, asondate);
 
     this.ageingSummary = result.ageing;
     this.closingBalance = this.openingBalanceData.BALANCE + result.totalBalance;

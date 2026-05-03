@@ -48,8 +48,8 @@ export class FinancialReportsComponent {
   selectedLocation: string = 'NULL'
   selectedCustomer: string = 'NULL'
 
-  startDate: Date;
-  endDate: Date;
+  startDate = '2026-01-01'
+  endDate = '2026-12-31'
 
   getData: boolean = false;
 
@@ -617,6 +617,8 @@ getLWPS() {
   this.reportService
     .getLocationwiseProfit(start, end, this.selectedLocation)
     .subscribe((res: any) => {
+
+      console.log(res.recordset)
       if (!res.recordset || res.recordset.length === 0) {
         alert('No data for selected criteria');
         this.getData = false;
@@ -636,6 +638,7 @@ getLWPS() {
       this.lwpsGroupedData = Object.keys(map).map(loc => {
         const rows = map[loc];
 
+        const totalqty = rows.reduce((sum: number, x: any) => sum + Number(x.UNITQTY || 0), 0);
         const totalSales = rows.reduce((sum: number, x: any) => sum + Number(x.GrossAmount || 0), 0);
         const totalCost = rows.reduce((sum: number, x: any) => sum + Number(x.CostOfSale || 0), 0);
         const totalProfit = totalSales - totalCost;
@@ -643,6 +646,7 @@ getLWPS() {
         return {
           location: loc,
           rows,
+          totalqty,
           totalSales,
           totalCost,
           totalProfit,
@@ -664,7 +668,7 @@ printLWPS() {
     doc.text(`${locationLabel}`, 10, 42);    
     doc.setFont('Helvetica', 'normal');
     doc.text(`Date: ${this.mCurDate}`,550,42);
-    let firstPageStartY = 60; // Start Y position for first page
+    let firstPageStartY = 50; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
 
@@ -673,7 +677,7 @@ printLWPS() {
       tableWidth: 620,
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
-        fontSize: 8,
+        fontSize: 6,
         textColor: [0, 0, 0],
         lineColor: [0, 0, 0],
         lineWidth: 0.1,
@@ -693,13 +697,14 @@ printLWPS() {
         halign: 'right'
       },
       columnStyles: {
-        10: { halign: 'right' },
+        9: { halign: 'right' },
         11: { halign: 'right' },
         12: { halign: 'right' },
         13: { halign: 'right' },
         14: { halign: 'right' },
         15: { halign: 'right' },
         16: { halign: 'right' },
+        17: { halign: 'right' },
       },
       margin: { 
         top: firstPage ? firstPageStartY : nextPagesStartY,
@@ -884,4 +889,19 @@ calculateAgeing(data: any[]): any {
     }
     return [year, month, day].join('-');
   }
+
+calcDiff(r: any): number {
+  const v =
+    (Number(r.UNITQTY) * Number(r.UnitPrice)) -
+    Number(r.GROSSAMOUNT);
+
+  if (!isFinite(v)) return 0;
+
+  // ✅ Clamp tiny floating values
+  if (Math.abs(v) > 0 && Math.abs(v) < 0.001) {
+    return v > 0 ? 0.001 : -0.001;
+  }
+
+  return v;
+}
 }

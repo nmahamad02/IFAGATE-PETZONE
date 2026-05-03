@@ -26,6 +26,7 @@ import { SharedModule } from '../shared/shared.module';
 import { SoaComponent } from './reports-component/soa/soa.component';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AllocationComponent } from './allocation-component/allocation/allocation.component';
+import { NgxChartsModule } from '@swimlane/ngx-charts';
 
 export const payablesRoutes = [
   {
@@ -78,6 +79,7 @@ export const payablesRoutes = [
     MatProgressSpinnerModule,
     MatCardModule,
     MatSelectModule,
+    NgxChartsModule,
     MatPaginatorModule,
     MatDividerModule,
     MatTreeModule,

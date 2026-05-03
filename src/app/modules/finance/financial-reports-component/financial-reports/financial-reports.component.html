@@ -88,22 +88,22 @@
                 <tbody>
                     <ng-container *ngFor="let group of locGroupedData">
                         <tr *ngFor="let row of group.rows">
-                            <td>{{ row.MonthYear }}</td>
-                            <td>{{ row.SALESUNITID }}</td>
-                            <td>{{ row.LOCATIONNAME }}</td>
-                            <td class="text-end">{{ row.Sales_KWD | number:'1.3-3' }}</td>
+                            <td><small>{{ row.MonthYear }}</small></td>
+                            <td><small>{{ row.SALESUNITID }}</small></td>
+                            <td><small>{{ row.LOCATIONNAME }}</small></td>
+                            <td class="text-end"><small>{{ row.Sales_KWD | number:'1.3-3' }}</small></td>
                         </tr>
                         <!-- Subtotal row per location -->
                         <tr class="fw-bold bg-light">
-                            <td colspan="3" class="text-end">{{ group.location }} Subtotal</td>
-                            <td class="text-end">{{ group.subtotal | number:'1.3-3' }}</td>
+                            <td colspan="3" class="text-end"><small>{{ group.location }} Subtotal</small></td>
+                            <td class="text-end"><small>{{ group.subtotal | number:'1.3-3' }}</small></td>
                         </tr>
                     </ng-container>
                 </tbody>
                 <tfoot>
                     <tr class="fw-bold text-end table-secondary">
-                        <td colspan="3">Grand Total</td>
-                        <td>{{ grandTotal | number:'1.3-3' }}</td>
+                        <td colspan="3"><small>Grand Total</small></td>
+                        <td><small>{{ grandTotal | number:'1.3-3' }}</small></td>
                     </tr>
                 </tfoot>
             </table>
@@ -172,19 +172,19 @@
                 </thead>
                 <tbody>
                     <tr *ngFor="let row of mossumData">
-                        <td>{{ row.LOCATIONNAME }}</td>
-                        <td class="text-end">{{ row.January | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.February | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.March | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.April | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.May | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.June | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.July | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.August | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.September | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.October | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.November | number:'1.3-3' }}</td>
-                        <td class="text-end">{{ row.December | number:'1.3-3' }}</td>
+                        <td><small>{{ row.LOCATIONNAME }}</small></td>
+                        <td class="text-end"><small>{{ row.January | number:'1.3-3' }}</small></td>
+                        <td class="text-end"><small>{{ row.February | number:'1.3-3' }}</small></td>
+                        <td class="text-end"><small>{{ row.March | number:'1.3-3' }}</small></td>
+                        <td class="text-end"><small>{{ row.April | number:'1.3-3' }}</small></td>
+                        <td class="text-end"><small>{{ row.May | number:'1.3-3' }}</small></td>
+                        <td class="text-end"><small>{{ row.June | number:'1.3-3' }}</small></td>
+                        <td class="text-end"><small>{{ row.July | number:'1.3-3' }}</small></td>
+                        <td class="text-end"><small>{{ row.August | number:'1.3-3' }}</small></td>
+                        <td class="text-end"><small>{{ row.September | number:'1.3-3' }}</small></td>
+                        <td class="text-end"><small>{{ row.October | number:'1.3-3' }}</small></td>
+                        <td class="text-end"><small>{{ row.November | number:'1.3-3' }}</small></td>
+                        <td class="text-end"><small>{{ row.December | number:'1.3-3' }}</small></td>
                     </tr>
                 </tbody>
             </table>
@@ -229,8 +229,8 @@
                         </thead>
                         <tbody>
                             <tr *ngFor="let cust of customerList; let i = index;" (click)="selectCustomer(cust.CUSTOMERID)">
-                                <td>{{ cust.CUSTOMERID }}</td>
-                                <td>{{ cust.CUSTOMERNAME }}</td>
+                                <td><small>{{ cust.CUSTOMERID }}</small></td>
+                                <td><small>{{ cust.CUSTOMERNAME }}</small></td>
                             </tr>
                         </tbody>
                     </table>
@@ -274,51 +274,56 @@
                                 <th>Product ID</th>
                                 <th>Product Name</th>
                                 <th>Brand</th>
+                                <th>Category</th>
                                 <th>Supplier</th>
+                                <th>Quantity</th>
                                 <th>Unit</th>
                                 <th>Unit Price</th>
+                                <th>Item Discount</th>
+                                <th>Net Sales</th>
                                 <th>Unit Cost</th>
-                                <th>Quantity</th>
-                                <th>Cost of Sale</th>
-                                <th>Gross Amount</th>
-                                <th>Gross Profit</th>
-                                <th>Profit Margin</th>
+                                <th>Net Cost</th>
+                                <th>Gross Margin</th>
+                                <th>Margin %</th>
                             </tr>
                         </thead>
                         <tbody>
                             <ng-container *ngFor="let group of groupedData">
                                 <tr *ngFor="let row of group.rows">
-                                    <td>{{ group.docNumber }}</td>
-                                    <td>{{ row.DOCDATE | date:'dd-MMM-yyyy' }}</td>
-                                    <td>{{ group.customerId }}</td>
-                                    <td>{{ group.customerName }}</td>
-                                    <td>{{ row.LOCATIONNAME }}</td>
-                                    <td>{{ row.PRODUCTID }}</td>
-                                    <td>{{ row.material_name }}</td>
-                                    <td>{{ row.brand }}</td>
-                                    <td>{{ row.supplier }}</td>
-                                    <td>PCS</td>
-                                    <td class="text-end">{{ row.UnitPrice | number:'1.3-3' }}</td>
-                                    <td class="text-end">{{ row.COSTAMOUNT | number:'1.3-3' }}</td>
-                                    <td class="text-end">{{ row.UNITQTY | number:'1.0-0' }}</td>
-                                    <td class="text-end">{{ row.CostOfSale | number:'1.3-3' }}</td>
-                                    <td class="text-end">{{ row.GROSSAMOUNT | number:'1.3-3' }}</td>
-                                    <td class="text-end">{{ row.GrossProfit | number:'1.3-3' }}</td>
-                                    <td class="text-end">{{ row.ProfitPercent | number:'1.0-0' }}%</td>
+                                    <td><small>{{ group.docNumber }}</small></td>
+                                    <td><small>{{ row.DOCDATE | date:'dd-MMM-yyyy' }}</small></td>
+                                    <td><small>{{ group.customerId }}</small></td>
+                                    <td><small>{{ group.customerName }}</small></td>
+                                    <td><small>{{ row.LOCATIONNAME }}</small></td>
+                                    <td><small>{{ row.PRODUCTID }}</small></td>
+                                    <td><small>{{ row.material_name }}</small></td>
+                                    <td><small>{{ row.brand }}</small></td>
+                                    <td><small>{{ row.supplier }}</small></td>
+                                    <td><small>{{ row.category }}</small></td>
+                                    <td class="text-end"><small>{{ row.UNITQTY | number:'1.0-0' }}</small></td>
+                                    <td><small>{{ row.unit }}</small></td>
+                                    <td class="text-end"><small>{{ row.UnitPrice | number:'1.3-3' }}</small></td>
+<td class="text-end">
+  <small>{{ calcDiff(row) | number:'1.3-3' }}</small>
+</td>                                    <td class="text-end"><small>{{ row.GROSSAMOUNT | number:'1.3-3' }}</small></td>
+                                    <td class="text-end"><small>{{ row.COSTAMOUNT | number:'1.3-3' }}</small></td>
+                                    <td class="text-end"><small>{{ row.CostOfSale | number:'1.3-3' }}</small></td>
+                                    <td class="text-end"><small>{{ row.GrossProfit | number:'1.3-3' }}</small></td>
+                                    <td class="text-end"><small>{{ row.ProfitPercent | number:'1.0-0' }}%</small></td>
                                 </tr>
                                 <!-- Subtotal row per document/customer -->
                                 <tr class="fw-bold bg-light">
-                                    <td colspan="9" class="text-end">
+                                    <td colspan="9" class="text-end"><small>
                                         Voucher {{ group.docNumber }} Subtotal
-                                    </td>
-                                    <td>Total Cost</td>
-                                    <td class="text-end">{{ group.totalCost | number:'1.3-3' }}</td>
-                                    <td>Total Sale</td>
-                                    <td class="text-end">{{ group.totalSale | number:'1.3-3' }}</td>
-                                    <td>Total Profit</td>
-                                    <td class="text-end">{{ (group.totalSale-group.totalCost) | number:'1.3-3' }}</td>
-                                    <td>Total Profit Margin</td>
-                                    <td class="text-end">{{ ((group.totalSale-group.totalCost)/group.totalCost)*100 | number:'1.0-0' }}%</td>
+                                    </small></td>
+                                    <td><small>Total Cost</small></td>
+                                    <td class="text-end"><small>{{ group.totalCost | number:'1.3-3' }}</small></td>
+                                    <td><small>Total Sale</small></td>
+                                    <td class="text-end"><small>{{ group.totalSale | number:'1.3-3' }}</small></td>
+                                    <td><small>Total Profit</small></td>
+                                    <td class="text-end"><small>{{ (group.totalSale-group.totalCost) | number:'1.3-3' }}</small></td>
+                                    <td><small>Total Profit Margin</small></td>
+                                    <td class="text-end"><small>{{ ((group.totalSale-group.totalCost)/group.totalCost)*100 | number:'1.0-0' }}%</small></td>
                                 </tr>
                             </ng-container>
                         </tbody>
@@ -392,51 +397,66 @@
     <table class="table table-bordered table-sm" id="lwpsTable">
       <thead class="table-dark">
         <tr>
-          <th>Voucher</th>
-          <th>Date</th>
-          <th>Customer</th>
-          <th>Location</th>
+          <th>Voucher Number</th>
+          <th>Date</th>  
+          <th>Customer ID</th>
+          <th>Customer Name</th>
           <th>Product ID</th>
-          <th>Product</th>
+          <th>Product Name</th>
+          <th>Brand</th>
+          <th>Category</th>
+          <th>Supplier</th>
+          <th>Quantity</th>
           <th>Unit</th>
-          <th>Qty</th>
-          <th>Unit Cost</th>
           <th>Unit Price</th>
-          <th>Cost of Sale</th>
-          <th>Gross Amount</th>
-          <th>Gross Profit</th>
-          <th>Profit %</th>
+          <th>Item Discount</th>
+          <th>Net Sales</th>
+          <th>Unit Cost</th>
+          <th>Net Cost</th>
+          <th>Gross Margin</th>
+          <th>Margin %</th>
         </tr>
       </thead>
 
       <tbody>
         <ng-container *ngFor="let group of lwpsGroupedData">
           <tr *ngFor="let r of group.rows">
-            <td>{{ r.VoucherNo }}</td>
-            <td>{{ r.VoucherDate | date:'dd-MMM-yyyy' }}</td>
-            <td>{{ r.CustomerName }}</td>
-            <td>{{ r.Location }}</td>
-            <td>{{ r.ProductID }}</td>
-            <td>{{ r.ProductName }}</td>
-            <td>{{ r.Unit }}</td>
-            <td class="text-end">{{ r.Quantity }}</td>
-            <td class="text-end">{{ r.UnitCost | number:'1.3-3' }}</td>
-            <td class="text-end">{{ r.UnitPrice | number:'1.3-3' }}</td>
-            <td class="text-end">{{ r.CostOfSale | number:'1.3-3' }}</td>
-            <td class="text-end">{{ r.GrossAmount | number:'1.3-3' }}</td>
-            <td class="text-end">{{ r.GrossProfit | number:'1.3-3' }}</td>
-            <td class="text-end">{{ r.ProfitMarginPercent | number:'1.2-2' }}%</td>
+            <td><small>{{ r.VoucherNo }}</small></td>
+            <td><small>{{ r.VoucherDate | date:'dd-MM-yyyy' }}</small></td>
+            <td><small>{{ r.CustomerID }}</small></td>
+            <td><small>{{ r.CustomerName }}</small></td>
+            <td><small>{{ r.ProductID }}</small></td>
+            <td><small>{{ r.ProductName }}</small></td>
+            <td><small>{{ r.Brand }}</small></td>
+            <td><small>{{ r.Category }}</small></td>
+            <td><small>{{ r.Supplier }}</small></td>
+            <td class="text-end"><small>{{ r.Quantity | number:'1.0-0' }}</small></td>
+            <td><small>{{ r.Unit }}</small></td>
+            <td class="text-end"><small> {{ r.UnitPrice | number:'1.3-3' }}</small></td>
+<td class="text-end">
+  <small>{{ calcDiff(r) | number:'1.3-3' }}</small>
+</td>
+            <td class="text-end"><small> {{ r.GrossAmount | number:'1.3-3' }}</small></td>
+            <td class="text-end"><small> {{ r.UnitCost | number:'1.3-3' }}</small></td>
+            <td class="text-end"><small> {{ r.CostOfSale | number:'1.3-3' }}</small></td>
+            <td class="text-end"><small> {{ r.GrossProfit | number:'1.3-3' }}</small></td>
+            <td class="text-end"><small> {{ r.ProfitMarginPercent | number:'1.2-2' }}%</small></td>
           </tr>
 
           <!-- Location subtotal -->
           <tr class="fw-bold bg-light">
-            <td colspan="9" class="text-end">
+            <td colspan="9" class="text-end"><small> 
               {{ group.location }} Subtotal
-            </td>
-            <td class="text-end">{{ group.totalCost | number:'1.3-3' }}</td>
-            <td class="text-end">{{ group.totalSales | number:'1.3-3' }}</td>
-            <td class="text-end">{{ group.totalProfit | number:'1.3-3' }}</td>
-            <td class="text-end">{{ group.margin | number:'1.2-2' }}%</td>
+            </small></td>
+            <td class="text-end"><small> Total Quantity</small></td>
+            <td class="text-end"><small> {{ group.totalqty | number:'1.3-3' }}</small></td>
+            <td class="text-end"><small> Total Sales</small></td>
+            <td class="text-end"><small> {{ group.totalSales | number:'1.3-3' }}</small></td>
+            <td class="text-end"><small> Total Cost</small></td>
+            <td class="text-end"><small> {{ group.totalCost | number:'1.3-3' }}</small></td>
+            <td class="text-end"><small> Total Margin</small></td>
+            <td class="text-end"><small> {{ group.totalProfit | number:'1.3-3' }}</small></td>
+            <td class="text-end"><small> {{ group.margin | number:'1.2-2' }}%</small></td>
           </tr>
         </ng-container>
       </tbody>
