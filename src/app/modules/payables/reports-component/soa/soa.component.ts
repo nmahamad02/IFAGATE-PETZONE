@@ -167,7 +167,7 @@ buildKPIs() {
   const today = new Date();
 
   this.soaData.forEach(r => {
-    const bal = Math.abs(Number(r.BALANCE) || 0);
+    const bal = Number(r.BALANCE) || 0;
     const due = r.DUEDATE ? new Date(r.DUEDATE) : null;
 
     total += bal;
@@ -222,9 +222,9 @@ buildKPIs() {
 
     this.ageingChart = buckets.map(b => ({
       name: b.replace('_', '-'),
-      value: Math.abs(
+      value: 
         this.soaData.reduce((s, r) => s + (Number(r[b]) || 0), 0)
-      )
+      
     }));
   }
 
@@ -237,7 +237,7 @@ buildOverdue() {
   this.soaData.forEach(r => {
     if (!r.DUEDATE || r.DOC_NO?.startsWith('OPENING')) return;
 
-    const bal = Math.abs(Number(r.BALANCE) || 0);
+    const bal = Number(r.BALANCE) || 0;
     const due = new Date(r.DUEDATE);
 
     if (due < today) overdue += bal;
@@ -256,7 +256,7 @@ buildCategory() {
 
   this.soaData.forEach(r => {
     const category = r.SupplierCategory || 'Uncategorised';
-    const val = Math.abs(Number(r.BALANCE) || 0);
+    const val = Number(r.BALANCE) || 0;
 
     map[category] = (map[category] || 0) + val;
   });
@@ -716,7 +716,7 @@ getSPWSOA(customer: any) {
        ----------------------------------------------------------- */
 
     this.swoutData = Array.from(map.values()).filter(
-      s => Math.abs(s.CURRENT_OUTSTANDING) > 0.001
+      s => s.CURRENT_OUTSTANDING > 0.001
     );
 
     this.totalOutstanding = this.swoutData.reduce(

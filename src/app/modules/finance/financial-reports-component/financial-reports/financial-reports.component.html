@@ -22,11 +22,8 @@
                                         <a class="nav-link" (click)="openLWPS()">Location-wise Period Profit</a>
                                     </td>
                                     <td>
-                                        <a class="nav-link" (click)="openIWPDPF()">Customer-wise Period Profit</a>
-                                    </td>
-                                    <!--<td>
                                         <a class="nav-link" (click)="openMOSSUM()">Monthwise Sales Summary</a>
-                                    </td>-->
+                                    </td>
                                 </tr>
                             </table>
                         </mat-card-content>
@@ -112,15 +109,10 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-4"></div>
+        <div class="col-8"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportLOCMOS()" style="float: right" title="export">
                 Export to Excel
-            </button>
-        </div>
-        <div class="col-4">
-            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printLOCMOS()" style="float: right" title="print">
-                Print Statement
             </button>
         </div>
     </div>
@@ -193,163 +185,10 @@
     </div>
     <hr>
     <div class="row container-fluid">
-        <div class="col-4"></div>
+        <div class="col-8"></div>
         <div class="col-4">
             <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportMOSSUM()" style="float: right" title="export">
                 Export to Excel
-            </button>
-        </div>
-        <div class="col-4">
-            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printMOSSUM()" style="float: right" title="print">
-                Print Statement
-            </button>
-        </div>
-    </div>
-    <br>
-</ng-template>
-
-<ng-template #iwpdpfLookupDialog style="width: 100%;">
-    <h3 matDialogTitle>
-        <b>Customer-wise Period Profit Preview</b>
-    </h3>
-    <hr>
-    <div mat-dialog-content style="font-size: small;">
-        <div class="col-12">
-            <div class="row">
-                <div class="col-4">
-                    <div class="mb-3">
-                        <input type="text" [(ngModel)]="selectedCustomer" class="form-control" placeholder="Search customers..." (keydown)="searchCustomer(selectedCustomer)" />
-                    </div>
-                    <table class="table table-hover table-responsive-xxl">
-                        <thead class="table-dark">
-                            <tr class="table-reflow">
-                                <th>CODE</th>
-                                <th>NAME</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let cust of customerList; let i = index;" (click)="selectCustomer(cust.CUSTOMERID)">
-                                <td><small>{{ cust.CUSTOMERID }}</small></td>
-                                <td><small>{{ cust.CUSTOMERNAME }}</small></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="col-8">
-                    <div class="row">
-                        <div class="col-4">
-                            <select [(ngModel)]="selectedLocation" class="form-control form-control-sm">
-                                <option value="NULL">--- All Locations ---</option>
-                                <option *ngFor="let loc of locationList" [value]="loc.locationCode">
-                                    {{ loc.locationName }}
-                                </option>
-                            </select>                    
-                        </div>
-                        <div class="col-3">
-                            <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" placeholder="Start Date">
-                        </div>
-                        <div class="col-3">
-                            <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" placeholder="End Date">
-                        </div>
-                        <div class="col-2">
-                            <button class="btn btn-sm btn-primary" (click)="getIWPDPF()" >Filter</button>
-                        </div>
-                    </div>
-                    <br>
-                    <div class="row" *ngIf="groupedData.length === 0 && getData === true">
-                        <div class="col-4"></div>
-                        <div class="col-4">
-                            <mat-spinner></mat-spinner>
-                        </div>
-                        <div class="col-4"></div>
-                    </div>
-                    <table class="table table-striped table-sm table-bordered" id="iwpdpfTable">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Voucher Number</th>
-                                <th>Date</th>
-                                <th>Customer ID</th>
-                                <th>Customer Name</th>
-                                <th>Location</th>
-                                <th>Product ID</th>
-                                <th>Product Name</th>
-                                <th>Brand</th>
-                                <th>Category</th>
-                                <th>Supplier</th>
-                                <th>Quantity</th>
-                                <th>Unit</th>
-                                <th>Unit Price</th>
-                                <th>Item Discount</th>
-                                <th>Net Sales</th>
-                                <th>Unit Cost</th>
-                                <th>Net Cost</th>
-                                <th>Gross Margin</th>
-                                <th>Margin %</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <ng-container *ngFor="let group of groupedData">
-                                <tr *ngFor="let row of group.rows">
-                                    <td><small>{{ group.docNumber }}</small></td>
-                                    <td><small>{{ row.DOCDATE | date:'dd-MMM-yyyy' }}</small></td>
-                                    <td><small>{{ group.customerId }}</small></td>
-                                    <td><small>{{ group.customerName }}</small></td>
-                                    <td><small>{{ row.LOCATIONNAME }}</small></td>
-                                    <td><small>{{ row.PRODUCTID }}</small></td>
-                                    <td><small>{{ row.material_name }}</small></td>
-                                    <td><small>{{ row.brand }}</small></td>
-                                    <td><small>{{ row.supplier }}</small></td>
-                                    <td><small>{{ row.category }}</small></td>
-                                    <td class="text-end"><small>{{ row.UNITQTY | number:'1.0-0' }}</small></td>
-                                    <td><small>{{ row.unit }}</small></td>
-                                    <td class="text-end"><small>{{ row.UnitPrice | number:'1.3-3' }}</small></td>
-<td class="text-end">
-  <small>{{ calcDiff(row) | number:'1.3-3' }}</small>
-</td>                                    <td class="text-end"><small>{{ row.GROSSAMOUNT | number:'1.3-3' }}</small></td>
-                                    <td class="text-end"><small>{{ row.COSTAMOUNT | number:'1.3-3' }}</small></td>
-                                    <td class="text-end"><small>{{ row.CostOfSale | number:'1.3-3' }}</small></td>
-                                    <td class="text-end"><small>{{ row.GrossProfit | number:'1.3-3' }}</small></td>
-                                    <td class="text-end"><small>{{ row.ProfitPercent | number:'1.0-0' }}%</small></td>
-                                </tr>
-                                <!-- Subtotal row per document/customer -->
-                                <tr class="fw-bold bg-light">
-                                    <td colspan="9" class="text-end"><small>
-                                        Voucher {{ group.docNumber }} Subtotal
-                                    </small></td>
-                                    <td><small>Total Cost</small></td>
-                                    <td class="text-end"><small>{{ group.totalCost | number:'1.3-3' }}</small></td>
-                                    <td><small>Total Sale</small></td>
-                                    <td class="text-end"><small>{{ group.totalSale | number:'1.3-3' }}</small></td>
-                                    <td><small>Total Profit</small></td>
-                                    <td class="text-end"><small>{{ (group.totalSale-group.totalCost) | number:'1.3-3' }}</small></td>
-                                    <td><small>Total Profit Margin</small></td>
-                                    <td class="text-end"><small>{{ ((group.totalSale-group.totalCost)/group.totalCost)*100 | number:'1.0-0' }}%</small></td>
-                                </tr>
-                            </ng-container>
-                        </tbody>
-                       <!--- <tfoot>
-                            <tr class="fw-bold text-end table-secondary">
-                                <td colspan="16">Grand Total</td>
-                                <td>{{ grandTotal | number:'1.3-3' }}</td>
-                            </tr>
-                        </tfoot>-->
-                    </table>
-                </div>
-            </div>
-            <br>
-        </div>
-    </div>
-    <hr>
-    <div class="row container-fluid">
-        <div class="col-4"></div>
-        <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportIWPDPF()" style="float: right" title="export">
-                Export to Excel
-            </button>
-        </div>
-        <div class="col-4">
-            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printIWPDPF()" style="float: right" title="print">
-                Print Statement
             </button>
         </div>
     </div>
@@ -403,6 +242,7 @@
           <th>Customer Name</th>
           <th>Product ID</th>
           <th>Product Name</th>
+          <th>Product/Service</th>
           <th>Brand</th>
           <th>Category</th>
           <th>Supplier</th>
@@ -427,6 +267,7 @@
             <td><small>{{ r.CustomerName }}</small></td>
             <td><small>{{ r.ProductID }}</small></td>
             <td><small>{{ r.ProductName }}</small></td>
+            <td><small>{{ getProductType(r.ProductID) }}</small></td>
             <td><small>{{ r.Brand }}</small></td>
             <td><small>{{ r.Category }}</small></td>
             <td><small>{{ r.Supplier }}</small></td>
@@ -466,17 +307,11 @@
   <hr>
 
   <div class="row container-fluid">
-    <div class="col-4"></div>
+    <div class="col-8"></div>
     <div class="col-4">
       <button mat-raised-button class="bg-warning btn btn-block"
               (click)="exportLWPS()">
         Export to Excel
-      </button>
-    </div>
-    <div class="col-4">
-      <button mat-raised-button class="bg-success text-white btn btn-block"
-              (click)="printLWPS()">
-        Print Statement
       </button>
     </div>
   </div>
