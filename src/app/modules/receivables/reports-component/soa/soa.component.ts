@@ -21,6 +21,24 @@ declare module 'jspdf' {
   }
 }
 
+export interface FreeInvoiceRow {
+  CUST_CODE: string;
+  CUST_NAME: string;
+  INV_DATE: string;
+  INV_NO: string;
+  AMOUNT: number;
+  REMARKS: string;
+  CURRENCY: string;
+  DUEDATE: string;
+}
+
+export interface FrisoaCustomerGroup {
+  custCode: string;
+  custName: string;
+  invoices: FreeInvoiceRow[];
+  totalAmount: number;
+}
+
 @Component({
   selector: 'app-soa',
   templateUrl: './soa.component.html',
@@ -38,6 +56,7 @@ export class SoaComponent {
   @ViewChild('cpwsoaLookupDialog', { static: false }) cpwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('ppwsoaLookupDialog', { static: false }) ppwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('ipwsoaLookupDialog', { static: false }) ipwsoaLookupDialog!: TemplateRef<any>;
+  @ViewChild('frisoaLookupDialog', { static: false }) frisoaLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
@@ -49,6 +68,9 @@ export class SoaComponent {
   cpwsoaData: any[] = []
   ppwsoaData: any[] = []
   ipwsoaData: any[] = []
+  frisoaRawData: any[] = [];
+  frisoaGroups: FrisoaCustomerGroup[] = [];
+  frisoaGrandTotal = 0;
 
   industryList: any[] = [];
   organisationList: any[] = [];
@@ -86,20 +108,6 @@ export class SoaComponent {
   selectedParent: any
   selectedCategories: string[] = []
   selectedLocation: string = 'NULL'
-
-   /*countries = [
-    { name: 'All Countries', code: 'un' },
-    { name: 'Bahrain', code: 'bh' },
-    { name: 'Kuwait', code: 'kw' },
-    { name: 'Saudi Arabia', code: 'sa' },
-    { name: 'United Arab Emirates', code: 'ae' },
-    { name: 'Oman', code: 'om' },
-    { name: 'Qatar', code: 'qa' },
-  ];
-
-  selectedCountry: { name: string; code: string } = this.countries[0];
-  selectedCountryName = '*';
-  selectedCountryCode = 'un';*/
 
   salesUnits: { id: string; name: string; code: string, country: string }[] = [];
   selectedUnit!: { id: string; name: string; code: string, country: string };
@@ -2347,7 +2355,6 @@ this.ppwsoaData = [openingRow, ...filteredPeriodRows];
     FileSaver.saveAs(blob, fileName);
   }
 
-
   openIPWSOA() {
     //let dialogRef = this.dialog.open(this.spwsoaLookupDialog);
     this.dialog.open(this.ipwsoaLookupDialog, {
@@ -2700,6 +2707,279 @@ const result = this.applyCustomerFifoAndAgeing(fifoInput, asondate);
 
     FileSaver.saveAs(blob, fileName);
   }
+
+  openFRISOA() {
+  this.frisoaGroups = [];
+  this.frisoaGrandTotal = 0;
+
+  this.dialog.open(this.frisoaLookupDialog, {
+    width: '100vw',
+    maxWidth: '100vw'
+  });
+
+  this.getFRISOA();
+}
+
+getFRISOA() {
+  this.getData = true;
+
+  this.reportService.getFreeInvoiceSoa(this.selectedUnit.id)
+    .subscribe((res: any) => {
+      console.log(res.recordset)
+      this.getData = false;
+
+      if (!res.recordset?.length) {
+        alert('No Free Invoice data!');
+        return;
+      }
+
+      this.frisoaRawData = res.recordset;
+      this.frisoaGroups = this.buildFRISOAGroups(this.frisoaRawData);
+      this.frisoaGrandTotal = this.calculateGrandTotal(this.frisoaGroups);
+    });
+}
+
+buildFRISOAGroups(data: any[]): FrisoaCustomerGroup[] {
+  const map = new Map<string, FrisoaCustomerGroup>();
+
+  data.forEach(row => {
+    const custCode = row.CUST_CODE;
+
+    if (!map.has(custCode)) {
+      map.set(custCode, {
+        custCode,
+        custName: row.OPYEAR,
+        invoices: [],
+        totalAmount: 0
+      });
+    }
+
+    const group = map.get(custCode)!;
+
+    const amount = Number(row.AMOUNT) || 0;
+
+    group.invoices.push({
+  CUST_CODE: row.CUST_CODE,
+  CUST_NAME: row.OPYEAR,
+
+  INV_DATE: row.INV_DATE,
+  INV_NO: row.INV_NO,
+  REMARKS: row.REMARKS,
+  CURRENCY: row.JOB,
+  DUEDATE: row.DUEDATE,
+  AMOUNT: amount
+});
+
+    group.totalAmount += amount;
+  });
+
+  return Array.from(map.values());
+}
+
+calculateGrandTotal(groups: FrisoaCustomerGroup[]): number {
+  return groups.reduce(
+    (sum, g) => sum + g.totalAmount,
+    0
+  );
+}
+
+printFRISOA() {
+
+  if (!this.frisoaGroups.length) {
+    alert('No data to print.');
+    return;
+  }
+
+  var doc = new jsPDF('portrait', 'px', 'a4');
+  doc.setFontSize(16);
+  doc.setFont('Helvetica', 'bold');
+  doc.text('Free Invoice Statement', 140, 23);
+  doc.roundedRect(5, 32, 436, 15, 5, 5);
+  doc.setFontSize(10);
+  doc.setFont('Helvetica', 'normal');
+  doc.text(`Sales Unit: ${this.selectedUnit?.name}`, 10, 42);
+  doc.text(`Date: ${this.mCurDate}`, 330, 42);
+  let currentY = 60;
+  /** ---------- DATA ---------- **/
+  this.frisoaGroups.forEach((group, index) => {
+    // Customer Title
+    doc.setFont('Helvetica', 'bold');
+    doc.text(
+      `${group.custName} (${group.custCode})`,
+      8,
+      currentY
+    );
+
+    currentY += 5;
+
+    // Table Rows
+    const body = group.invoices.map(row => ([
+      this.formatDate(row.INV_DATE),
+      row.INV_NO,
+      row.REMARKS,
+      row.CURRENCY,
+      //row.DUEDATE ? this.formatDate(row.DUEDATE) : '',
+      row.AMOUNT.toFixed(3)
+    ]));
+
+    // Add subtotal row
+    /*body.push([
+      '',
+      '',
+      '',
+      'Sub Total',
+      group.totalAmount.toFixed(3)
+    ]);*/
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Inv Date', 'Invoice No', 'Remarks', 'Curr', 'Amount']],
+      body,
+      tableWidth: 436,
+      theme: 'grid',
+      columnStyles: {
+        4: { halign: 'right' }
+      },
+      margin: { left: 5 },
+      styles: {
+        fontSize: 8,
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1,
+        halign: 'left',
+        valign: 'middle'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // White background
+        textColor: [0, 0, 0],       // Black text
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        halign: 'right'
+      },
+    });
+
+    currentY = doc.lastAutoTable!.finalY! + 10;
+
+    // New page safety
+    if (currentY > 750) {
+      doc.addPage();
+      currentY = 40;
+    }
+  });
+
+  /** ---------- GRAND TOTAL ---------- **/
+  /*autoTable(doc, {
+    startY: currentY,
+    body: [[
+      'GRAND TOTAL',
+      '',
+      '',
+      '',
+      this.frisoaGrandTotal.toFixed(3)
+    ]],
+    tableWidth: 436,
+    theme: 'grid',
+    styles: {
+      fontSize: 9,
+      fontStyle: 'bold'
+    },
+    columnStyles: {
+      4: { halign: 'right' }
+    },
+    margin: { left: 5 }
+  });*/
+
+  /** ---------- WATERMARK ---------- **/
+  doc = this.addWaterMark(doc, 'p');
+
+  doc.save(
+    `Free-Invoices-${this.selectedUnit?.name}-${this.mCurDate}.pdf`
+  );
+}
+
+exportFRISOA(): void {
+
+  if (!this.frisoaGroups.length) {
+    alert('No data to export.');
+    return;
+  }
+
+  const rows: any[] = [];
+
+  this.frisoaGroups.forEach(group => {
+
+    // Customer Header Row
+    rows.push({
+      'Customer': `${group.custName} (${group.custCode})`,
+      'Invoice Date': '',
+      'Invoice No': '',
+      'Currency': '',
+      'Due Date': '',
+      'Amount': ''
+    });
+
+    // Invoice Rows
+    group.invoices.forEach(inv => {
+      rows.push({
+        'Customer': '',
+        'Invoice Date': inv.INV_DATE ? new Date(inv.INV_DATE).toLocaleDateString() : '',
+        'Invoice No': inv.INV_NO,
+        'Currency': inv.CURRENCY,
+        'Due Date': inv.DUEDATE ? new Date(inv.DUEDATE).toLocaleDateString() : '',
+        'Amount': inv.AMOUNT
+      });
+    });
+
+    // Subtotal Row
+    rows.push({
+      'Customer': 'SUB TOTAL',
+      'Invoice Date': '',
+      'Invoice No': '',
+      'Currency': '',
+      'Due Date': '',
+      'Amount': group.totalAmount
+    });
+
+    // Spacer
+    rows.push({});
+  });
+
+  // Grand Total
+  rows.push({
+    'Customer': 'GRAND TOTAL',
+    'Invoice Date': '',
+    'Invoice No': '',
+    'Currency': '',
+    'Due Date': '',
+    'Amount': this.frisoaGrandTotal
+  });
+
+  const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(rows);
+
+  const workbook: XLSX.WorkBook = {
+    Sheets: { 'FRISOA': worksheet },
+    SheetNames: ['FRISOA']
+  };
+
+  const excelBuffer = XLSX.write(workbook, {
+    bookType: 'xlsx',
+    type: 'array'
+  });
+
+  const blob = new Blob([excelBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+  });
+
+  FileSaver.saveAs(
+    blob,
+    `Free-Invoices-${this.selectedUnit?.name}-${this.mCurDate}.xlsx`
+  );
+}
 
 calculateAgeing(data: any[]): any {
   const ageing = {

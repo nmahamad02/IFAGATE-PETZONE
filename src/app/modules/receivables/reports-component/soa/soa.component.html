@@ -73,7 +73,9 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td></td>
+                                    <td>
+                                        <a class="nav-link" (click)="openFRISOA()">Free Invoice Statement</a>
+                                    </td>
                                     <td>
                                         <a class="nav-link" (click)="openIPWSOA()">Period-wise Intermediary Statement of Account</a>
                                     </td>
@@ -1097,6 +1099,82 @@
         </div>
         <div class="col-4">
             <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printIPWSOA()" style="float: right" title="print">
+                Print Statement
+            </button>
+        </div>
+    </div>
+    <br>
+</ng-template>
+
+<ng-template #frisoaLookupDialog>
+    <h3 matDialogTitle>
+        <b>Free Invoices Statement Preview</b>
+    </h3>
+    <div mat-dialog-content style="font-size: small;">
+        <div class="col-12">          
+            <div class="row" *ngIf="getData === true">
+                <div class="col-4"></div>
+                <div class="col-4">
+                    <mat-spinner></mat-spinner>
+                </div>
+                <div class="col-4"></div>
+            </div>
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-sm table-bordered">
+  <tbody *ngFor="let group of frisoaGroups">
+
+    <!-- Customer Header -->
+    <tr class="table-primary fw-bold">
+      <td colspan="5"><small>
+        {{ group.custName }} ({{ group.custCode }})
+      </small></td>
+    </tr>
+
+    <!-- Invoices -->
+    <tr *ngFor="let row of group.invoices">
+      <td><small>{{ row.INV_DATE | date:'dd-MM-yyyy' }}</small></td>
+      <td><small>{{ row.INV_NO }}</small></td>
+      <td><small>{{ row.REMARKS }}</small></td>
+      <td><small>{{ row.CURRENCY }}</small></td>
+      <td class="text-end"><small>
+        {{ row.AMOUNT | number:'1.3-3' }}
+      </small></td>
+    </tr>
+
+    <!-- Sub-total 
+    <tr class="fw-bold table-secondary">
+      <td colspan="3">Sub Total</td>
+      <td class="text-end">
+        {{ group.totalAmount | number:'1.3-3' }}
+      </td>
+    </tr>-->
+
+  </tbody>
+
+  <!-- Grand Total 
+  <tfoot>
+    <tr class="fw-bold table-dark">
+      <td colspan="3">GRAND TOTAL</td>
+      <td class="text-end">
+        {{ frisoaGrandTotal | number:'1.3-3' }}
+      </td>
+    </tr>
+  </tfoot>-->
+</table>
+            </div>
+        </div>
+        <br>
+    </div>
+    <hr>
+    <div class="row container-fluid">
+        <div class="col-4"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportFRISOA()" style="float: right" title="export">
+                Export Raw Excel
+            </button>
+        </div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-success text-white btn btn-block" (click)="printFRISOA()" style="float: right" title="print">
                 Print Statement
             </button>
         </div>
