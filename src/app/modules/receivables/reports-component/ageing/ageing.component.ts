@@ -228,6 +228,7 @@ updateUnit(unit: { id: string; name: string; code: string, country: string }) {
 
   this.customerAgeingSummaryList = [];
   this.resetAgeing();
+  this.getData = true
 
   for (const customer of this.customerList) {
 
@@ -252,12 +253,15 @@ updateUnit(unit: { id: string; name: string; code: string, country: string }) {
     this.customerAgeingSummaryList.push({
       pcode: customer.PCODE,
       customerName: customer.CUST_NAME,
+      currency: result.currency,
       ageingSummary: result.ageing,
       total: result.totalBalance
     });
 
     this.addToGrandAgeing(result.ageing);
   }
+    // ✅ Turn loader off AFTER ALL CUSTOMERS finish
+  this.getData = false;
   }
 
   printCWASL() {
@@ -266,11 +270,19 @@ updateUnit(unit: { id: string; name: string; code: string, country: string }) {
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
     doc.text('Customer Ageing Statement', 150, 20);
-    let firstPageStartY = 30; // Start Y position for first page
-
+    doc.roundedRect(5, 32.5, 436, 25, 5, 5);
+    doc.setFontSize(10);
+    doc.text(`${this.selectedUnit.name} (${this.selectedUnit.id})`,10,42);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,42);
+    doc.text('Period',10,52);
+    doc.text(`: ${this.startDate} - ${this.endDate}`,45,52);
+    let firstPageStartY = 60; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
     autoTable(doc, {
       html: '#cwAslTable',
-      tableWidth: 435,
+      tableWidth: 436,
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
         fontSize: 8,
@@ -302,8 +314,12 @@ updateUnit(unit: { id: string; name: string; code: string, country: string }) {
         8: { halign: 'right' }
       },*/
       margin: { 
-        top: firstPageStartY,
+        top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
+      },
+      showFoot: 'lastPage', 
+      didDrawPage: function () {
+        firstPage = false;
       }
     });
 
@@ -464,6 +480,7 @@ async getPWASL() {
 
   this.parentAgeingSummaryList = [];
   this.resetAgeing();
+  this.getData = true
 
   for (const parent of this.parentList) {
 
@@ -487,12 +504,14 @@ async getPWASL() {
     this.parentAgeingSummaryList.push({
       pcode: parent.pcode,
       parentName: parent.PARENTNAME,
+      currency: result.currency,
       ageingSummary: result.ageing,
       total: result.totalBalance
     });
 
     this.addToGrandAgeing(result.ageing);
   }
+    this.getData = false
 }
 
   printPWASL() {
@@ -501,8 +520,16 @@ async getPWASL() {
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
     doc.text('Parent Ageing Statement', 145, 20);
-    let firstPageStartY = 30; // Start Y position for first page
-
+doc.roundedRect(5, 32.5, 436, 25, 5, 5);
+    doc.setFontSize(10);
+    doc.text(`${this.selectedUnit.name} (${this.selectedUnit.id})`,10,42);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Date: ${this.mCurDate}`,330,42);
+    doc.text('Period',10,52);
+    doc.text(`: ${this.startDate} - ${this.endDate}`,45,52);
+    let firstPageStartY = 60; // Start Y position for first page
+    let nextPagesStartY = 35; // Start Y position for subsequent pages
+    let firstPage = true;      // Flag to check if it's the first page
     autoTable(doc, {
       html: '#pwAslTable',
       tableWidth: 435,
@@ -537,8 +564,12 @@ async getPWASL() {
         8: { halign: 'right' }
       },*/
       margin: { 
-        top: firstPageStartY,
+        top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
+      },
+      showFoot: 'lastPage', 
+      didDrawPage: function () {
+        firstPage = false;
       }
     });
 
@@ -715,8 +746,6 @@ async getPCASL() {
     .getParentSoa(this.selectedParent.PARENTNAME, this.selectedUnit?.id || '*')
     .subscribe(
       (res: any) => {
-
-        this.getData = false;
 
         if (!res.recordset || res.recordset.length === 0) {
           alert('No data for the selected parameters!');
@@ -952,223 +981,8 @@ async getPCASL() {
     FileSaver.saveAs(blob, fileName);
   }
 
-
-private applyFifoAndAgeing(data: any[], endDate: Date) {
-
-  const end = new Date(endDate);
-  end.setHours(23, 59, 59, 999);
-
-  // 🔹 Filter transactions up to end date
-  const filtered = data.filter(row => {
-    const txnDate = new Date(row.INV_DATE);
-    txnDate.setHours(0, 0, 0, 0);
-    return txnDate <= end;
-  });
-
-  const debits: any[] = [];
-  const credits: any[] = [];
-
-  // 🔹 Separate
-  filtered.forEach(row => {
-
-    const debit = Number(row.DEBIT) || 0;
-    const credit = Number(row.CREDIT) || 0;
-
-    if (debit > 0 && credit === 0) {
-      debits.push({
-        ...row,
-        original: debit,
-        remaining: debit,
-        applied: 0
-      });
-    }
-
-    if (credit > 0 && debit === 0) {
-      credits.push({
-        ...row,
-        remaining: credit
-      });
-    }
-  });
-
-  // 🔹 Sort FIFO
-  debits.sort((a, b) =>
-    new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime()
-  );
-
-  credits.sort((a, b) =>
-    new Date(a.INV_DATE).getTime() - new Date(b.INV_DATE).getTime()
-  );
-
-  // 🔹 Apply FIFO
-  credits.forEach(credit => {
-
-    let remainingCredit = credit.remaining;
-
-    for (const debit of debits) {
-
-      if (remainingCredit <= 0) break;
-      if (debit.remaining <= 0) continue;
-
-      const applied = Math.min(debit.remaining, remainingCredit);
-
-      debit.remaining -= applied;
-      debit.applied += applied;
-      remainingCredit -= applied;
-    }
-  });
-
-  // 🔹 Ageing
-  const ageing = {
-    CURRENT: 0,
-    '30_DAYS': 0,
-    '60_DAYS': 0,
-    '90_DAYS': 0,
-    '120_DAYS': 0,
-    'ABOVE_120_DAYS': 0
-  };
-
-  let runningBalance = 0;
-  const resultRows: any[] = [];
-
-  const today = new Date(endDate);
-  today.setHours(0, 0, 0, 0);
-
-  debits.forEach(row => {
-
-    const amt = row.remaining || 0;
-    if (amt <= 0) return;
-
-    runningBalance += amt;
-
-    const dueDate = row.DUEDATE ? new Date(row.DUEDATE) : null;
-    let daysDiff = 0;
-
-    if (dueDate) {
-      dueDate.setHours(0, 0, 0, 0);
-      daysDiff = Math.floor(
-        (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      if (daysDiff < 0) ageing.CURRENT += amt;
-      else if (daysDiff <= 30) ageing['30_DAYS'] += amt;
-      else if (daysDiff <= 60) ageing['60_DAYS'] += amt;
-      else if (daysDiff <= 90) ageing['90_DAYS'] += amt;
-      else if (daysDiff <= 120) ageing['120_DAYS'] += amt;
-      else ageing['ABOVE_120_DAYS'] += amt;
-    }
-
-    resultRows.push({
-      ...row,
-      DEBIT: amt,
-      BALANCE: runningBalance,
-      DAYS_DIFF: daysDiff
-    });
-
-  });
-
-  return {
-    rows: resultRows,
-    ageing,
-    totalBalance: runningBalance
-  };
-}
-
-private applyBucketAgeing(data: any[], endDate: Date) {
-
-    const asOn = new Date(endDate);
-    asOn.setHours(0, 0, 0, 0);
-
-    const ageing: any = {
-      CURRENT: 0,
-      '30_DAYS': 0,
-      '60_DAYS': 0,
-      '90_DAYS': 0,
-      '120_DAYS': 0,
-      'ABOVE_120_DAYS': 0
-    };
-
-    // 1️⃣ classify rows
-    data.forEach(row => {
-
-      const debit = Number(row.DEBIT) || 0;
-      const credit = Number(row.CREDIT) || 0;
-      const net = debit - credit;
-
-if (net === 0) return;
-
-      // due date
-      let dueDate: Date | null = null;
-      if (row.DUEDATE) {
-        const d = new Date(row.DUEDATE);
-        if (!isNaN(d.getTime())) {
-          d.setHours(0, 0, 0, 0);
-          dueDate = d;
-        }
-      }
-
-      // ✅ CURRENT
-      if (dueDate && dueDate > asOn) {
-        ageing.CURRENT += net;
-        return;
-      }
-
-      // ✅ overdue → invoice-date ageing
-      if (!row.INV_DATE) {
-        ageing['ABOVE_120_DAYS'] += net;
-        return;
-      }
-
-      const invDate = new Date(row.INV_DATE);
-      if (isNaN(invDate.getTime())) {
-        ageing['ABOVE_120_DAYS'] += net;
-        return;
-      }
-
-      invDate.setHours(0, 0, 0, 0);
-
-      const age = Math.floor(
-        (asOn.getTime() - invDate.getTime()) / 86400000
-      );
-
-      if (age <= 30) ageing['30_DAYS'] += net;
-      else if (age <= 60) ageing['60_DAYS'] += net;
-      else if (age <= 90) ageing['90_DAYS'] += net;
-      else if (age <= 120) ageing['120_DAYS'] += net;
-      else ageing['ABOVE_120_DAYS'] += net;
-    });
-
-    // 2️⃣ normalize credits (youngest → oldest)
-    const buckets = ['30_DAYS', '60_DAYS', '90_DAYS', '120_DAYS', 'ABOVE_120_DAYS'];
-
-    for (let i = 0; i < buckets.length - 1; i++) {
-      if (ageing[buckets[i]] < 0) {
-        ageing[buckets[i + 1]] += ageing[buckets[i]];
-        ageing[buckets[i]] = 0;
-      }
-    }
-
-    if (ageing['ABOVE_120_DAYS'] < 0) {
-      ageing['ABOVE_120_DAYS'] = 0;
-    }
-
-    const ageingTotal =
-      ageing['30_DAYS'] +
-      ageing['60_DAYS'] +
-      ageing['90_DAYS'] +
-      ageing['120_DAYS'] +
-      ageing['ABOVE_120_DAYS'];
-
-    const totalOutstanding = ageingTotal// + ageing.CURRENT;
-
-    return {
-      ageing,
-      totalOutstanding
-    };
-
-}
-
 private calculateSimpleAgeing(data: any[], endDate: Date) {
+  console.log(data)
 
   const asOn = new Date(endDate);
   asOn.setHours(0, 0, 0, 0);
@@ -1182,9 +996,12 @@ private calculateSimpleAgeing(data: any[], endDate: Date) {
     'CURRENT': 0
   };
 
+  var currency = data[0].JOB;
+
   let totalOutstanding = 0;
 
   data.forEach(row => {
+    console.log(row)
 
     if (!row.INV_DATE) return;
 
@@ -1227,12 +1044,12 @@ private calculateSimpleAgeing(data: any[], endDate: Date) {
     else if (age <= 90) ageing['90_DAYS'] += net;
     else if (age <= 120) ageing['120_DAYS'] += net;
     else ageing['ABOVE_120_DAYS'] += net;
-
   });
 
   return {
     ageing,
-    totalOutstanding
+    totalOutstanding,
+    currency
   };
 }
 
