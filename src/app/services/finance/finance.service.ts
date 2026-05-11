@@ -296,15 +296,15 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
   }
 
   getAllReceiptPayments(pcode: string) {
-    return this.http.get(this.url + '/coa/getAllReceiptPayments/' + pcode + '/01')
+    return this.http.get(this.url + '/coa/getAllReceiptPayments/' + pcode + '/C1')
   }  
 
   getSelectedCustomerBills(pcode: string) {
-    return this.http.get(this.url + '/coa/getSelectedCustomerBills/' + pcode + '/01')
+    return this.http.get(this.url + '/coa/getSelectedCustomerBills/' + pcode + '/C1')
   } 
 
   getAllocatedReceipts(pcode: string) {
-    return this.http.get(this.url + '/coa/getAllocatedReceipts/' + pcode + '/01')
+    return this.http.get(this.url + '/coa/getAllocatedReceipts/' + pcode + '/C1')
   }  
 
 getAllocatedInvoices(refno: string, custcode: string) {

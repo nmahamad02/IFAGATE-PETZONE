@@ -202,6 +202,20 @@ viewAllocations(){
   })
 }
 
+totalPaymentBalance(): number {
+  return this.payments.reduce(
+    (sum, p) => this.r4(sum + (Number(p.BALANCE) || 0)),
+    0
+  );
+}
+
+totalInvoiceBalance(): number {
+  return this.invoices.reduce(
+    (sum, i) => this.r4(sum + (Number(i.BALANCE) || 0)),
+    0
+  );
+}
+
 getAllocatedInvoices(refno: string){
 this.financeService.getAllocatedInvoices(refno,this.selectedSupplier.PCODE).subscribe((res: any) => {
       console.log(res)

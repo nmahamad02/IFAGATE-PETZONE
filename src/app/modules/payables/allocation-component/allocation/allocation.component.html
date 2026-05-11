@@ -109,6 +109,16 @@
                                             </td>
                                         </tr>
                                     </tbody>
+                                    <tfoot>
+                                        <tr class="table-secondary fw-bold">
+                                            <td colspan="5" align="end">
+                                                <small>Available Payment To Be Allocated</small>
+                                            </td>
+                                            <td align="end">
+                                                <small>{{ formatAmount(totalPaymentBalance()) }}</small>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </mat-card>
                         </div>
@@ -147,6 +157,16 @@
                                             </td>
                                         </tr>
                                     </tbody>
+                                    <tfoot>
+                                        <tr class="table-secondary fw-bold">
+                                            <td colspan="5" align="end">
+                                                <small>Available Bills To Be Allocated</small>
+                                            </td>
+                                            <td align="end">
+                                                <small>{{ formatAmount(totalInvoiceBalance()) }}</small>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </mat-card>
                         </div>
