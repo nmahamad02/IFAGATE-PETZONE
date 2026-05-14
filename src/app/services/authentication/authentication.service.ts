@@ -26,7 +26,7 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api/user'
   }
 
   // tslint:disable-next-line:max-line-length
-  setUser(userid: string, firstname: string, lastname: string, userclass: string, userright: string) {
+  setUser(userid: string, firstname: string, lastname: string, userclass: string, userright: string, deptid: string) {
     // this sets a default user for the template
     this.loggedUser = new LoggedUserModel();
     this.loggedUser.firstname = firstname;
@@ -39,6 +39,7 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api/user'
     localStorage.setItem('lastname', JSON.stringify(lastname));
     localStorage.setItem('userclass', JSON.stringify(userclass));
     localStorage.setItem('userright', JSON.stringify(userright));
+    localStorage.setItem('deptid', JSON.stringify(deptid));
   }
 
   checkUser(username: string): Observable<any> {
@@ -54,8 +55,8 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api/user'
     return this.http.get(this.url + 's/roles/submodules/' + userclass + '/' + module)
   }
 
-  signin(usercode: string, firstname: string, lastname: string, userclass: string, userRight: string): Observable<any> {
-    this.setUser(usercode,firstname, lastname, userclass, userRight);
+  signin(usercode: string, firstname: string, lastname: string, userclass: string, userRight: string, deptid: string): Observable<any> {
+    this.setUser(usercode,firstname, lastname, userclass, userRight, deptid);
     // your log in logic should go here
     this.loggedUserSubject.next(this.loggedUser);
     return of(true);

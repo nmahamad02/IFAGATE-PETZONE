@@ -242,9 +242,12 @@
           <th>Customer Name</th>
           <th>Product ID</th>
           <th>Product Name</th>
-          <th>Product/Service</th>
           <th>Brand</th>
           <th>Category</th>
+          <th>Type</th>
+          <th>Location</th>
+          <th>Channel</th>
+          <th>Payment Method</th>
           <th>Supplier</th>
           <th>Quantity</th>
           <th>Unit</th>
@@ -257,7 +260,6 @@
           <th>Margin %</th>
         </tr>
       </thead>
-
       <tbody>
         <ng-container *ngFor="let group of lwpsGroupedData">
           <tr *ngFor="let r of group.rows">
@@ -267,9 +269,12 @@
             <td><small>{{ r.CustomerName }}</small></td>
             <td><small>{{ r.ProductID }}</small></td>
             <td><small>{{ r.ProductName }}</small></td>
-            <td><small>{{ getProductType(r.ProductID) }}</small></td>
             <td><small>{{ r.Brand }}</small></td>
             <td><small>{{ r.Category }}</small></td>
+            <td><small>{{ getProductType(r.ProductID) }}</small></td>    
+            <td><small>{{ r.Branch }}</small></td>
+            <td><small>{{ r.Supplier }}</small></td>
+            <td><small>{{ r.Supplier }}</small></td>
             <td><small>{{ r.Supplier }}</small></td>
             <td class="text-end"><small>{{ r.Quantity | number:'1.0-0' }}</small></td>
             <td><small>{{ r.Unit }}</small></td>

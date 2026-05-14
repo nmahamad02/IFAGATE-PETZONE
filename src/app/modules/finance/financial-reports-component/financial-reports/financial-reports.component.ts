@@ -349,9 +349,12 @@ exportLWPS() {
     'Customer Name',
     'Product ID',
     'Product Name',
-    'Product/Service',
     'Brand',
     'Category',
+    'Type',
+    'Location',
+    'Channel',
+    'Payment Method',
     'Supplier',
     'Qty',
     'Unit',
@@ -378,9 +381,12 @@ exportLWPS() {
         r.CustomerName,
         r.ProductID,
         r.ProductName,
-        this.getProductType(r.ProductID),
         r.Brand,
         r.Category,
+        this.getProductType(r.ProductID),
+        r.Branch,
+        r.Supplier,
+        r.Supplier,
         r.Supplier,
         r.Quantity,
         r.Unit,
@@ -406,6 +412,9 @@ exportLWPS() {
       '',
       '',
       `${group.location} Subtotal`,
+      '',
+      '',
+      '',
       group.totalqty,
       '',
       '',
@@ -427,9 +436,10 @@ exportLWPS() {
   worksheet['!cols'] = [
     { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 25 },
     { wch: 15 }, { wch: 35 }, { wch: 20 }, { wch: 25 }, 
+    { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
     { wch: 35 }, { wch: 25 }, { wch: 10 }, { wch: 10 }, 
     { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
-    { wch: 15 }, { wch: 15 }, { wch: 15 }
+    { wch: 15 }, { wch: 15 }
   ];
 
   // Number formatting

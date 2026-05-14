@@ -315,18 +315,36 @@ this.currencyChart = Object.entries(map)
   }
 
   loadSalesUnits() {
-    this.reportService.getSalesUnits().subscribe((res: any) => {
-      const data = res.recordset || [];
-      this.salesUnits = 
-        data.map((u: any) => ({
-          id: u.salesunitID,
-          name: u.salesunitname,
-          code: this.mapFlagCode(u.salesunitname),
-          country: this.mapCountry(u.salesunitname)
-        }))
+  this.reportService.getSalesUnits().subscribe((res: any) => {
+    const data = res.recordset || [];
+
+    this.salesUnits = data.map((u: any) => ({
+      id: u.salesunitID,
+      name: u.salesunitname,
+      code: this.mapFlagCode(u.salesunitname),
+      country: this.mapCountry(u.salesunitname)
+    }));
+
+    // ✅ Get deptid from storage
+    const deptId = JSON.parse(localStorage.getItem('deptid') || 'null');
+
+    if (deptId === 'A') {
+      // ✅ Admin → ALL → select first
+      this.updateUnit(this.salesUnits[0]);
+    } else {
+      // ✅ Find matching unit
+      const matchedUnit = this.salesUnits.find(u => u.id === deptId);
+
+      if (matchedUnit) {
+        this.updateUnit(matchedUnit);
+        this.salesUnits = this.salesUnits.filter(u => u.id === deptId);
+      } else {
+        // fallback
         this.updateUnit(this.salesUnits[0]);
-    });
-  }
+      }
+    }
+  });
+}
 
   updateUnit(unit: any) {
     this.selectedUnit = unit;

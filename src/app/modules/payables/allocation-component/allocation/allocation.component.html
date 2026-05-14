@@ -83,7 +83,9 @@
                                 <table class="table table-sm table-hover table-striped mt-2" *ngIf="payments.length">
                                     <thead>
                                         <tr>
-                                            <th></th>
+                                            <th width="40">
+                                                <input type="checkbox" [checked]="allPaymentsSelected" (change)="toggleAllPayments()">
+                                            </th>
                                             <th><small>Receipt No</small></th>
                                             <th><small>Date</small></th>
                                             <th align="end"><small>Receipt Amount</small></th>
@@ -131,7 +133,9 @@
                                 <table class="table table-sm table-hover table-striped mt-2" *ngIf="invoices.length">
                                     <thead>
                                         <tr>
-                                            <th></th>
+                                            <th width="40">
+                                                <input type="checkbox" [checked]="allInvoicesSelected" (change)="toggleAllInvoices()">
+                                            </th>                                            
                                             <th><small>Invoice No</small></th>
                                             <th><small>Date</small></th>
                                             <th align="end"><small>Invoice amount</small></th>

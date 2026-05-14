@@ -33,6 +33,9 @@ export class AllocationComponent {
 
   currentYear = new Date().getFullYear();
 
+  allPaymentsSelected = false;
+allInvoicesSelected = false;
+
   modes = [
     { value: 'SUPPLIER', label: 'Supplier' },
     { value: 'INTERMEDIARY', label: 'Intermediary' }
@@ -111,6 +114,9 @@ export class AllocationComponent {
 
   addAllocations() {
     this.allocationLines = [];
+    this.allInvoicesSelected = !this.allInvoicesSelected;
+    this.allPaymentsSelected = !this.allPaymentsSelected;
+
 
     const invoices = this.selectedInvoices.map(i => ({ ...i }));
     const receipts = this.selectedReceipts.map(r => ({ ...r }));
@@ -255,6 +261,40 @@ totalAllocated(): number {
     (s, a) => this.r4(s + a.ALLOC_AMOUNT),
     0
   );
+}
+
+toggleAllPayments() {
+  this.allPaymentsSelected = !this.allPaymentsSelected;
+
+  this.selectedReceipts = [];
+
+  this.payments.forEach(p => {
+    p.selected = this.allPaymentsSelected;
+
+    if (p.selected) {
+      this.selectedReceipts.push({
+        ...p,
+        REMAINING: p.BALANCE
+      });
+    }
+  });
+}
+
+toggleAllInvoices() {
+  this.allInvoicesSelected = !this.allInvoicesSelected;
+
+  this.selectedInvoices = [];
+
+  this.invoices.forEach(i => {
+    i.selected = this.allInvoicesSelected;
+
+    if (i.selected) {
+      this.selectedInvoices.push({
+        ...i,
+        REMAINING: i.BALANCE
+      });
+    }
+  });
 }
 
 
