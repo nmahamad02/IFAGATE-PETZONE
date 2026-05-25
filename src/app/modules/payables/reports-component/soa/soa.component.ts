@@ -8,6 +8,7 @@ import autoTable, { RowInput } from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
 import { firstValueFrom } from 'rxjs';
+import { forkJoin } from 'rxjs';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -74,8 +75,13 @@ export class SoaComponent {
   swoutData: any[] = []
   swtrnlistData: any[] = []
   spwtrnlistData: any[] = []
-  iwtrnlistData: any[] = []
-  ipwtrnlistData: any[] = []
+  iwtrnlistGroupedData: any[] = [];
+  intermediaryGrandTotals = {
+    debit: 0,
+    credit: 0,
+    balance: 0
+  };  
+  ipwtrnlistGroupedData: any[] = [];
 
   soaData: any[] = [];
 
@@ -125,15 +131,49 @@ export class SoaComponent {
 
 loadIntermedaries() {
     this.getData = true;
-    this.accountService.listOpbal(this.currentYear.toString(),'G').subscribe((res: any) => {
+    /*this.accountService.listOpbal(this.currentYear.toString(),'G').subscribe((res: any) => {
       this.getData = false;
       console.log(res.recordset)
       this.intermediariesList = res.recordset;
     }, (err:any) => {
       this.getData = false;
       alert('Failed to load suppliers!');
-    });
+    });*/
+    this.intermediariesList = [
+  {
+    CUST_NAME: 'Petzone Market Company - Kuwait',
+    GLCODES: ['102311']
+  },
+  {
+    CUST_NAME: 'Basic General Trading - Kuwait',
+    GLCODES: ['102312', '201312']
+  },
+  {
+    CUST_NAME: 'United Shipping Co.',
+    GLCODES: ['102313', '201313']
+  },
+  {
+    CUST_NAME: 'Basic General Trading - UAE',
+    GLCODES: ['102321', '201321']
+  },
+  {
+    CUST_NAME: 'Petzone LLC - UAE',
+    GLCODES: ['102323']
+  },
+  {
+    CUST_NAME: 'Petzone KSA',
+    GLCODES: ['102324', '201324']
+  },
+  {
+    CUST_NAME: 'Petzone Qatar',
+    GLCODES: ['102325']
+  },
+  {
+    CUST_NAME: 'Petzone Bahrain',
+    GLCODES: ['102326']
   }
+];
+}
 
 ngOnInit() {
   this.loadSalesUnits();
@@ -296,8 +336,43 @@ this.currencyChart = Object.entries(map)
     this.accountService.listOpbal(this.currentYear.toString(), 'S')
       .subscribe((res: any) => this.supplierList = res.recordset || []);
 
-    this.accountService.listOpbal(this.currentYear.toString(), 'G')
-      .subscribe((res: any) => this.intermediariesList = res.recordset || []);
+    /*this.accountService.listOpbal(this.currentYear.toString(), 'G')
+      .subscribe((res: any) => this.intermediariesList = res.recordset || []);*/
+
+          this.intermediariesList = [
+  {
+    CUST_NAME: 'Petzone Market Company - Kuwait',
+    GLCODES: ['102311']
+  },
+  {
+    CUST_NAME: 'Basic General Trading - Kuwait',
+    GLCODES: ['102312', '201312']
+  },
+  {
+    CUST_NAME: 'United Shipping Co.',
+    GLCODES: ['102313', '201313']
+  },
+  {
+    CUST_NAME: 'Basic General Trading - UAE',
+    GLCODES: ['102321', '201321']
+  },
+  {
+    CUST_NAME: 'Petzone LLC - UAE',
+    GLCODES: ['102323']
+  },
+  {
+    CUST_NAME: 'Petzone KSA',
+    GLCODES: ['102324', '201324']
+  },
+  {
+    CUST_NAME: 'Petzone Qatar',
+    GLCODES: ['102325']
+  },
+  {
+    CUST_NAME: 'Petzone Bahrain',
+    GLCODES: ['102326']
+  }
+];
 
     this.reportService.getSupplierNatureList().subscribe((res: any) => {
       console.log(res)
@@ -316,6 +391,7 @@ this.currencyChart = Object.entries(map)
 
   loadSalesUnits() {
   this.reportService.getSalesUnits().subscribe((res: any) => {
+    console.log(res)
     const data = res.recordset || [];
 
     this.salesUnits = data.map((u: any) => ({
@@ -1131,32 +1207,90 @@ getSPWSOA(customer: any) {
     this.resetTRN();
   }
 
-  getIWTRNLIST(customer: any) {
-    this.selectedSupplier = customer;
-    this.getData = true;
-    this.resetTRN();
+getIWTRNLIST(customer: any) {
 
-    this.reportService
-      .getApCustomerTrnList(this.selectedUnit.id, 'G', customer.PCODE)
-      .subscribe({
-        next: (res: any) => {
-          console.log(res)
-          this.getData = false;
-          let running = 0;
-          this.iwtrnlistData = res.recordset.map((r: any) => {
-            running += (r.INV_AMOUNT - r.REFAMOUNT); // +invoice, -receipt
-            return {
-              ...r,
-              RUNNING_BALANCE: running
-            };
-          });
-          //this.swtrnlistData = res.recordset || [];
-        }, error: () => {
-          this.getData = false;
-          alert('Failed to load Intermediary Transaction Listing');
-        }
+  this.selectedSupplier = customer;
+  this.getData = true;
+
+  this.iwtrnlistGroupedData = [];
+
+  this.intermediaryGrandTotals = {
+    debit: 0,
+    credit: 0,
+    balance: 0
+  };
+
+  const apiCalls = customer.GLCODES.map((gl: string) =>
+    this.reportService.getGLTrnList(
+      this.selectedUnit.id,
+      gl
+    )
+  );
+
+  forkJoin(apiCalls).subscribe({
+
+    next: (responses: any) => {
+
+      this.getData = false;
+
+      this.iwtrnlistGroupedData = responses.map((res: any, index: number) => {
+
+        const glcode = customer.GLCODES[index];
+
+        let runningBalance = 0;
+
+        const transactions = (res.recordset || []).map((r: any) => {
+
+          const debit = Number(r.DEBIT_AMT || 0);
+          const credit = Math.abs(Number(r.CREDIT_AMT || 0));
+
+          runningBalance += (debit - credit);
+
+          return {
+            ...r,
+            CREDIT_AMT: credit,
+            RUNNING_BALANCE: runningBalance
+          };
+        });
+
+        const totalDebit = transactions.reduce(
+          (sum: number, r: any) => sum + Number(r.DEBIT_AMT || 0),
+          0
+        );
+
+        const totalCredit = transactions.reduce(
+          (sum: number, r: any) => sum + Number(r.CREDIT_AMT || 0),
+          0
+        );
+
+        const totalBalance = totalDebit - totalCredit;
+
+        this.intermediaryGrandTotals.debit += totalDebit;
+        this.intermediaryGrandTotals.credit += totalCredit;
+        this.intermediaryGrandTotals.balance += totalBalance;
+
+        return {
+          glcode,
+          transactions,
+          totals: {
+            debit: totalDebit,
+            credit: totalCredit,
+            balance: totalBalance
+          }
+        };
       });
-  }
+
+    },
+
+    error: () => {
+
+      this.getData = false;
+      alert('Failed to load GL Transaction Listing');
+
+    }
+
+  });
+}
 
   printIWTRNLIST() {
     var doc = new jsPDF("portrait", "px", "a4");
@@ -1167,14 +1301,10 @@ getSPWSOA(customer: any) {
     doc.roundedRect(5, 32.5, 436, 55, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedSupplier.CUST_NAME}`,10,42);
-    doc.text(`Account ID: ${this.selectedSupplier.PCODE}`,330,42);
+    doc.text(`Account ID: ${this.selectedSupplier.GLCODES}`,330,42);
     doc.setFont('Helvetica', 'normal');
     doc.text(`Date: ${this.mCurDate}`,330,52);
-    doc.text('Nature',10,52);
-    doc.text(`: ${this.selectedSupplier.Nature}`,45,52);
-    doc.text('Category',10,62);
-    doc.text(`: ${this.selectedSupplier.SupplierCategory}`,45,62);
-    let firstPageStartY = 70; // Start Y position for first page
+    let firstPageStartY = 60; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
 
@@ -1220,7 +1350,7 @@ getSPWSOA(customer: any) {
     // Add watermark (if necessary)
     doc = this.addWaterMark(doc,'p');
     // Save the PDF
-    doc.save(`${this.selectedSupplier.PCODE}-transaction-listing-${this.mCurDate}.pdf`);
+    doc.save(`${this.selectedSupplier.NAME}-transaction-listing-${this.mCurDate}.pdf`);
   }
 
   openIPWTRNLIST() {
@@ -1232,99 +1362,168 @@ getSPWSOA(customer: any) {
     this.resetTRN();
   }
 
-  getIPWTRNLIST(customer: any) {
-    this.ipwtrnlistData = []
-    this.periodTotalDebit = 0;
-    this.periodTotalCredit = 0;
-  
-    this.openingBalanceData = {
-      DEBIT: 0,
-      CREDIT: 0,
-      BALANCE: 0,
-    };
-    this.selectedSupplier = customer
+getIPWTRNLIST(customer: any) {
+
+  this.selectedSupplier = customer;
+
+  this.ipwtrnlistGroupedData = [];
+
+  this.intermediaryGrandTotals = {
+    debit: 0,
+    credit: 0,
+    balance: 0
+  };
+
+}
+
+setIPWTRNLIST() {
+
+  if (!this.startDate || !this.endDate) {
+
+    alert('Please select both start and end dates.');
+    return;
+
   }
 
-  setIPWTRNLIST() {
-    if (!this.startDate || !this.endDate) {
-      alert('Please select both start and end dates.');
-      return;
-    }
-    this.openingBalanceData = {
-      DEBIT: 0,
-      CREDIT: 0,
-      BALANCE: 0,
-    };
+  const start = new Date(this.startDate);
+  start.setHours(0, 0, 0, 0);
 
-    const start = new Date(this.startDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(this.endDate);
-    end.setHours(23, 59, 59, 999);
+  const end = new Date(this.endDate);
+  end.setHours(23, 59, 59, 999);
 
-    this.getData = true;
+  this.getData = true;
 
-     this.reportService
-      .getApCustomerTrnList(this.selectedUnit.id, 'G', this.selectedSupplier.PCODE)
-      .subscribe({
-        next: (res: any) => {
-          console.log(res)
-          this.getData = false;
-          let running = 0;
-          this.openingBalanceData = { DEBIT: 0, CREDIT: 0, BALANCE: 0 };
+  this.intermediaryGrandTotals = {
+    debit: 0,
+    credit: 0,
+    balance: 0
+  };
 
-          const openingData = res.recordset.filter((row: any) => {
-            const txnDate = new Date(row.INV_DATE)
-            txnDate.setHours(0,0,0,0)
-            return txnDate < start
-          })
-          console.log(openingData)
-          openingData.forEach((row: any) => {
-            this.openingBalanceData.DEBIT += Number(row.REFAMOUNT );
-            this.openingBalanceData.CREDIT += Number(row.INV_AMOUNT );
-            this.openingBalanceData.BALANCE += (Number(row.INV_AMOUNT - Number(row.REFAMOUNT )));
-          });
+  const apiCalls = this.selectedSupplier.GLCODES.map((gl: string) =>
+    this.reportService.getGLTrnList(
+      this.selectedUnit.id,
+      gl
+    )
+  );
 
-          // Build opening balance row
-          const openingRow = {
-            INV_NO: 'OPENING BALANCE',
-            INV_DATE: null,
-            REFAMOUNT: this.openingBalanceData.DEBIT,
-            INV_AMOUNT: this.openingBalanceData.CREDIT,
-            BALANCE: this.openingBalanceData.BALANCE,
-            DAYS_DIFF: null,
-            DUEDATE: null,
-            DOC_TYPE: '',
-            REMARKS: '',
-            VENDOR_REF_NO: '',
-            CUST_REF_NO: '',
+  forkJoin(apiCalls).subscribe({
+
+    next: (responses: any) => {
+
+      this.getData = false;
+
+      this.ipwtrnlistGroupedData = responses.map((res: any, index: number) => {
+
+        const glcode = this.selectedSupplier.GLCODES[index];
+
+        const allRows = res.recordset || [];
+
+        // OPENING ENTRIES
+        const openingRows = allRows.filter((row: any) => {
+
+          const txnDate = new Date(row.DOCDATE);
+          txnDate.setHours(0,0,0,0);
+
+          return txnDate < start;
+
+        });
+
+        let openingDebit = 0;
+        let openingCredit = 0;
+
+        openingRows.forEach((r: any) => {
+
+          openingDebit += Number(r.DEBIT_AMT || 0);
+          openingCredit += Math.abs(Number(r.CREDIT_AMT || 0));
+
+        });
+
+        const openingBalance = openingDebit - openingCredit;
+
+        // PERIOD ROWS
+        const filteredRows = allRows.filter((row: any) => {
+
+          const txnDate = new Date(row.DOCDATE);
+
+          return txnDate >= start && txnDate <= end;
+
+        });
+
+        let runningBalance = openingBalance;
+
+        const openingRow = {
+          DOCDATE: null,
+          JOURNALENTRY: '',
+          JOURNALREF: 'OPENING BALANCE',
+          GLCODE: glcode,
+          COMPANYCURRENCY: 'KWD',
+          DEBIT_AMT: openingDebit,
+          CREDIT_AMT: openingCredit,
+          RUNNING_BALANCE: openingBalance,
+          IS_OPENING: true
+        };
+
+        const transactions = filteredRows.map((r: any) => {
+
+          const debit = Number(r.DEBIT_AMT || 0);
+          const credit = Math.abs(Number(r.CREDIT_AMT || 0));
+
+          runningBalance += (debit - credit);
+
+          return {
+            ...r,
+            CREDIT_AMT: credit,
+            RUNNING_BALANCE: runningBalance
           };
 
-          // Filter transactions in selected period
-          /*var filteredPeriodRows = res.recordset.filter((row: any) => {
-            const txnDate = new Date(row.INV_DATE)
-            return txnDate >= start && txnDate <= end
-          })*/
+        });
 
-          var filteredPeriodRows = res.recordset.filter((row: any) => {
-            const txnDate = new Date(row.INV_DATE)
-            return txnDate >= start && txnDate <= end
-          })
-          
-          var temp = [openingRow, ...filteredPeriodRows]
+        const fullRows = [openingRow, ...transactions];
 
-          this.ipwtrnlistData =  temp.map((r: any) => {
-            running += (r.INV_AMOUNT - r.REFAMOUNT); // +invoice, -receipt
-            return {
-              ...r,
-              BALANCE: running
-            };
-          });
-        }, error: () => {
-          this.getData = false;
-          alert('Failed to load Intermediary Transaction Listing');
-        }
+        const totalDebit = transactions.reduce(
+          (sum: number, r: any) => sum + Number(r.DEBIT_AMT || 0),
+          0
+        );
+
+        const totalCredit = transactions.reduce(
+          (sum: number, r: any) => sum + Number(r.CREDIT_AMT || 0),
+          0
+        );
+
+        const totalBalance = openingBalance + totalDebit - totalCredit;
+
+        this.intermediaryGrandTotals.debit += totalDebit;
+        this.intermediaryGrandTotals.credit += totalCredit;
+        this.intermediaryGrandTotals.balance += totalBalance;
+
+        return {
+
+          glcode,
+
+          transactions: fullRows,
+
+          totals: {
+            debit: totalDebit,
+            credit: totalCredit,
+            balance: totalBalance
+          }
+
+        };
+
       });
-  }
+
+    },
+
+    error: () => {
+
+      this.getData = false;
+      alert('Failed to load Period-wise GL Transaction Listing');
+
+    }
+
+  });
+
+}
 
   printIPWTRNLIST() {
     if (!this.startDate || !this.endDate) {
@@ -1339,16 +1538,12 @@ getSPWSOA(customer: any) {
     doc.roundedRect(5, 32.5, 436, 65, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedSupplier.CUST_NAME}`,10,42);
-    doc.text(`Account ID: ${this.selectedSupplier.PCODE}`,330,42);
+    doc.text(`Account ID: ${this.selectedSupplier.GLCODES}`,330,42);
     doc.setFont('Helvetica', 'normal');
     doc.text(`Date: ${this.mCurDate}`,330,52);
-    doc.text('Nature',10,52);
-    doc.text(`: ${this.selectedSupplier.Nature}`,45,52);
-    doc.text('Category',10,62);
-    doc.text(`: ${this.selectedSupplier.SupplierCategory}`,45,62);
-    doc.text('Period',10,72);
-    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 72)
-    let firstPageStartY = 80; // Start Y position for first page
+    doc.text('Period',10,52);
+    doc.text(`: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`, 45, 52)
+    let firstPageStartY = 60; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
 
@@ -1394,7 +1589,7 @@ getSPWSOA(customer: any) {
     // Add watermark (if necessary)
     doc = this.addWaterMark(doc,'p');
     // Save the PDF
-    doc.save(`${this.selectedSupplier.PCODE}-transaction-listing-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
+    doc.save(`${this.selectedSupplier.NAME}-transaction-listing-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
     }
   }
 
@@ -1416,8 +1611,8 @@ getSPWSOA(customer: any) {
   private resetTRN() {
     this.swtrnlistData = [];
     this.spwtrnlistData = [];
-    this.iwtrnlistData = [];
-    this.ipwtrnlistData = [];
+    this.iwtrnlistGroupedData = [];
+    this.ipwtrnlistGroupedData = [];
     this.totalOutstanding = 0;
   }
 
@@ -1484,6 +1679,114 @@ exportTable(data: any[], file: string) {
     );
   }
 
+  exportGroupedTable(data: any[], file: string) {
+
+  let exportData: any[] = [];
+
+  // GROUPED DATA EXPORT
+  if (data.length > 0 && data[0].transactions) {
+
+    data.forEach((group: any) => {
+
+      // GROUP HEADER
+      exportData.push({
+        'GL Account': group.glcode,
+        'Transaction Date': '',
+       // 'Transaction No': '',
+       // 'Reference': '',
+        'Description': '',
+        'Currency': '',
+        'Debit': '',
+        'Credit': '',
+        'Balance': ''
+      });
+
+      // TRANSACTIONS
+      group.transactions.forEach((row: any) => {
+
+        exportData.push({
+          'GL Account': row.GLCODE,
+          'Transaction Date': row.DOCDATE
+            ? new Date(row.DOCDATE).toLocaleDateString('en-GB')
+            : '',
+
+        //  'Transaction No': row.JOURNALENTRY || '',
+        //  'Reference': row.JOURNALREF || '',
+          'Description': row.JOURNALREF || '',
+          'Currency': row.COMPANYCURRENCY || '',
+
+          'Debit': row.DEBIT_AMT || 0,
+          'Credit': row.CREDIT_AMT || 0,
+          'Balance': row.RUNNING_BALANCE || row.BALANCE || 0
+        });
+
+      });
+
+      // SUBTOTAL ROW
+      exportData.push({
+        'GL Account': `Subtotal for ${group.glcode}`,
+        'Transaction Date': '',
+      //  'Transaction No': '',
+      //  'Reference': '',
+        'Description': '',
+        'Currency': '',
+
+        'Debit': group.totals.debit,
+        'Credit': group.totals.credit,
+        'Balance': group.totals.balance
+      });
+
+      // EMPTY SPACER ROW
+      exportData.push({});
+
+    });
+
+    // GRAND TOTAL
+    exportData.push({
+      'GL Account': 'GRAND TOTAL',
+      'Transaction Date': '',
+   //   'Transaction No': '',
+    //  'Reference': '',
+      'Description': '',
+      'Currency': '',
+
+      'Debit': this.intermediaryGrandTotals.debit,
+      'Credit': this.intermediaryGrandTotals.credit,
+      'Balance': this.intermediaryGrandTotals.balance
+    });
+
+  }
+
+  // NORMAL ARRAY EXPORT
+  else {
+
+    exportData = data;
+
+  }
+
+  const ws: XLSX.WorkSheet = XLSX.utils.json_to_sheet(exportData);
+
+  const wb: XLSX.WorkBook = {
+    Sheets: { Data: ws },
+    SheetNames: ['Data']
+  };
+
+  const buffer = XLSX.write(wb, {
+    bookType: 'xlsx',
+    type: 'array'
+  });
+
+  FileSaver.saveAs(
+    new Blob(
+      [buffer],
+      {
+        type:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      }
+    ),
+    `${file}.xlsx`
+  );
+}
   
 /* ------------------------------- UTILITIES -------------------------------- */
 
