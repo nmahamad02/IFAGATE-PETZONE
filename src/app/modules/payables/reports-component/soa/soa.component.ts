@@ -34,6 +34,7 @@ export class SoaComponent {
   @ViewChild('swsoaLookupDialog', { static: false }) swsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('spwsoaLookupDialog', { static: false }) spwsoaLookupDialog!: TemplateRef<any>;
   @ViewChild('swoutLookupDialog', { static: false }) swoutLookupDialog!: TemplateRef<any>;
+  @ViewChild('swageLookupDialog', { static: false }) swageLookupDialog!: TemplateRef<any>;
   @ViewChild('swtrnlistLookupDialog', { static: false }) swtrnlistLookupDialog!: TemplateRef<any>;
   @ViewChild('spwtrnlistLookupDialog', { static: false }) spwtrnlistLookupDialog!: TemplateRef<any>;
   @ViewChild('iwtrnlistLookupDialog', { static: false }) iwtrnlistLookupDialog!: TemplateRef<any>;
@@ -722,30 +723,29 @@ getSPWSOA(customer: any) {
     });
   }
 
-  async applySupplierFilters() {
-    if (!this.endDate) {
-      alert('Please select end date');
-      return;
-    }
+async applySupplierFilters() {
+  if (!this.endDate) {
+    alert('Please select end date');
+    return;
+  }
 
-    this.getData = true;
-    this.swoutData = [];
-    this.totalOutstanding = 0;
+  this.getData = true;
+  this.swoutData = [];
+  this.totalOutstanding = 0;
 
-    const end = new Date(this.endDate);
-    end.setHours(23, 59, 59, 999);
+  const end = new Date(this.endDate);
+  end.setHours(23, 59, 59, 999);
 
-    try {
-      // ✅ ONE API CALL
-      const res: any = await firstValueFrom(
-        this.reportService.getSupplierAgeingData(this.selectedUnit.id, this.endDate)
-      );
+  try {
+    const res: any = await firstValueFrom(
+      this.reportService.getSupplierAgeingData(this.selectedUnit.id, this.endDate)
+    );
 
     const rows = res.recordset || [];
 
     /* -----------------------------------------------------------
-       2️⃣ FILTER BY SEARCH / NATURE / CATEGORY
-       ----------------------------------------------------------- */
+       1️⃣ FILTER (SEARCH / NATURE / CATEGORY)
+    ----------------------------------------------------------- */
 
     const uiFiltered = rows.filter((r: any) => {
       const matchesSearch = this.searchText
@@ -764,16 +764,17 @@ getSPWSOA(customer: any) {
     });
 
     /* -----------------------------------------------------------
-       3️⃣ GROUP BY SUPPLIER + CALCULATE AGEING
-       ----------------------------------------------------------- */
+       2️⃣ GROUP BY SUPPLIER
+    ----------------------------------------------------------- */
 
-    const map = new Map<string, any>();
+    const supplierMap = new Map<string, any>();
 
     for (const r of uiFiltered) {
+
       const key = r.CUST_CODE;
 
-      if (!map.has(key)) {
-        map.set(key, {
+      if (!supplierMap.has(key)) {
+        supplierMap.set(key, {
           PCODE: r.CUST_CODE,
           CUST_NAME: r.CUST_NAME,
           Nature: r.Nature,
@@ -789,14 +790,9 @@ getSPWSOA(customer: any) {
         });
       }
 
-      const s = map.get(key);
+      const s = supplierMap.get(key);
 
-      const dueDate = r.DUEDATE ? new Date(r.DUEDATE) : null;
-
-      // ✅ Outstanding only when due <= endDate
-      //if (dueDate && dueDate <= end) {
-        s.CURRENT_OUTSTANDING += Number(r.BALANCE) || 0;
-      //}
+      s.CURRENT_OUTSTANDING += Number(r.BALANCE) || 0;
 
       s.CURRENT += Number(r.CURRENT) || 0;
       s['1_30'] += Number(r['1_30']) || 0;
@@ -806,15 +802,53 @@ getSPWSOA(customer: any) {
     }
 
     /* -----------------------------------------------------------
-       4️⃣ FINAL OUTPUT
-       ----------------------------------------------------------- */
+       3️⃣ GROUP BY CATEGORY + SUBTOTAL
+    ----------------------------------------------------------- */
 
-    this.swoutData = Array.from(map.values()).filter(
-      s => s.CURRENT_OUTSTANDING > 0.001
-    );
+    const categoryMap = new Map<string, any>();
 
-    this.totalOutstanding = this.swoutData.reduce(
-      (sum, s) => sum + s.CURRENT_OUTSTANDING,
+    for (const s of Array.from(supplierMap.values())) {
+
+      if (s.CURRENT_OUTSTANDING <= 0.001) continue;
+
+      const category = s.SupplierCategory || 'Uncategorized';
+
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, {
+          category: category,
+          subtotal: 0,
+          suppliers: []
+        });
+      }
+
+      const group = categoryMap.get(category);
+
+      group.suppliers.push(s);
+      group.subtotal += s.CURRENT_OUTSTANDING;
+    }
+
+    /* -----------------------------------------------------------
+       4️⃣ SORT (OPTIONAL BUT RECOMMENDED)
+    ----------------------------------------------------------- */
+
+    const finalData = Array.from(categoryMap.values());
+
+    finalData.sort((a, b) => a.category.localeCompare(b.category));
+
+    finalData.forEach(group => {
+      group.suppliers.sort((a: any, b: any) =>
+        a.CUST_NAME.localeCompare(b.CUST_NAME)
+      );
+    });
+
+    /* -----------------------------------------------------------
+       5️⃣ FINAL OUTPUT
+    ----------------------------------------------------------- */
+
+    this.swoutData = finalData;
+
+    this.totalOutstanding = finalData.reduce(
+      (sum, g) => sum + g.subtotal,
       0
     );
 
@@ -824,6 +858,315 @@ getSPWSOA(customer: any) {
   } finally {
     this.getData = false;
   }
+}
+
+  openSWAGE() {
+      this.swoutData = [];
+  this.totalOutstanding = 0;
+    this.dialog.open(this.swageLookupDialog, {
+      width: '100vw',
+      maxWidth: '100vw'
+    });
+  }
+
+async applySupplierAgeingSummary() {
+  if (!this.endDate) {
+    alert('Please select end date');
+    return;
+  }
+
+  this.getData = true;
+  this.swoutData = [];
+  this.totalOutstanding = 0;
+
+  try {
+    const res: any = await firstValueFrom(
+      this.reportService.getSupplierAgeingData(this.selectedUnit.id, this.endDate)
+    );
+
+    const rows = res.recordset || [];
+
+    /* -----------------------------------------------------------
+       1️⃣ FILTER
+    ----------------------------------------------------------- */
+
+    const uiFiltered = rows.filter((r: any) => {
+      const matchesSearch = this.searchText
+        ? r.CUST_NAME?.toLowerCase().includes(this.searchText.toLowerCase())
+        : true;
+
+      const matchesNature = this.selectedNature
+        ? r.Nature === this.selectedNature
+        : true;
+
+      const matchesCategory = this.selectedCategory
+        ? r.SupplierCategory === this.selectedCategory
+        : true;
+
+      return matchesSearch && matchesNature && matchesCategory;
+    });
+
+    /* -----------------------------------------------------------
+       2️⃣ GROUP BY SUPPLIER + AGEING
+    ----------------------------------------------------------- */
+
+    const supplierMap = new Map<string, any>();
+    const end = new Date(this.endDate);
+
+    for (const r of uiFiltered) {
+
+      const key = r.CUST_CODE;
+
+      if (!supplierMap.has(key)) {
+        supplierMap.set(key, {
+          PCODE: r.CUST_CODE,
+          CUST_NAME: r.CUST_NAME,
+          Nature: r.Nature,
+          SupplierCategory: r.SupplierCategory,
+
+          bucket_0_30: 0,
+          bucket_31_60: 0,
+          bucket_61_90: 0,
+          bucket_91_120: 0,
+          bucket_120_plus: 0,
+
+          TOTAL: 0
+        });
+      }
+
+      const s = supplierMap.get(key);
+
+      const trxDate = r.DOC_DATE ? new Date(r.DOC_DATE) : null;
+      const amount = Number(r.BALANCE) || 0;
+
+      if (!trxDate) continue;
+
+      const diffDays = Math.floor(
+        (end.getTime() - trxDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (diffDays <= 30) {
+        s.bucket_0_30 += amount;
+      } else if (diffDays <= 60) {
+        s.bucket_31_60 += amount;
+      } else if (diffDays <= 90) {
+        s.bucket_61_90 += amount;
+      } else if (diffDays <= 120) {
+        s.bucket_91_120 += amount;
+      } else {
+        s.bucket_120_plus += amount;
+      }
+
+      s.TOTAL += amount;
+    }
+
+    /* -----------------------------------------------------------
+       3️⃣ GROUP BY CATEGORY + SUBTOTALS
+    ----------------------------------------------------------- */
+
+    const categoryMap = new Map<string, any>();
+
+    for (const s of Array.from(supplierMap.values())) {
+
+      if (s.TOTAL <= 0.001) continue;
+
+      const category = s.SupplierCategory || 'Uncategorized';
+
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, {
+          category: category,
+          subtotal: 0,
+
+          bucket_0_30: 0,
+          bucket_31_60: 0,
+          bucket_61_90: 0,
+          bucket_91_120: 0,
+          bucket_120_plus: 0,
+
+          suppliers: []
+        });
+      }
+
+      const group = categoryMap.get(category);
+
+      group.suppliers.push(s);
+
+      // ✅ accumulate subtotals
+      group.bucket_0_30 += s.bucket_0_30;
+      group.bucket_31_60 += s.bucket_31_60;
+      group.bucket_61_90 += s.bucket_61_90;
+      group.bucket_91_120 += s.bucket_91_120;
+      group.bucket_120_plus += s.bucket_120_plus;
+
+      group.subtotal += s.TOTAL;
+    }
+
+    /* -----------------------------------------------------------
+       4️⃣ SORT
+    ----------------------------------------------------------- */
+
+    const finalData = Array.from(categoryMap.values());
+
+    finalData.sort((a, b) => a.category.localeCompare(b.category));
+
+    finalData.forEach(g => {
+      g.suppliers.sort((a: any, b: any) =>
+        a.CUST_NAME.localeCompare(b.CUST_NAME)
+      );
+    });
+
+    /* -----------------------------------------------------------
+       5️⃣ FINAL OUTPUT
+    ----------------------------------------------------------- */
+
+    this.swoutData = finalData;
+
+    this.totalOutstanding = finalData.reduce(
+      (sum, g) => sum + g.subtotal,
+      0
+    );
+
+  } catch (err) {
+    console.error(err);
+    alert('Failed to load Supplier Ageing Summary');
+  } finally {
+    this.getData = false;
+  }
+}
+
+exportSWOUT(data: any[], file: string) {
+
+  let exportData: any[] = [];
+
+  data.forEach((group: any) => {
+
+    // ✅ CATEGORY HEADER
+    exportData.push({
+      'Supplier Code': group.category,
+      'Supplier Name': '',
+      'Nature': '',
+      'Category': '',
+      'Payment Term': '',
+      'Current Outstanding': group.subtotal
+    });
+
+    // ✅ SUPPLIER ROWS
+    group.suppliers.forEach((s: any) => {
+      exportData.push({
+        'Supplier Code': s.PCODE,
+        'Supplier Name': s.CUST_NAME,
+        'Nature': s.Nature,
+        'Category': s.SupplierCategory,
+        'Payment Term': s.REMARKS,
+        'Current Outstanding': s.CURRENT_OUTSTANDING
+      });
+    });
+
+    // ✅ SUBTOTAL ROW
+    exportData.push({
+      'Supplier Code': `Subtotal - ${group.category}`,
+      'Supplier Name': '',
+      'Nature': '',
+      'Category': '',
+      'Payment Term': '',
+      'Current Outstanding': group.subtotal
+    });
+
+    // ✅ SPACER
+    exportData.push({});
+  });
+
+  // ✅ GRAND TOTAL
+  exportData.push({
+    'Supplier Code': 'GRAND TOTAL',
+    'Current Outstanding': this.totalOutstanding
+  });
+
+  const ws = XLSX.utils.json_to_sheet(exportData);
+  const wb = { Sheets: { Data: ws }, SheetNames: ['Data'] };
+
+  const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+  FileSaver.saveAs(
+    new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+    `${file}.xlsx`
+  );
+}
+
+exportSWAGE(data: any[], file: string) {
+
+  let exportData: any[] = [];
+
+  data.forEach((group: any) => {
+
+    // ✅ CATEGORY HEADER
+    exportData.push({
+      'Supplier Code': group.category,
+      'Supplier Name': '',
+      '0-30': group.bucket_0_30,
+      '31-60': group.bucket_31_60,
+      '61-90': group.bucket_61_90,
+      '91-120': group.bucket_91_120,
+      '120+': group.bucket_120_plus,
+      'Total': group.subtotal
+    });
+
+    // ✅ SUPPLIERS
+    group.suppliers.forEach((s: any) => {
+
+      exportData.push({
+        'Supplier Code': s.PCODE,
+        'Supplier Name': s.CUST_NAME,
+        '0-30': s.bucket_0_30,
+        '31-60': s.bucket_31_60,
+        '61-90': s.bucket_61_90,
+        '91-120': s.bucket_91_120,
+        '120+': s.bucket_120_plus,
+        'Total': s.TOTAL
+      });
+
+    });
+
+    // ✅ SUBTOTAL
+    exportData.push({
+      'Supplier Code': `Subtotal - ${group.category}`,
+      'Supplier Name': '',
+      '0-30': group.bucket_0_30,
+      '31-60': group.bucket_31_60,
+      '61-90': group.bucket_61_90,
+      '91-120': group.bucket_91_120,
+      '120+': group.bucket_120_plus,
+      'Total': group.subtotal
+    });
+
+    // ✅ SPACER
+    exportData.push({});
+  });
+
+  // ✅ GRAND TOTAL
+  exportData.push({
+    'Supplier Code': 'GRAND TOTAL',
+    'Total': this.totalOutstanding
+  });
+
+  const ws = XLSX.utils.json_to_sheet(exportData);
+
+  const wb = {
+    Sheets: { Data: ws },
+    SheetNames: ['Data']
+  };
+
+  const buffer = XLSX.write(wb, {
+    bookType: 'xlsx',
+    type: 'array'
+  });
+
+  FileSaver.saveAs(
+    new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }),
+    `${file}.xlsx`
+  );
 }
 
   printSWOUT() {
@@ -839,8 +1182,7 @@ getSPWSOA(customer: any) {
     doc.text(`: ${this.selectedNature}`,45,42);
     doc.text('Category',10,52);
     doc.text(`: ${this.selectedCategory}`,45,52);    
-    doc.text('As On Date',330,52);
-    doc.text(`: ${this.formatDate(this.endDate)}`,365,52); 
+    doc.text(`As On Date: ${this.formatDate(this.endDate)}`,330,52); 
     let firstPageStartY = 60; // Start Y position for first page
     let nextPagesStartY = 35; // Start Y position for subsequent pages
     let firstPage = true;      // Flag to check if it's the first page
