@@ -1639,7 +1639,7 @@ getIWTRNLIST(customer: any) {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Intermediary Transaction Listing', 150, 20);
+    doc.text('Inter-Company Transaction Listing', 150, 20);
     doc.roundedRect(5, 32.5, 436, 55, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedSupplier.CUST_NAME}`,10,42);
@@ -1876,7 +1876,7 @@ setIPWTRNLIST() {
     doc.setFontSize(16);
     doc.setFont('Helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Intermediary Transaction Listing', 150, 20);
+    doc.text('Inter-Company Transaction Listing', 150, 20);
     doc.roundedRect(5, 32.5, 436, 65, 5, 5);
     doc.setFontSize(10);
     doc.text(`${this.selectedSupplier.CUST_NAME}`,10,42);

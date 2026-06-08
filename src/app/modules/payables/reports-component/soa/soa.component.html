@@ -35,10 +35,10 @@
                                         <a class="nav-link" (click)="openSPWTRNLIST()">Period-wise Supplier Transaction Listing</a> 
                                     </td>
                                     <td>
-                                        <a class="nav-link" (click)="openIWTRNLIST()">Intermediary Transaction Listing (Full)</a>
+                                        <a class="nav-link" (click)="openIWTRNLIST()">Inter-Company Transaction Listing (Full)</a>
                                     </td>
                                     <td>
-                                        <a class="nav-link" (click)="openIPWTRNLIST()">Period-wise Intermediary Transaction Listing</a> 
+                                        <a class="nav-link" (click)="openIPWTRNLIST()">Period-wise Inter-Company Transaction Listing</a> 
                                     </td>
                                 </tr>
                                 <tr>
@@ -956,7 +956,7 @@
 
 <ng-template #iwtrnlistLookupDialog>
     <h3 matDialogTitle>
-        <b>Intermediary Transaction Listing Preview</b>
+        <b>Inter-Company Transaction Listing Preview</b>
     </h3>
     <div mat-dialog-content style="font-size: small;">
         <div class="row">
@@ -967,7 +967,7 @@
                 <table class="table table-hover table-sm table-bordered">
                     <thead class="table-dark">
                         <tr class="table-reflow">
-                            <th><small>INTERMEDIARY NAME</small></th>
+                            <th><small>INTERCOMPANY NAME</small></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -979,7 +979,7 @@
             </div>
             <div class="col-9">  
                 <div class="col-12">
-                    <input type="text" class="form-control form-control-sm" [value]="selectedSupplier?.CUST_NAME" placeholder="Intermediary Name" disabled>
+                    <input type="text" class="form-control form-control-sm" [value]="selectedSupplier?.CUST_NAME" placeholder="Inter-Company Name" disabled>
                 </div>
                 <br>            
                 <div class="row" *ngIf="getData === true">
@@ -1110,7 +1110,7 @@
 
 <ng-template #ipwtrnlistLookupDialog>
     <h3 matDialogTitle>
-        <b>Period-wise Intermediary Transaction Listing Preview</b>
+        <b>Period-wise Inter-Company Transaction Listing Preview</b>
     </h3>
      
     <div mat-dialog-content style="font-size: small;">
@@ -1122,7 +1122,7 @@
                 <table class="table table-hover table-sm table-bordered">
                     <thead class="table-dark">
                         <tr class="table-reflow">
-                            <th><small>INTERMEDIARY NAME</small></th>
+                            <th><small>INTERCOMPANY NAME</small></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1135,7 +1135,7 @@
             <div class="col-9">
                 <div class="row">
                     <div class="col-4">
-                        <input type="text" class="form-control form-control-sm" [value]="selectedSupplier?.CUST_NAME" placeholder="Intermediary Name" disabled>
+                        <input type="text" class="form-control form-control-sm" [value]="selectedSupplier?.CUST_NAME" placeholder="Inter-Company Name" disabled>
                     </div>
                     <div class="col-3">
                         <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" placeholder="Start Date">
