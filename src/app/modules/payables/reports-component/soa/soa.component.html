@@ -3,7 +3,7 @@
         <div class="visualization-heading col-12">
             <div class="heading-info">
                 <div class="row">
-                    <div class="col-6">
+                    <div class="col-8">
                         <h2 class="heading-title">SOA Reports</h2>
                     </div>
                     <div class="col-2 flex-1">
@@ -19,9 +19,22 @@
                             </mat-option>
                         </mat-select>
                     </div>
+                    <div class="col-2" *ngIf="userRight==='true'">
+                        <button mat-raised-button class="bg-secondary text-white btn btn-block" (click)="startFinanceSync()" [disabled]="isSyncing" title="Update Finance Data" style="float: right">
+                            <mat-icon>refresh</mat-icon> Finance Data
+                        </button>
+                    </div>
                 </div>
             </div>
             <hr>
+            <div class="col-12" *ngIf="isSyncing">
+                <p style="color: white;" class="mt-2 text-white">Syncing... {{ getProgressTotal() }}% Complete. Please make sure not to leave this page to avoid any changes being lost.</p>
+                <div *ngIf="financeData" class="progress progress-bar-striped progress-bar-animated fixed-top" style="height: 25px; z-index: 1050;">
+                   <!--- <div class="progress-bar bg-primary" [style.width.%]="progress[0]">Invoices</div>-->
+                    <div class="progress-bar bg-success" [style.width.%]="progress[1]">Payables</div>
+                    <div class="progress-bar bg-info" [style.width.%]="progress[2]">Payments</div>
+                </div>
+            </div>
             <div class="row">
                 <div class="col-12">
                     <mat-card class="bg-secondary">

@@ -23,6 +23,14 @@ export class SapService {
     return this.http.get(this.url + '/sync-payment-details')
   } 
 
+  syncTransactionDetails() {
+    return this.http.get(this.url + '/sync-transaction-details')
+  } 
+
+  syncGLDetails() {
+    return this.http.get(this.url + '/sync-gl-details')
+  } 
+
   syncCustomerDetails() {
     return this.http.get(this.url + '/sync-customer-details')
   } 

@@ -9,6 +9,8 @@ import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
 import { firstValueFrom } from 'rxjs';
 import { forkJoin } from 'rxjs';
+import { SapService } from 'src/app/services/SAP/sap.service';
+import { EmailService } from 'src/app/services/email/email.service';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -93,6 +95,9 @@ export class SoaComponent {
   topSuppliers: any[] = [];
   currencyChart: any[] = [];
 
+  isSyncing = false;
+  financeData = false;
+  progress = [0, 0, 0];
 
   /* ---------------------------------- TOTALS -------------------------------- */
 
@@ -114,10 +119,102 @@ export class SoaComponent {
 
   /* -------------------------------- SERVICES -------------------------------- */
 
-  constructor(private dialog: MatDialog, private accountService: AccountsService, private reportService: ReportsService) {
+  constructor(private dialog: MatDialog, private accountService: AccountsService, private reportService: ReportsService, private sapservice: SapService, private emailService: EmailService) {
     this.loadMasters();
   }
 
+  startFinanceSync() {
+  this.isSyncing = true;
+  this.financeData = true;
+  this.progress = [33, 0, 0];
+  this.synctransaction()
+}
+
+synctransaction() {
+  this.sapservice.syncTransactionDetails().subscribe({
+    next: res => {
+      this.progress[1] = 50;
+      this.syncGl();
+    },
+    error: err => {
+      // Only treat real errors (status 4xx/5xx)
+      if (err.status >= 400) {
+        console.error('Error syncing transactions:', err);
+        this.sendErrorEmail('Transaction');
+      } else {
+        console.warn('Non-critical response in transactions sync:', err);
+      }
+      this.progress[1] = 50;
+      this.syncGl();
+    }
+  });
+}
+
+syncGl() {
+  this.sapservice.syncGLDetails().subscribe({
+    next: res => {
+      this.progress[2] = 50;
+      setTimeout(() => {
+        alert("Finance sync successful!");
+        this.sendSuccessEmail('Supplier Finance');
+        this.resetProgress();
+      }, 300);
+    },
+    error: err => {
+      this.progress[2] = 50;
+      if (err.status >= 400) {
+        console.error('Error syncing GLs:', err);
+        if (err.status === 401) {
+          alert("Finance sync unsuccessful: Unauthorized.");
+        } else {
+          alert("Finance sync error occurred.");
+        }
+        this.sendErrorEmail('GL');
+      } else {
+        console.warn('Non-critical response in gl sync:', err);
+        alert("Finance sync successful (minor issue).");
+        this.sendSuccessEmail('Supplier Finance');
+      }
+      this.resetProgress();
+    }
+  });
+}
+
+resetProgress() {
+  this.progress = [0, 0, 0];
+  this.isSyncing = false;
+  this.financeData = false;
+}
+
+getProgressTotal(): number {
+  return this.progress.reduce((a, b) => a + b, 0);
+}
+
+sendSuccessEmail(type: string) {
+  const state = 'Manual';
+  const user = this.loggedInUser || "SYSTEM";
+  const date = new Date().toLocaleDateString("en-GB").replace(/\//g, "-");
+  const time = new Date().toLocaleTimeString("en-GB");
+
+  this.emailService.sendSyncSuccessEmail(type, state, user, date, time)
+    .subscribe({
+      next: res => console.log("Success email sent", res),
+      error: err => console.error("Error sending success email", err)
+    });
+}
+
+sendErrorEmail(type: string) {
+  const state = 'Manual';
+  const user = this.loggedInUser || "SYSTEM";
+  const date = new Date().toLocaleDateString("en-GB").replace(/\//g, "-");
+  const time = new Date().toLocaleTimeString("en-GB");
+
+  this.emailService.sendSyncErrorEmail(type, state, user, date, time)
+    .subscribe({
+      next: res => console.log("Error email sent", res),
+      error: err => console.error("Error sending error email", err)
+    });
+}
   loadSuppliers() {
     this.getData = true;
     this.accountService.listOpbal(this.currentYear.toString(),'S').subscribe((res: any) => {
