@@ -244,11 +244,12 @@
           <th>Product Name</th>
           <th>Brand</th>
           <th>Category</th>
-          <th>Type</th>
+          <th>Product Type</th>
           <th>Location</th>
-          <th>Channel</th>
+          <!--<th>Channel</th>-->
           <th>Third Party</th>
           <th>Supplier</th>
+          <th>Supplier Type</th>
           <th>Quantity</th>
           <th>Unit</th>
           <th>Unit Price</th>
@@ -269,13 +270,14 @@
             <td><small>{{ r.CustomerName }}</small></td>
             <td><small>{{ r.ProductID }}</small></td>
             <td><small>{{ r.ProductName }}</small></td>
-            <td><small>{{ r.Brand }}</small></td>
+            <td><small>{{ getBrandType(r.ProductID, r.Brand) }}</small></td>
             <td><small>{{ r.Category }}</small></td>
             <td><small>{{ getProductType(r.ProductID) }}</small></td>    
-            <td><small>{{ r.Branch }}</small></td>
-            <td><small>{{ r.Channel }}</small></td>
+            <td><small>{{ r.Location }}</small></td>
+            <!--<td><small>{{ r.Channel }}</small></td>-->
             <td><small></small></td>
             <td><small>{{ r.Supplier }}</small></td>
+            <td><small>{{ r.SupplierType }}</small></td>
             <td class="text-end"><small>{{ r.Quantity | number:'1.0-0' }}</small></td>
             <td><small>{{ r.Unit }}</small></td>
             <td class="text-end"><small> {{ r.UnitPrice | number:'1.3-3' }}</small></td>

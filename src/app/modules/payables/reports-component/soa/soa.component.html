@@ -533,7 +533,7 @@
                 <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" placeholder="End Date">
             </div>
             <div class="col-1">
-                <button class="btn btn-sm btn-primary" (click)="applySupplierFilters()" >Filter</button>
+                <button class="btn btn-sm btn-primary" (click)="buildOutstandingFromSOA()" >Filter</button>
             </div>
         </div>
 
@@ -659,7 +659,7 @@
                 <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" placeholder="End Date">
             </div>
             <div class="col-1">
-                <button class="btn btn-sm btn-primary" (click)="applySupplierAgeingSummary()" >Filter</button>
+                <button class="btn btn-sm btn-primary" (click)="buildAgeingFromSOA()" >Filter</button>
             </div>
         </div>
 
@@ -677,11 +677,11 @@
   <tr>
     <th>Supplier Code</th>
     <th>Supplier Name</th>
-    <th>0–30</th>
-    <th>31–60</th>
-    <th>61–90</th>
-    <th>91–120</th>
-    <th>120+</th>
+    <th>0–30 Days</th>
+    <th>31–60 Days</th>
+    <th>61–90 Days</th>
+    <th>91–120 Days</th>
+    <th>120+ Days</th>
     <th>Total</th>
   </tr>
 </thead>
@@ -693,13 +693,41 @@
     <tr class="table-primary fw-bold">
       <td colspan="2">{{ group.category }}</td>
 
-      <td class="text-end">{{ group.bucket_0_30 | number:'1.2-2' }}</td>
-      <td class="text-end">{{ group.bucket_31_60 | number:'1.2-2' }}</td>
-      <td class="text-end">{{ group.bucket_61_90 | number:'1.2-2' }}</td>
-      <td class="text-end">{{ group.bucket_91_120 | number:'1.2-2' }}</td>
-      <td class="text-end">{{ group.bucket_120_plus | number:'1.2-2' }}</td>
+      <td class="text-end">
+  {{ group.bucket_0_30 < 0 
+    ? '(' + (group.bucket_0_30 | abs | number:'1.2-2') + ')' 
+    : (group.bucket_0_30 | number:'1.2-2') }}
+</td>
 
-      <td class="text-end fw-bold">{{ group.subtotal | number:'1.2-2' }}</td>
+<td class="text-end">
+  {{ group.bucket_31_60 < 0 
+    ? '(' + (group.bucket_31_60 | abs | number:'1.2-2') + ')' 
+    : (group.bucket_31_60 | number:'1.2-2') }}
+</td>
+
+<td class="text-end">
+  {{ group.bucket_61_90 < 0 
+    ? '(' + (group.bucket_61_90 | abs | number:'1.2-2') + ')' 
+    : (group.bucket_61_90 | number:'1.2-2') }}
+</td>
+
+<td class="text-end">
+  {{ group.bucket_91_120 < 0 
+    ? '(' + (group.bucket_91_120 | abs | number:'1.2-2') + ')' 
+    : (group.bucket_91_120 | number:'1.2-2') }}
+</td>
+
+<td class="text-end">
+  {{ group.bucket_120_plus < 0 
+    ? '(' + (group.bucket_120_plus | abs | number:'1.2-2') + ')' 
+    : (group.bucket_120_plus | number:'1.2-2') }}
+</td>
+
+<td class="text-end fw-bold">
+  {{ group.subtotal < 0 
+    ? '(' + (group.subtotal | abs | number:'1.2-2') + ')' 
+    : (group.subtotal | number:'1.2-2') }}
+</td>
     </tr>
 
     <!-- SUPPLIERS -->
@@ -707,13 +735,41 @@
       <td>{{ s.PCODE }}</td>
       <td>{{ s.CUST_NAME }}</td>
 
-      <td class="text-end">{{ s.bucket_0_30 | number:'1.2-2' }}</td>
-      <td class="text-end">{{ s.bucket_31_60 | number:'1.2-2' }}</td>
-      <td class="text-end">{{ s.bucket_61_90 | number:'1.2-2' }}</td>
-      <td class="text-end">{{ s.bucket_91_120 | number:'1.2-2' }}</td>
-      <td class="text-end">{{ s.bucket_120_plus | number:'1.2-2' }}</td>
+      <td class="text-end">
+  {{ s.bucket_0_30 < 0 
+    ? '(' + (s.bucket_0_30 | abs | number:'1.2-2') + ')' 
+    : (s.bucket_0_30 | number:'1.2-2') }}
+</td>
 
-      <td class="text-end fw-bold">{{ s.TOTAL | number:'1.2-2' }}</td>
+<td class="text-end">
+  {{ s.bucket_31_60 < 0 
+    ? '(' + (s.bucket_31_60 | abs | number:'1.2-2') + ')' 
+    : (s.bucket_31_60 | number:'1.2-2') }}
+</td>
+
+<td class="text-end">
+  {{ s.bucket_61_90 < 0 
+    ? '(' + (s.bucket_61_90 | abs | number:'1.2-2') + ')' 
+    : (s.bucket_61_90 | number:'1.2-2') }}
+</td>
+
+<td class="text-end">
+  {{ s.bucket_91_120 < 0 
+    ? '(' + (s.bucket_91_120 | abs | number:'1.2-2') + ')' 
+    : (s.bucket_91_120 | number:'1.2-2') }}
+</td>
+
+<td class="text-end">
+  {{ s.bucket_120_plus < 0 
+    ? '(' + (s.bucket_120_plus | abs | number:'1.2-2') + ')' 
+    : (s.bucket_120_plus | number:'1.2-2') }}
+</td>
+
+<td class="text-end fw-bold">
+  {{ s.TOTAL < 0 
+    ? '(' + (s.TOTAL | abs | number:'1.2-2') + ')' 
+    : (s.TOTAL | number:'1.2-2') }}
+</td>
     </tr>
 
     <!-- SUBTOTAL ROW -->
@@ -730,8 +786,11 @@
 <tfoot>
   <tr class="fw-bold">
     <td colspan="7" class="text-end">Total</td>
-    <td class="text-end">{{ totalOutstanding | number:'1.2-2' }}</td>
-  </tr>
+<td class="text-end">
+  {{ totalOutstanding < 0 
+    ? '(' + (totalOutstanding | abs | number:'1.2-2') + ')' 
+    : (totalOutstanding | number:'1.2-2') }}
+</td>  </tr>
 </tfoot>
             </table>
         </div>

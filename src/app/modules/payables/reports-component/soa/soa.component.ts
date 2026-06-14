@@ -820,93 +820,72 @@ getSPWSOA(customer: any) {
     });
   }
 
-async applySupplierFilters() {
+async buildOutstandingFromSOA() {
+
   if (!this.endDate) {
     alert('Please select end date');
     return;
   }
 
   this.getData = true;
-  this.swoutData = [];
-  this.totalOutstanding = 0;
-
-  const end = new Date(this.endDate);
-  end.setHours(23, 59, 59, 999);
 
   try {
-    const res: any = await firstValueFrom(
-      this.reportService.getSupplierAgeingData(this.selectedUnit.id, this.endDate)
-    );
 
-    const rows = res.recordset || [];
+    const result: any[] = [];
 
-    /* -----------------------------------------------------------
-       1️⃣ FILTER (SEARCH / NATURE / CATEGORY)
-    ----------------------------------------------------------- */
+    for (const s of this.supplierList) {
 
-    const uiFiltered = rows.filter((r: any) => {
-      const matchesSearch = this.searchText
-        ? r.CUST_NAME?.toLowerCase().includes(this.searchText.toLowerCase())
-        : true;
+      const res: any = await firstValueFrom(
+        this.reportService.getSupplierSOA(
+          this.selectedUnit.id,
+          s.PCODE,
+          this.endDate
+        )
+      );
 
-      const matchesNature = this.selectedNature
-        ? r.Nature === this.selectedNature
-        : true;
+      const rows = res.recordset || [];
 
-      const matchesCategory = this.selectedCategory
-        ? r.SupplierCategory === this.selectedCategory
-        : true;
+      let agg = {
+        PCODE: s.PCODE,
+        CUST_NAME: s.CUST_NAME,
+        Nature: s.Nature,
+        SupplierCategory: s.SupplierCategory,
+        REMARKS: s.REMARKS,
 
-      return matchesSearch && matchesNature && matchesCategory;
-    });
+        CURRENT_OUTSTANDING: 0,
+        CURRENT: 0,
+        '1_30': 0,
+        '31_60': 0,
+        '61_90': 0,
+        '90_PLUS': 0
+      };
 
-    /* -----------------------------------------------------------
-       2️⃣ GROUP BY SUPPLIER
-    ----------------------------------------------------------- */
+      rows.forEach((r: any) => {
 
-    const supplierMap = new Map<string, any>();
+        const bal = Number(r.BALANCE) || 0;
 
-    for (const r of uiFiltered) {
+        agg.CURRENT_OUTSTANDING += bal;
 
-      const key = r.CUST_CODE;
-
-      if (!supplierMap.has(key)) {
-        supplierMap.set(key, {
-          PCODE: r.CUST_CODE,
-          CUST_NAME: r.CUST_NAME,
-          Nature: r.Nature,
-          SupplierCategory: r.SupplierCategory,
-          REMARKS: r.PaymentTerms,
-
-          CURRENT_OUTSTANDING: 0,
-          CURRENT: 0,
-          '1_30': 0,
-          '31_60': 0,
-          '61_90': 0,
-          '90_PLUS': 0
-        });
-      }
-
-      const s = supplierMap.get(key);
-
-      s.CURRENT_OUTSTANDING += Number(r.BALANCE) || 0;
-
-      s.CURRENT += Number(r.CURRENT) || 0;
-      s['1_30'] += Number(r['1_30']) || 0;
-      s['31_60'] += Number(r['31_60']) || 0;
-      s['61_90'] += Number(r['61_90']) || 0;
-      s['90_PLUS'] += Number(r['90_PLUS']) || 0;
+        if (r.DOC_TYPE === 'INVOICE') {
+          if (r.AGE_DAYS <= 0) agg.CURRENT += bal;
+          else if (r.AGE_DAYS <= 30) agg['1_30'] += bal;
+          else if (r.AGE_DAYS <= 60) agg['31_60'] += bal;
+          else if (r.AGE_DAYS <= 90) agg['61_90'] += bal;
+          else agg['90_PLUS'] += bal;
+        }
+      });
+      result.push(agg);
     }
+    
+
 
     /* -----------------------------------------------------------
-       3️⃣ GROUP BY CATEGORY + SUBTOTAL
+       ✅ GROUP BY CATEGORY
     ----------------------------------------------------------- */
 
     const categoryMap = new Map<string, any>();
 
-    for (const s of Array.from(supplierMap.values())) {
-
-      if (s.CURRENT_OUTSTANDING <= 0.001) continue;
+    for (const s of result) {
 
       const category = s.SupplierCategory || 'Uncategorized';
 
@@ -925,7 +904,7 @@ async applySupplierFilters() {
     }
 
     /* -----------------------------------------------------------
-       4️⃣ SORT (OPTIONAL BUT RECOMMENDED)
+       ✅ SORTING
     ----------------------------------------------------------- */
 
     const finalData = Array.from(categoryMap.values());
@@ -933,13 +912,13 @@ async applySupplierFilters() {
     finalData.sort((a, b) => a.category.localeCompare(b.category));
 
     finalData.forEach(group => {
-      group.suppliers.sort((a: any, b: any) =>
-        a.CUST_NAME.localeCompare(b.CUST_NAME)
-      );
+group.suppliers.sort((a: any, b: any) =>
+  a.PCODE.localeCompare(b.PCODE)
+);
     });
 
     /* -----------------------------------------------------------
-       5️⃣ FINAL OUTPUT
+       ✅ FINAL OUTPUT
     ----------------------------------------------------------- */
 
     this.swoutData = finalData;
@@ -949,13 +928,14 @@ async applySupplierFilters() {
       0
     );
 
-  } catch (err) {
-    console.error(err);
+  } catch (e) {
+    console.error(e);
     alert('Failed to load Supplier Outstanding');
   } finally {
     this.getData = false;
   }
 }
+
 
   openSWAGE() {
       this.swoutData = [];
@@ -966,106 +946,81 @@ async applySupplierFilters() {
     });
   }
 
-async applySupplierAgeingSummary() {
+async buildAgeingFromSOA() {
+
   if (!this.endDate) {
     alert('Please select end date');
     return;
   }
 
   this.getData = true;
-  this.swoutData = [];
-  this.totalOutstanding = 0;
 
   try {
-    const res: any = await firstValueFrom(
-      this.reportService.getSupplierAgeingData(this.selectedUnit.id, this.endDate)
-    );
 
-    const rows = res.recordset || [];
-
-    /* -----------------------------------------------------------
-       1️⃣ FILTER
-    ----------------------------------------------------------- */
-
-    const uiFiltered = rows.filter((r: any) => {
-      const matchesSearch = this.searchText
-        ? r.CUST_NAME?.toLowerCase().includes(this.searchText.toLowerCase())
-        : true;
-
-      const matchesNature = this.selectedNature
-        ? r.Nature === this.selectedNature
-        : true;
-
-      const matchesCategory = this.selectedCategory
-        ? r.SupplierCategory === this.selectedCategory
-        : true;
-
-      return matchesSearch && matchesNature && matchesCategory;
-    });
-
-    /* -----------------------------------------------------------
-       2️⃣ GROUP BY SUPPLIER + AGEING
-    ----------------------------------------------------------- */
-
-    const supplierMap = new Map<string, any>();
+    const result: any[] = [];
     const end = new Date(this.endDate);
 
-    for (const r of uiFiltered) {
+    for (const s of this.supplierList) {
 
-      const key = r.CUST_CODE;
-
-      if (!supplierMap.has(key)) {
-        supplierMap.set(key, {
-          PCODE: r.CUST_CODE,
-          CUST_NAME: r.CUST_NAME,
-          Nature: r.Nature,
-          SupplierCategory: r.SupplierCategory,
-
-          bucket_0_30: 0,
-          bucket_31_60: 0,
-          bucket_61_90: 0,
-          bucket_91_120: 0,
-          bucket_120_plus: 0,
-
-          TOTAL: 0
-        });
-      }
-
-      const s = supplierMap.get(key);
-
-      const trxDate = r.DOC_DATE ? new Date(r.DOC_DATE) : null;
-      const amount = Number(r.BALANCE) || 0;
-
-      if (!trxDate) continue;
-
-      const diffDays = Math.floor(
-        (end.getTime() - trxDate.getTime()) / (1000 * 60 * 60 * 24)
+      const res: any = await firstValueFrom(
+        this.reportService.getSupplierSOA(
+          this.selectedUnit.id,
+          s.PCODE,
+          this.endDate
+        )
       );
 
-      if (diffDays <= 30) {
-        s.bucket_0_30 += amount;
-      } else if (diffDays <= 60) {
-        s.bucket_31_60 += amount;
-      } else if (diffDays <= 90) {
-        s.bucket_61_90 += amount;
-      } else if (diffDays <= 120) {
-        s.bucket_91_120 += amount;
-      } else {
-        s.bucket_120_plus += amount;
-      }
+      const rows = res.recordset || [];
 
-      s.TOTAL += amount;
+      let agg = {
+        PCODE: s.PCODE,
+        CUST_NAME: s.CUST_NAME,
+        Nature: s.Nature,
+        SupplierCategory: s.SupplierCategory,
+
+        bucket_0_30: 0,
+        bucket_31_60: 0,
+        bucket_61_90: 0,
+        bucket_91_120: 0,
+        bucket_120_plus: 0,
+
+        TOTAL: 0
+      };
+
+      rows.forEach((r: any) => {
+
+        const amount = Number(r.BALANCE) || 0;
+        const trxDate = r.DOC_DATE ? new Date(r.DOC_DATE) : null;
+
+        if (!trxDate) return;
+
+        const diffDays = Math.floor(
+          (end.getTime() - trxDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        if (diffDays <= 30) {
+          agg.bucket_0_30 += amount;
+        } else if (diffDays <= 60) {
+          agg.bucket_31_60 += amount;
+        } else if (diffDays <= 90) {
+          agg.bucket_61_90 += amount;
+        } else if (diffDays <= 120) {
+          agg.bucket_91_120 += amount;
+        } else {
+          agg.bucket_120_plus += amount;
+        }
+
+        agg.TOTAL += amount;
+      });
+
+        result.push(agg);
     }
 
-    /* -----------------------------------------------------------
-       3️⃣ GROUP BY CATEGORY + SUBTOTALS
-    ----------------------------------------------------------- */
+    /* ✅ GROUP BY CATEGORY */
 
     const categoryMap = new Map<string, any>();
 
-    for (const s of Array.from(supplierMap.values())) {
-
-      if (s.TOTAL <= 0.001) continue;
+    for (const s of result) {
 
       const category = s.SupplierCategory || 'Uncategorized';
 
@@ -1088,7 +1043,6 @@ async applySupplierAgeingSummary() {
 
       group.suppliers.push(s);
 
-      // ✅ accumulate subtotals
       group.bucket_0_30 += s.bucket_0_30;
       group.bucket_31_60 += s.bucket_31_60;
       group.bucket_61_90 += s.bucket_61_90;
@@ -1098,9 +1052,7 @@ async applySupplierAgeingSummary() {
       group.subtotal += s.TOTAL;
     }
 
-    /* -----------------------------------------------------------
-       4️⃣ SORT
-    ----------------------------------------------------------- */
+    /* ✅ SORT */
 
     const finalData = Array.from(categoryMap.values());
 
@@ -1108,13 +1060,11 @@ async applySupplierAgeingSummary() {
 
     finalData.forEach(g => {
       g.suppliers.sort((a: any, b: any) =>
-        a.CUST_NAME.localeCompare(b.CUST_NAME)
+        a.PCODE.localeCompare(b.PCODE)
       );
     });
 
-    /* -----------------------------------------------------------
-       5️⃣ FINAL OUTPUT
-    ----------------------------------------------------------- */
+    /* ✅ OUTPUT */
 
     this.swoutData = finalData;
 
@@ -1200,11 +1150,11 @@ exportSWAGE(data: any[], file: string) {
     exportData.push({
       'Supplier Code': group.category,
       'Supplier Name': '',
-      '0-30': group.bucket_0_30,
-      '31-60': group.bucket_31_60,
-      '61-90': group.bucket_61_90,
-      '91-120': group.bucket_91_120,
-      '120+': group.bucket_120_plus,
+      '0-30 Days': group.bucket_0_30,
+      '31-60 Days': group.bucket_31_60,
+      '61-90 Days': group.bucket_61_90,
+      '91-120 Days': group.bucket_91_120,
+      '120+ Days': group.bucket_120_plus,
       'Total': group.subtotal
     });
 
@@ -1214,11 +1164,11 @@ exportSWAGE(data: any[], file: string) {
       exportData.push({
         'Supplier Code': s.PCODE,
         'Supplier Name': s.CUST_NAME,
-        '0-30': s.bucket_0_30,
-        '31-60': s.bucket_31_60,
-        '61-90': s.bucket_61_90,
-        '91-120': s.bucket_91_120,
-        '120+': s.bucket_120_plus,
+        '0-30 Days': s.bucket_0_30,
+        '31-60 Days': s.bucket_31_60,
+        '61-90 Days': s.bucket_61_90,
+        '91-120 Days': s.bucket_91_120,
+        '120+ Days': s.bucket_120_plus,
         'Total': s.TOTAL
       });
 
@@ -1228,11 +1178,11 @@ exportSWAGE(data: any[], file: string) {
     exportData.push({
       'Supplier Code': `Subtotal - ${group.category}`,
       'Supplier Name': '',
-      '0-30': group.bucket_0_30,
-      '31-60': group.bucket_31_60,
-      '61-90': group.bucket_61_90,
-      '91-120': group.bucket_91_120,
-      '120+': group.bucket_120_plus,
+      '0-30 Days': group.bucket_0_30,
+      '31-60 Days': group.bucket_31_60,
+      '61-90 Days': group.bucket_61_90,
+      '91-120 Days': group.bucket_91_120,
+      '120+ Days': group.bucket_120_plus,
       'Total': group.subtotal
     });
 

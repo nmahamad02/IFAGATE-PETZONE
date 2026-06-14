@@ -351,11 +351,12 @@ exportLWPS() {
     'Product Name',
     'Brand',
     'Category',
-    'Type',
+    'Product Type',
     'Location',
-    'Channel',
+    //'Channel',
     'Third Party',
     'Supplier',
+    'Supplier Type',
     'Qty',
     'Unit',
     'Unit Price',
@@ -381,13 +382,14 @@ exportLWPS() {
         r.CustomerName,
         r.ProductID,
         r.ProductName,
-        r.Brand,
+        this.getBrandType(r.ProductID,r.Brand),
         r.Category,
         this.getProductType(r.ProductID),
-        r.Branch,
-        r.Channel,
+        r.Location,
+        //r.Channel,
         '',
         r.Supplier,
+        r.SupplierType,
         r.Quantity,
         r.Unit,
         r.UnitPrice,
@@ -436,8 +438,8 @@ exportLWPS() {
   worksheet['!cols'] = [
     { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 25 },
     { wch: 15 }, { wch: 35 }, { wch: 20 }, { wch: 25 }, 
-    { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
-    { wch: 35 }, { wch: 25 }, { wch: 10 }, { wch: 10 }, 
+    { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 35 }, 
+    { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, 
     { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
     { wch: 15 }, { wch: 15 }
   ];
@@ -487,6 +489,13 @@ getProductType(productId: any): string {
   if (!isFinite(id)) return '';
 
   return id < 1000 ? 'Service' : 'Product';
+}
+
+getBrandType(productId: any, brand: string): string {
+  const id = Number(productId);
+  if (!isFinite(id)) return '';
+
+  return id < 1000 ? 'Service' : brand;
 }
 
   searchCustomer(search: string) {
