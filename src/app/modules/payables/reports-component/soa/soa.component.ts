@@ -862,7 +862,7 @@ async buildOutstandingFromSOA() {
 
       rows.forEach((r: any) => {
 
-        const bal = Number(r.BALANCE) || 0;
+        const bal = (Number(r.BALANCE)*-1) || 0;
 
         agg.CURRENT_OUTSTANDING += bal;
 
@@ -989,7 +989,7 @@ async buildAgeingFromSOA() {
 
       rows.forEach((r: any) => {
 
-        const amount = Number(r.BALANCE) || 0;
+        const amount = (Number(r.BALANCE)*-1) || 0;
         const trxDate = r.DOC_DATE ? new Date(r.DOC_DATE) : null;
 
         if (!trxDate) return;
