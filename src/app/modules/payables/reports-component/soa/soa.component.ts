@@ -551,7 +551,7 @@ getSWSOA(customer: any) {
 
         let running = 0;
         this.swsoaData = rows.map((r: any) => {
-          running += r.BALANCE; // +invoice, -receipt
+          running -= r.BALANCE; // +invoice, -receipt
           return {
             ...r,
             RUNNING_BALANCE: running
@@ -697,7 +697,7 @@ getSPWSOA(customer: any) {
           });*/
           let running = 0;
           this.spwsoaData = res.recordset.map((r: any) => {
-            running += Number(r.BALANCE || 0);
+            running -= Number(r.BALANCE || 0);
             return {
               ...r,
               RUNNING_BALANCE: running
@@ -1302,7 +1302,7 @@ exportSWAGE(data: any[], file: string) {
           this.getData = false;
           let running = 0;
           this.swtrnlistData = res.recordset.map((r: any) => {
-            running += (r.INV_AMOUNT - r.REFAMOUNT); // +invoice, -receipt
+            running += (r.REFAMOUNT - r.INV_AMOUNT);//(r.INV_AMOUNT - r.REFAMOUNT); // +invoice, -receipt
             return {
               ...r,
               RUNNING_BALANCE: running
@@ -1440,7 +1440,7 @@ exportSWAGE(data: any[], file: string) {
           openingData.forEach((row: any) => {
             this.openingBalanceData.DEBIT += Number(row.REFAMOUNT );
             this.openingBalanceData.CREDIT += Number(row.INV_AMOUNT );
-            this.openingBalanceData.BALANCE += (Number(row.INV_AMOUNT - Number(row.REFAMOUNT )));
+            this.openingBalanceData.BALANCE += (Number(row.REFAMOUNT - Number(row.INV_AMOUNT )));
           });
 
           // Build opening balance row
