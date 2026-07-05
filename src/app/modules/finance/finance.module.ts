@@ -26,6 +26,7 @@ import { JournalVoucherDetailComponent } from './journal-voucher-component/journ
 import { FilterTablePipe } from '../../pipes/filterTable.pipe';
 import { SharedModule } from '../shared/shared.module';
 import { FinancialReportsComponent } from './financial-reports-component/financial-reports/financial-reports.component';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 export const financeRoutes = [
   {
@@ -72,6 +73,7 @@ export const financeRoutes = [
     MatTableModule,
     MatButtonModule,
     MatCardModule,
+    NgSelectModule,
     MatSelectModule,
     MatPaginatorModule,
     MatDividerModule,

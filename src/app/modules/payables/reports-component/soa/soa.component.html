@@ -47,10 +47,10 @@
                                     <td>
                                         <a class="nav-link" (click)="openSPWTRNLIST()">Period-wise Supplier Transaction Listing</a> 
                                     </td>
-                                    <td>
+                                    <!--<td>
                                         <a class="nav-link" (click)="openIWTRNLIST()">Inter-Company Transaction Listing (Full)</a>
-                                    </td>
-                                    <td>
+                                    </td>-->
+                                    <td colspan="2">
                                         <a class="nav-link" (click)="openIPWTRNLIST()">Period-wise Inter-Company Transaction Listing</a> 
                                     </td>
                                 </tr>
@@ -446,45 +446,9 @@
                             </td>
                         </tr>
                     </tbody>
-                    <tfoot>
-                        <tr class="fw-bold   ">
-                            <td colspan="6" class="text-start"><small>Total</small></td>
-                            <td><small>{{ periodTotalDebit | number:'1.3-3' }}</small></td>
-                            <td><small>{{ periodTotalCredit | number:'1.3-3' }}</small></td>
-                            <td><small>
-                                {{ (openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) < 0 ? '(' + ((openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) | abs | number:'1.3-3') + ')' : ((openingBalanceData.BALANCE + periodTotalDebit - periodTotalCredit) | number:'1.3-3') }}
-                            </small></td>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
-                <table id="spwsoaAgeingSummaryTable" class="table table-sm table-bordered">
-                    <!--<thead>
-                        <tr class="table-primary">
-                            <th colspan="7" class="text-start"><small>Period-wise Ageing Summary</small></th>
-                        </tr>
-                        <tr class="table-secondary"  >
-                            <th><small>Current</small></th>
-                            <th><small>0 - 30 days</small></th>
-                            <th><small>31 - 60 days</small></th>
-                            <th><small>61 - 90 days</small></th>
-                            <th><small>91 - 120 days</small></th>
-                            <th><small>Above 120 days</small></th>
-                            <th><small>Total Outstanding</small></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr   >
-                            <td><small>{{ periodAgeingSummary['CURRENT'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ periodAgeingSummary['30_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ periodAgeingSummary['60_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ periodAgeingSummary['90_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ periodAgeingSummary['120_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ periodAgeingSummary['ABOVE_120_DAYS'] | number:'1.3-3' }}</small></td>
-                            <td><small>{{ (periodAgeingSummary['CURRENT'] + periodAgeingSummary['30_DAYS'] + periodAgeingSummary['60_DAYS'] + periodAgeingSummary['90_DAYS'] + periodAgeingSummary['120_DAYS'] + periodAgeingSummary['ABOVE_120_DAYS']) | number:'1.3-3' }}</small></td>
-                        </tr>
-                    </tbody>-->
-                </table>
+               
             </div>
         </div>
         <br>
@@ -1234,113 +1198,131 @@
                     <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">     
                         <tr>
                             <th><small>Transaction Date</small></th>
-                            <!--<th><small>Transaction No</small></th>-->
-                            <th><small>Description</small></th>
+                            <th><small>Transaction No</small></th>
+                            <th><small>Reference</small></th>
                             <th><small>Currency</small></th>
                             <th><small>Debit (Payments)</small></th>
                             <th><small>Credit (Bills)</small></th>
                             <th><small>Balance</small></th>
                         </tr>
                     </thead>
-<tbody>
+<tbody *ngFor="let group of ipwtrnlistGroupedData">
 
-    <ng-container *ngFor="let group of ipwtrnlistGroupedData">
+    <tr class="table-primary fw-bold">
+        <td colspan="7">
+<small>
+            {{ group.glcode }}
 
-        <!-- GROUP HEADER -->
-        <tr class="table-primary">
-            <td colspan="6">
-                <b>GL Account: {{ group.glcode }}</b>
-            </td>
-        </tr>
+</small>
 
-        <!-- ROWS -->
-        <tr *ngFor="let row of group.transactions">
+        </td>
+    </tr>
 
-            <td>
-                <small>
-                    {{ row.DOCDATE ? (row.DOCDATE | date:'dd-MM-yyyy') : '-' }}
-                </small>
-            </td>
+    <tr *ngFor="let row of group.rows">
 
-            <!--<td>
-                <small>{{ row.JOURNALENTRY }}</small>
-            </td>-->
+        <td>
+            <small>
+                {{ row.docdate | date:'dd-MM-yyyy' }}
 
-            
+</small>
+        </td>
 
-            <td>
-                <small>{{ row.JOURNALREF }}</small>
-            </td>
-            <td>
-                <small>{{ row.COMPANYCURRENCY }}</small>
-            </td>
+        <td>
+                                <small>{{ row.journalentry }}</small>
+                            </td>
+                            <td>
+                                <small>{{ row.journalref }}</small>
+                            </td>
 
-            <td>
-                <small *ngIf="row.DEBIT_AMT != 0">
-                    {{ row.DEBIT_AMT | number:'1.3-3' }}
-                </small>
-            </td>
+        <td>
+            <small>{{ row.companycurrency }}</small>
+        </td>
 
-            <td>
-                <small *ngIf="row.CREDIT_AMT != 0">
-                    {{ row.CREDIT_AMT | number:'1.3-3' }}
-                </small>
-            </td>
+        <td>
+            <small>
+                {{ row.debit | number:'1.3-3' }}
+            </small>
+        </td>
 
-            <td>
-                <small>
-                    {{
-                      row.RUNNING_BALANCE < 0
-                      ? '(' + (row.RUNNING_BALANCE | abs | number:'1.3-3') + ')'
-                      : (row.RUNNING_BALANCE | number:'1.3-3')
-                    }}
-                </small>
-            </td>
+        <td>
+            <small>
+                {{ row.credit | abs | number:'1.3-3' }}
+            </small>
+        </td>
 
-        </tr>
+        <td>
+            <small>
 
-        <!-- SUBTOTAL -->
-        <tr class="table-warning">
+                {{
+                    row.running_balance < 0
+                    ? '(' + (row.running_balance | abs | number:'1.3-3') + ')'
+                    : (row.running_balance | number:'1.3-3')
+                }}
 
-            <td colspan="3" class="text-end">
-                <b>Subtotal for {{ group.glcode }}</b>
-            </td>
+            </small>
+        </td>
 
-            <td>
-                <b>{{ group.totals.debit | number:'1.3-3' }}</b>
-            </td>
+    </tr>
 
-            <td>
-                <b>{{ group.totals.credit | number:'1.3-3' }}</b>
-            </td>
+    <tr class="table-warning fw-bold">
 
-            <td>
-                <b>{{ group.totals.balance | number:'1.3-3' }}</b>
-            </td>
+        <td colspan="4">
+                        <small>
+Subtotal ({{ group.glcode }})
+            </small>
+        </td>
 
-        </tr>
+        <td>
+                        <small>
+{{ group.totalDebit | number:'1.3-3' }}
+            </small>
+        </td>
 
-    </ng-container>
+        <td>
+                        <small>
+{{ group.totalCredit | abs | number:'1.3-3' }}
+            </small>
+        </td>
+
+        <td>
+            <small>
+
+            {{
+                group.balance < 0
+                ? '(' + (group.balance | abs | number:'1.3-3') + ')'
+                : (group.balance | number:'1.3-3')
+            }}
+            </small>
+
+        </td>
+
+    </tr>
 
 </tbody>
 <tfoot class="table-dark">
 
     <tr>
 
-        <td colspan="3" class="text-end">
+        <td colspan="4" class="text-end">
+                        <small>
             <b>GRAND TOTAL</b>
+                                    </small>
         </td>
 
         <td>
-            <b>{{ intermediaryGrandTotals.debit | number:'1.3-3' }}</b>
+                        <small>
+            <b>{{ grandDebit | number:'1.3-3' }}</b>
+                                    </small>
         </td>
 
         <td>
-            <b>{{ intermediaryGrandTotals.credit | number:'1.3-3' }}</b>
+                        <small>
+            <b>{{ grandCredit | abs | number:'1.3-3' }}</b>
+                                    </small>
         </td>
 
         <td>
-            <b>{{ intermediaryGrandTotals.balance | number:'1.3-3' }}</b>
+                                <small>{{ grandBalance < 0 ? '(' + (grandBalance | abs | number:'1.3-3') + ')' : (grandBalance | number:'1.3-3') }}</small>
         </td>
 
     </tr>
@@ -1356,7 +1338,7 @@
     <div class="row container-fluid">
         <div class="col-4"></div>
         <div class="col-4">
-            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportGroupedTable(ipwtrnlistGroupedData,'download')" style="float: right" title="export">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportIPWTRNList()" style="float: right" title="export">
                 Export Raw Excel
             </button>
         </div>

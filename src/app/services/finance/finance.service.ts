@@ -37,6 +37,10 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
 
   getGLCode(subgroup: string) {
     return this.http.get(this.url + '/coa/glcode/search/' + subgroup)
+  } 
+
+  getAllGLCode() {
+    return this.http.get(this.url + '/coa/get-all-glcode')
   }  
 
   getMaxGlId() {

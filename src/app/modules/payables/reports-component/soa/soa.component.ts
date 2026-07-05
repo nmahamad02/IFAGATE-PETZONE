@@ -84,7 +84,12 @@ export class SoaComponent {
     credit: 0,
     balance: 0
   };  
-  ipwtrnlistGroupedData: any[] = [];
+
+ipwtrnlistGroupedData: any[] = [];
+
+grandDebit = 0;
+grandCredit = 0;
+grandBalance = 0;
 
   soaData: any[] = [];
 
@@ -1472,7 +1477,7 @@ exportSWAGE(data: any[], file: string) {
           var temp = [openingRow, ...filteredPeriodRows]
 
           this.spwtrnlistData =  temp.map((r: any) => {
-            running += (r.INV_AMOUNT - r.REFAMOUNT); // +invoice, -receipt
+            running += (r.REFAMOUNT - r.INV_AMOUNT); // +invoice, -receipt
             return {
               ...r,
               BALANCE: running
@@ -1765,7 +1770,7 @@ getIPWTRNLIST(customer: any) {
 
 }
 
-setIPWTRNLIST() {
+async setIPWTRNLIST() {
 
   if (!this.startDate || !this.endDate) {
 
@@ -1774,144 +1779,212 @@ setIPWTRNLIST() {
 
   }
 
-  const start = new Date(this.startDate);
-  start.setHours(0, 0, 0, 0);
-
-  const end = new Date(this.endDate);
-  end.setHours(23, 59, 59, 999);
-
   this.getData = true;
 
-  this.intermediaryGrandTotals = {
-    debit: 0,
-    credit: 0,
-    balance: 0
-  };
+  this.ipwtrnlistGroupedData = [];
 
-  const apiCalls = this.selectedSupplier.GLCODES.map((gl: string) =>
-    this.reportService.getGLTrnList(
-      this.selectedUnit.id,
-      gl
-    )
-  );
+  this.grandDebit = 0;
+  this.grandCredit = 0;
+  this.grandBalance = 0;
 
-  forkJoin(apiCalls).subscribe({
+  try {
 
-    next: (responses: any) => {
+    const start = this.formatDate(this.startDate);
+    const end = this.formatDate(this.endDate);
 
-      this.getData = false;
+    for (const gl of this.selectedSupplier.GLCODES) {
 
-      this.ipwtrnlistGroupedData = responses.map((res: any, index: number) => {
+      const res: any = await firstValueFrom(
+        this.reportService.getGLTransactionList(
+          start,
+          end,
+          gl,
+          this.selectedUnit.id
+        )
+      );
 
-        const glcode = this.selectedSupplier.GLCODES[index];
+      let running = 0;
+      let totalDebit = 0;
+      let totalCredit = 0;
 
-        const allRows = res.recordset || [];
+      const rows = (res || []).map((row: any) => {
 
-        // OPENING ENTRIES
-        const openingRows = allRows.filter((row: any) => {
+        const debit = Number(row.debit || 0);
+        const credit = Number(row.credit || 0);
 
-          const txnDate = new Date(row.DOCDATE);
-          txnDate.setHours(0,0,0,0);
+        running += (debit - credit);
 
-          return txnDate < start;
-
-        });
-
-        let openingDebit = 0;
-        let openingCredit = 0;
-
-        openingRows.forEach((r: any) => {
-
-          openingDebit += Number(r.DEBIT_AMT || 0);
-          openingCredit += Math.abs(Number(r.CREDIT_AMT || 0));
-
-        });
-
-        const openingBalance = openingDebit - openingCredit;
-
-        // PERIOD ROWS
-        const filteredRows = allRows.filter((row: any) => {
-
-          const txnDate = new Date(row.DOCDATE);
-
-          return txnDate >= start && txnDate <= end;
-
-        });
-
-        let runningBalance = openingBalance;
-
-        const openingRow = {
-          DOCDATE: null,
-          JOURNALENTRY: '',
-          JOURNALREF: 'OPENING BALANCE',
-          GLCODE: glcode,
-          COMPANYCURRENCY: 'KWD',
-          DEBIT_AMT: openingDebit,
-          CREDIT_AMT: openingCredit,
-          RUNNING_BALANCE: openingBalance,
-          IS_OPENING: true
-        };
-
-        const transactions = filteredRows.map((r: any) => {
-
-          const debit = Number(r.DEBIT_AMT || 0);
-          const credit = Math.abs(Number(r.CREDIT_AMT || 0));
-
-          runningBalance += (debit - credit);
-
-          return {
-            ...r,
-            CREDIT_AMT: credit,
-            RUNNING_BALANCE: runningBalance
-          };
-
-        });
-
-        const fullRows = [openingRow, ...transactions];
-
-        const totalDebit = transactions.reduce(
-          (sum: number, r: any) => sum + Number(r.DEBIT_AMT || 0),
-          0
-        );
-
-        const totalCredit = transactions.reduce(
-          (sum: number, r: any) => sum + Number(r.CREDIT_AMT || 0),
-          0
-        );
-
-        const totalBalance = openingBalance + totalDebit - totalCredit;
-
-        this.intermediaryGrandTotals.debit += totalDebit;
-        this.intermediaryGrandTotals.credit += totalCredit;
-        this.intermediaryGrandTotals.balance += totalBalance;
+        totalDebit += debit;
+        totalCredit += credit;
 
         return {
-
-          glcode,
-
-          transactions: fullRows,
-
-          totals: {
-            debit: totalDebit,
-            credit: totalCredit,
-            balance: totalBalance
-          }
-
+          ...row,
+          running_balance: running
         };
 
       });
 
-    },
+      this.ipwtrnlistGroupedData.push({
 
-    error: () => {
+        glcode: gl,
 
-      this.getData = false;
-      alert('Failed to load Period-wise GL Transaction Listing');
+        rows,
+
+        totalDebit,
+        totalCredit,
+
+        balance: running
+
+      });
+
+      this.grandDebit += totalDebit;
+      this.grandCredit += totalCredit;
+      this.grandBalance += running;
 
     }
 
+  } catch (err) {
+
+    console.error(err);
+
+  } finally {
+
+    this.getData = false;
+
+  }
+
+}
+
+exportIPWTRNList() {
+
+  const fileName =
+    `Intercompany-Transaction-Listing-${this.startDate}-${this.endDate}-${this.mCurDate}.xlsx`;
+
+  const rows: any[] = [];
+
+  // Title
+  rows.push(['Intercompany Transaction Listing']);
+  rows.push([`Period: ${this.startDate} to ${this.endDate}`]);
+  rows.push([`Unit: ${this.selectedUnit?.id || ''}`]);
+  rows.push([`Account: ${this.selectedSupplier.NAME || ''}`]);
+  rows.push([]);
+
+  // Header
+  rows.push([
+    'Transaction Date',
+    'Transaction No',
+    'Reference',
+    'Business Partner',
+    'Currency',
+    'Debit',
+    'Credit',
+    'Running Balance'
+  ]);
+
+  // Data
+  this.ipwtrnlistGroupedData.forEach((group: any) => {
+
+    // GL Heading
+    rows.push([
+      `${group.glcode} | ${group.glname}`
+    ]);
+
+    // Transactions
+    group.rows.forEach((row: any) => {
+
+      rows.push([
+        this.formatDate(row.docdate),
+        row.journalentry,
+        row.journalref,
+        row.pcode,
+        row.linecurrency,
+        Number(row.debit || 0),
+        Number(row.credit*-1 || 0),
+        Number(row.running_balance || 0)
+      ]);
+
+    });
+
+    // Subtotal
+    rows.push([
+      '',
+      '',
+      '',
+      '',
+      `Subtotal (${group.glcode})`,
+      group.totalDebit,
+      Number(group.totalCredit*-1),
+      group.balance
+    ]);
+
+    // Spacer
+    rows.push([]);
   });
 
+  // Grand Total
+  rows.push([
+    '',
+    '',
+    '',
+    '',
+    'GRAND TOTAL',
+    this.grandDebit,
+    Number(this.grandCredit*-1),
+    this.grandBalance
+  ]);
+
+  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+
+  // Column Widths
+  worksheet['!cols'] = [
+    { wch: 15 }, // Date
+    { wch: 50 }, // Transaction No
+    { wch: 50 }, // Reference
+    { wch: 25 }, // BP
+    { wch: 12 }, // Currency
+    { wch: 15 }, // Debit
+    { wch: 15 }, // Credit
+    { wch: 18 }  // Balance
+  ];
+
+  // Format number columns
+  const range = XLSX.utils.decode_range(worksheet['!ref']!);
+
+  for (let R = 0; R <= range.e.r; ++R) {
+
+    // Debit, Credit, Balance columns
+    [5, 6, 7].forEach(col => {
+
+      const cell = worksheet[
+        XLSX.utils.encode_cell({ r: R, c: col })
+      ];
+
+      if (cell && typeof cell.v === 'number') {
+        cell.z = '#,##0.000';
+      }
+    });
+  }
+
+  const workbook: XLSX.WorkBook = {
+    Sheets: {
+      Statement: worksheet
+    },
+    SheetNames: ['Statement']
+  };
+
+  const buffer = XLSX.write(workbook, {
+    bookType: 'xlsx',
+    type: 'array'
+  });
+
+  const blob = new Blob(
+    [buffer],
+    {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }
+  );
+
+  FileSaver.saveAs(blob, fileName);
 }
 
   printIPWTRNLIST() {

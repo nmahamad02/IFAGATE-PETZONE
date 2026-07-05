@@ -10,6 +10,7 @@ import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-financial-reports',
@@ -23,6 +24,7 @@ export class FinancialReportsComponent {
   @ViewChild('locmosLookupDialog', { static: false }) locmosLookupDialog!: TemplateRef<any>;
   @ViewChild('mossumLookupDialog', { static: false }) mossumLookupDialog!: TemplateRef<any>;
   @ViewChild('lwpsLookupDialog', { static: false }) lwpsLookupDialog!: TemplateRef<any>;
+  @ViewChild('gltrnlistLookupDialog', { static: false }) gltrnlistLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
@@ -35,23 +37,41 @@ export class FinancialReportsComponent {
   mossumData: any[] = []
   lwpsData: any[] = [];
   lwpsGroupedData: any[] = [];
-
+  gltrnlistData:any[] = [];
 
   groupedData: any[] = [];
   grandTotal: number = 0;
 
   locationList: any[] = [];
   customerList: any[] = [];
+  glList: any[] = [];
+  selectedGLs: string[] = [];
+
+  glGroupedData: any[] = [];
+
+grandDebit = 0;
+grandCredit = 0;
+grandBalance = 0;
+
 
   selectedLocation: string = 'NULL'
   selectedCustomer: string = 'NULL'
+  selectedGL: string = 'NULL'
 
   startDate = '2026-01-01'
   endDate = '2026-12-31'
 
+  totalDebit = 0;
+totalCredit = 0;
+finalBalance = 0;
+
   getData: boolean = false;
 
-  //searchText = ''
+  /* ------------------------------ SALES UNITS ------------------------------- */
+
+  salesUnits: { id: string; name: string; code: string; country: string }[] = [];
+  selectedUnit!: { id: string; name: string; code: string; country: string };
+  selectedCountryCode = 'un';
 
   constructor(private financeService: FinanceService, private route: ActivatedRoute, private dialog: MatDialog, private router: Router, private accountService: AccountsService, private reportService: ReportsService, private dataSharingService: DataSharingService, private sapservice: SapService) { 
     console.log(this.userRight)
@@ -59,12 +79,55 @@ export class FinancialReportsComponent {
       this.locationList = res.recordset
       console.log(this.locationList)
     })
+    this.financeService.getAllGLCode().subscribe((res: any) => {
+      this.glList = res.recordset
+      console.log(this.glList)
+    })
+  }
+
+    loadSalesUnits() {
+  this.reportService.getSalesUnits().subscribe((res: any) => {
+    console.log(res)
+    const data = res.recordset || [];
+
+    this.salesUnits = data.map((u: any) => ({
+      id: u.salesunitID,
+      name: u.salesunitname,
+      code: this.mapFlagCode(u.salesunitname),
+      country: this.mapCountry(u.salesunitname)
+    }));
+
+    // ✅ Get deptid from storage
+    const deptId = JSON.parse(localStorage.getItem('deptid') || 'null');
+
+    if (deptId === 'A') {
+      // ✅ Admin → ALL → select first
+      this.updateUnit(this.salesUnits[0]);
+    } else {
+      // ✅ Find matching unit
+      const matchedUnit = this.salesUnits.find(u => u.id === deptId);
+
+      if (matchedUnit) {
+        this.updateUnit(matchedUnit);
+        this.salesUnits = this.salesUnits.filter(u => u.id === deptId);
+      } else {
+        // fallback
+        this.updateUnit(this.salesUnits[0]);
+      }
+    }
+  });
+}
+
+  updateUnit(unit: any) {
+    this.selectedUnit = unit;
+    this.selectedCountryCode = unit.code;
   }
 
   ngOnInit() {
   const currentYear = new Date().getFullYear();
   this.yearList = Array.from({ length: 7 }, (_, i) => currentYear - i);
   this.selectedYear = currentYear;
+    this.loadSalesUnits();
 }
 
   openLOCMOS() {
@@ -472,6 +535,220 @@ exportLWPS() {
   FileSaver.saveAs(blob, fileName);
 }
 
+
+  openGLTRLT() {
+  this.dialog.open(this.gltrnlistLookupDialog, {
+    width: '95%',
+    maxWidth: '95vw'
+  });    
+  this.gltrnlistData = []
+  }
+
+async getGLTRNList() {
+
+  this.getData = true;
+
+  this.glGroupedData = [];
+
+  this.grandDebit = 0;
+  this.grandCredit = 0;
+  this.grandBalance = 0;
+
+  try {
+
+    const start = this.formatDate(this.startDate);
+    const end = this.formatDate(this.endDate);
+
+    for (const gl of this.selectedGLs) {
+
+      const res: any = await firstValueFrom(
+        this.reportService.getGLTransactionList(
+          start,
+          end,
+          gl,
+          this.selectedUnit.id
+        )
+      );
+
+      let running = 0;
+      let totalDebit = 0;
+      let totalCredit = 0;
+
+      const rows = (res || []).map((row: any) => {
+
+        const debit = Number(row.debit || 0);
+        const credit = Number(row.credit || 0);
+
+        running += (debit + credit);
+
+        totalDebit += debit;
+        totalCredit += credit;
+
+        return {
+          ...row,
+          running_balance: running
+        };
+
+      });
+
+const glObj = this.glList.find((x: any) => x.GLCODE === gl);
+
+this.glGroupedData.push({
+  glcode: gl,
+  glname: glObj?.GLNAME,
+  rows,
+  totalDebit,
+  totalCredit,
+  balance: running
+});
+
+      this.grandDebit += totalDebit;
+      this.grandCredit += totalCredit;
+      this.grandBalance += running;
+    }
+
+  } catch (e) {
+
+    console.error(e);
+
+  } finally {
+
+    this.getData = false;
+    console.log(this.glGroupedData)
+  }
+}
+
+exportGLTRNList() {
+
+  const fileName =
+    `GL-Transaction-Listing-${this.startDate}-${this.endDate}-${this.mCurDate}.xlsx`;
+
+  const rows: any[] = [];
+
+  // Title
+  rows.push(['GL Transaction Listing']);
+  rows.push([`Period: ${this.startDate} to ${this.endDate}`]);
+  rows.push([`Unit: ${this.selectedUnit?.id || ''}`]);
+  rows.push([]);
+
+  // Header
+  rows.push([
+    'Transaction Date',
+    'Transaction No',
+    'Reference',
+    'Business Partner',
+    'Currency',
+    'Debit',
+    'Credit',
+    'Running Balance'
+  ]);
+
+  // Data
+  this.glGroupedData.forEach((group: any) => {
+
+    // GL Heading
+    rows.push([
+      `${group.glcode} | ${group.glname}`
+    ]);
+
+    // Transactions
+    group.rows.forEach((row: any) => {
+
+      rows.push([
+        this.formatExcelDate(row.docdate),
+        row.journalentry,
+        row.journalref,
+        row.pcode,
+        row.linecurrency,
+        Number(row.debit || 0),
+        Number(row.credit*-1 || 0),
+        Number(row.running_balance || 0)
+      ]);
+
+    });
+
+    // Subtotal
+    rows.push([
+      '',
+      '',
+      '',
+      '',
+      `Subtotal (${group.glcode})`,
+      group.totalDebit,
+      Number(group.totalCredit*-1),
+      group.balance
+    ]);
+
+    // Spacer
+    rows.push([]);
+  });
+
+  // Grand Total
+  rows.push([
+    '',
+    '',
+    '',
+    '',
+    'GRAND TOTAL',
+    this.grandDebit,
+    Number(this.grandCredit*-1),
+    this.grandBalance
+  ]);
+
+  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+
+  // Column Widths
+  worksheet['!cols'] = [
+    { wch: 15 }, // Date
+    { wch: 50 }, // Transaction No
+    { wch: 50 }, // Reference
+    { wch: 25 }, // BP
+    { wch: 12 }, // Currency
+    { wch: 15 }, // Debit
+    { wch: 15 }, // Credit
+    { wch: 18 }  // Balance
+  ];
+
+  // Format number columns
+  const range = XLSX.utils.decode_range(worksheet['!ref']!);
+
+  for (let R = 0; R <= range.e.r; ++R) {
+
+    // Debit, Credit, Balance columns
+    [5, 6, 7].forEach(col => {
+
+      const cell = worksheet[
+        XLSX.utils.encode_cell({ r: R, c: col })
+      ];
+
+      if (cell && typeof cell.v === 'number') {
+        cell.z = '#,##0.000';
+      }
+    });
+  }
+
+  const workbook: XLSX.WorkBook = {
+    Sheets: {
+      Statement: worksheet
+    },
+    SheetNames: ['Statement']
+  };
+
+  const buffer = XLSX.write(workbook, {
+    bookType: 'xlsx',
+    type: 'array'
+  });
+
+  const blob = new Blob(
+    [buffer],
+    {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }
+  );
+
+  FileSaver.saveAs(blob, fileName);
+}
+
 formatExcelDate(date: any): string {
   if (!date) return '';
 
@@ -536,4 +813,31 @@ calcDiff(r: any): number {
 
   return v;
 }
+  
+/* ------------------------------- UTILITIES -------------------------------- */
+
+  mapCountry(name: string): string {
+    if (name.includes('Kuwait')) return 'Kuwait';
+    if (name.includes('KSA') || name.includes('Saudi')) return 'Saudi Arabia';
+    if (name.includes('Bahrain')) return 'Bahrain';
+    if (name.includes('UAE')) return 'United Arab Emirates';
+    if (name.includes('Oman')) return 'Oman';
+    if (name.includes('Qatar')) return 'Qatar';
+    return 'un';
+  }
+
+  mapFlagCode(name: string): string {
+    if (name.includes('Kuwait')) return 'kw';
+    if (name.includes('KSA') || name.includes('Saudi')) return 'sa';
+    if (name.includes('Bahrain')) return 'bh';
+    if (name.includes('UAE')) return 'ae';
+    if (name.includes('Oman')) return 'om';
+    if (name.includes('Qatar')) return 'qa';
+    return 'un';
+  }
+
+  private removeQuotes(val: string | null): string {
+    return val ? val.replace(/^"|"$/g, '') : '';
+  }
+
 }
