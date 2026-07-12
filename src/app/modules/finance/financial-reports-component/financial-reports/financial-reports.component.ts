@@ -354,14 +354,14 @@ getLWPS() {
     .getLocationwiseProfit(start, end, this.selectedLocation)
     .subscribe((res: any) => {
 
-      console.log(res.recordset)
-      if (!res.recordset || res.recordset.length === 0) {
+      console.log(res)
+      if (!res || res.length === 0) {
         alert('No data for selected criteria');
         this.getData = false;
         return;
       }
 
-      this.lwpsData = res.recordset;
+      this.lwpsData = res;
       this.getData = false;
 
       const map: any = {};
@@ -450,7 +450,7 @@ exportLWPS() {
         this.getProductType(r.ProductID),
         r.Location,
         //r.Channel,
-        '',
+        this.getThirdParty(r.GLAccountName),
         r.Supplier,
         r.SupplierType,
         r.Quantity,
@@ -766,6 +766,14 @@ getProductType(productId: any): string {
   if (!isFinite(id)) return '';
 
   return id < 1000 ? 'Service' : 'Product';
+}
+
+getThirdParty(GLname: string): string {
+  if (!GLname || GLname === 'Not Assigned') {
+    return '';
+  }
+
+  return GLname;
 }
 
 getBrandType(productId: any, brand: string): string {

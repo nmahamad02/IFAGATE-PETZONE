@@ -297,7 +297,7 @@
             <td><small>{{ getProductType(r.ProductID) }}</small></td>    
             <td><small>{{ r.Location }}</small></td>
             <!--<td><small>{{ r.Channel }}</small></td>-->
-            <td><small></small></td>
+            <td><small>{{ getThirdParty(r.GLAccountName) }}</small></td>
             <td><small>{{ r.Supplier }}</small></td>
             <td><small>{{ r.SupplierType }}</small></td>
             <td class="text-end"><small>{{ r.Quantity | number:'1.0-0' }}</small></td>
