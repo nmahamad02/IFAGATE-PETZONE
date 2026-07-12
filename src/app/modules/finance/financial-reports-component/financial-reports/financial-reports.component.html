@@ -395,9 +395,10 @@
                     <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">     
                         <tr>
                             <th><small>Transaction Date</small></th>
-                            <th><small>Transaction No</small></th>
+                            <th><small>Document Number</small></th>
+                            <th><small>Transaction Details</small></th>
                             <th><small>Reference</small></th>
-                            <th><small>Business Partner</small></th>
+                            <!--<th><small>Business Partner</small></th>-->
                             <th><small>Currency</small></th>
                             <th><small>Debit (Payments)</small></th>
                             <th><small>Credit (Bills)</small></th>
@@ -419,16 +420,19 @@
                                 </small>
                             </td>
                             <td>
+                                <small>{{ row.docid }}</small>
+                            </td>
+                            <td>
                                 <small>{{ row.journalentry }}</small>
                             </td>
                             <td>
                                 <small>{{ row.journalref }}</small>
                             </td>
-                            <td>
+                            <!--<td>
                                 <small>{{ row.pcode }}</small>
-                            </td>
+                            </td>-->
                             <td>
-                                <small>{{ row.linecurrency }}</small>
+                                <small>{{ row.companycurrency }}</small>
                             </td>
                             <td>
                                 <small>{{ row.debit | number:'1.3-3' }}</small>

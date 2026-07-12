@@ -374,7 +374,7 @@ getLWPS() {
       this.lwpsGroupedData = Object.keys(map).map(loc => {
         const rows = map[loc];
 
-        const totalqty = rows.reduce((sum: number, x: any) => sum + Number(x.UNITQTY || 0), 0);
+        const totalqty = rows.reduce((sum: number, x: any) => sum + Number(x.Quantity || 0), 0);
         const totalSales = rows.reduce((sum: number, x: any) => sum + Number(x.GrossAmount || 0), 0);
         const totalCost = rows.reduce((sum: number, x: any) => sum + Number(x.CostOfSale || 0), 0);
         const totalProfit = totalSales - totalCost;
@@ -453,15 +453,15 @@ exportLWPS() {
         this.getThirdParty(r.GLAccountName),
         r.Supplier,
         r.SupplierType,
-        r.Quantity,
+        Number(r.Quantity).toFixed(0),
         r.Unit,
-        r.UnitPrice,
-        this.calcDiff(r),
-        r.GrossAmount,
-        r.UnitCost,
-        r.CostOfSale,
-        r.GrossProfit,
-        r.ProfitMarginPercent
+Number(r.UnitPrice),
+Number(this.calcDiff(r)),
+Number(r.GrossAmount),
+Number(r.UnitCost),
+Number(r.CostOfSale),
+Number(r.GrossProfit),
+Number(r.ProfitMarginPercent)
       ]);
     });
 
@@ -480,15 +480,15 @@ exportLWPS() {
       '',
       '',
       '',
-      group.totalqty,
+      Number(group.totalqty),
       '',
       '',
       '',
-      group.totalSales,
+      Number(group.totalSales),
       '',
-      group.totalCost,
-      group.totalProfit,
-      group.margin
+      Number(group.totalCost),
+      Number(group.totalProfit),
+      Number(group.margin)
     ]);
 
     // Spacer row
@@ -499,24 +499,59 @@ exportLWPS() {
 
   // Column widths
   worksheet['!cols'] = [
-    { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 25 },
-    { wch: 15 }, { wch: 35 }, { wch: 20 }, { wch: 25 }, 
-    { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 35 }, 
-    { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, 
-    { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
-    { wch: 15 }, { wch: 15 }
+    { wch: 15 }, { wch: 12 }, { wch: 13 }, { wch: 25 },
+    { wch: 10 }, { wch: 35 }, { wch: 20 }, { wch: 20 }, 
+    { wch: 11 }, { wch: 15 }, { wch: 15 }, { wch: 35 }, 
+    { wch: 11 }, { wch: 5 }, { wch: 5 }, { wch: 10 }, 
+    { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, 
+    { wch: 10 }, { wch: 10 }
   ];
 
   // Number formatting
   const range = XLSX.utils.decode_range(worksheet['!ref']!);
   for (let R = 0; R <= range.e.r; ++R) {
-    [9, 11, 12, 13, 14, 15, 16, 17].forEach(col => {
-      const cell = worksheet[XLSX.utils.encode_cell({ r: R, c: col })];
-      if (cell && typeof cell.v === 'number') {
+
+  // Qty column
+  const qtyCell = worksheet[XLSX.utils.encode_cell({ r: R, c: 13 })];
+  if (qtyCell && typeof qtyCell.v === 'number') {
+    qtyCell.z = '#,##0';
+  }
+
+  // Decimal columns
+  [15, 16, 17, 18, 19, 20, 21].forEach(col => {
+    const cell = worksheet[XLSX.utils.encode_cell({ r: R, c: col })];
+    if (cell && typeof cell.v === 'number') {
+      cell.z = '#,##0.000';
+    }
+  });
+
+}
+
+for (let R = 0; R <= range.e.r; ++R) {
+
+  // Qty column
+  const qtyCell = worksheet[XLSX.utils.encode_cell({ r: R, c: 13 })];
+  if (qtyCell) {
+    qtyCell.s = {
+      alignment: { horizontal: 'right' }
+    };
+  }
+
+  // Numeric columns
+  [15, 16, 17, 18, 19, 20, 21].forEach(col => {
+    const cell = worksheet[XLSX.utils.encode_cell({ r: R, c: col })];
+
+    if (cell) {
+      cell.s = {
+        alignment: { horizontal: 'right' }
+      };
+
+      if (typeof cell.v === 'number') {
         cell.z = '#,##0.000';
       }
-    });
-  }
+    }
+  });
+}
 
   const workbook: XLSX.WorkBook = {
     Sheets: { Statement: worksheet },
@@ -631,18 +666,6 @@ exportGLTRNList() {
   rows.push([`Unit: ${this.selectedUnit?.id || ''}`]);
   rows.push([]);
 
-  // Header
-  rows.push([
-    'Transaction Date',
-    'Transaction No',
-    'Reference',
-    'Business Partner',
-    'Currency',
-    'Debit',
-    'Credit',
-    'Running Balance'
-  ]);
-
   // Data
   this.glGroupedData.forEach((group: any) => {
 
@@ -651,15 +674,30 @@ exportGLTRNList() {
       `${group.glcode} | ${group.glname}`
     ]);
 
+      rows.push([]);
+
+      // Header
+  rows.push([
+    'Transaction Date',
+    'Document Number',
+    'Transaction Details',
+    'Reference',
+    //'Account',
+    'Currency',
+    'Debit',
+    'Credit',
+    'Balance'
+  ]);
     // Transactions
     group.rows.forEach((row: any) => {
 
       rows.push([
         this.formatExcelDate(row.docdate),
+        row.docid,
         row.journalentry,
         row.journalref,
-        row.pcode,
-        row.linecurrency,
+        //row.pcode,
+        row.companycurrency,
         Number(row.debit || 0),
         Number(row.credit*-1 || 0),
         Number(row.running_balance || 0)
@@ -669,14 +707,14 @@ exportGLTRNList() {
 
     // Subtotal
     rows.push([
+      `Subtotal (${group.glcode} | ${group.glname})`,
       '',
       '',
       '',
       '',
-      `Subtotal (${group.glcode})`,
-      group.totalDebit,
+      Number(group.totalDebit),
       Number(group.totalCredit*-1),
-      group.balance
+      Number(group.balance)
     ]);
 
     // Spacer
@@ -689,10 +727,11 @@ exportGLTRNList() {
     '',
     '',
     '',
+    //'',
     'GRAND TOTAL',
-    this.grandDebit,
+    Number(this.grandDebit),
     Number(this.grandCredit*-1),
-    this.grandBalance
+    Number(this.grandBalance)
   ]);
 
   const worksheet = XLSX.utils.aoa_to_sheet(rows);
@@ -700,9 +739,10 @@ exportGLTRNList() {
   // Column Widths
   worksheet['!cols'] = [
     { wch: 15 }, // Date
+    { wch: 25 }, // Transaction No
     { wch: 50 }, // Transaction No
     { wch: 50 }, // Reference
-    { wch: 25 }, // BP
+   // { wch: 25 }, // BP
     { wch: 12 }, // Currency
     { wch: 15 }, // Debit
     { wch: 15 }, // Credit
@@ -715,7 +755,7 @@ exportGLTRNList() {
   for (let R = 0; R <= range.e.r; ++R) {
 
     // Debit, Credit, Balance columns
-    [5, 6, 7].forEach(col => {
+    [6, 7, 8].forEach(col => {
 
       const cell = worksheet[
         XLSX.utils.encode_cell({ r: R, c: col })
