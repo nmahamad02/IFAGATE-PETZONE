@@ -1198,7 +1198,8 @@
                     <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">     
                         <tr>
                             <th><small>Transaction Date</small></th>
-                            <th><small>Transaction No</small></th>
+                            <th><small>Document Number</small></th>
+                            <th><small>Transaction Details</small></th>
                             <th><small>Reference</small></th>
                             <th><small>Currency</small></th>
                             <th><small>Debit (Payments)</small></th>
@@ -1209,7 +1210,7 @@
 <tbody *ngFor="let group of ipwtrnlistGroupedData">
 
     <tr class="table-primary fw-bold">
-        <td colspan="7">
+        <td colspan="8">
 <small>
             {{ group.glcode }}
 
@@ -1228,6 +1229,9 @@
         </td>
 
         <td>
+                                <small>{{ row.docid }}</small>
+                            </td>
+                            <td>
                                 <small>{{ row.journalentry }}</small>
                             </td>
                             <td>
@@ -1266,7 +1270,7 @@
 
     <tr class="table-warning fw-bold">
 
-        <td colspan="4">
+        <td colspan="5">
                         <small>
 Subtotal ({{ group.glcode }})
             </small>
@@ -1303,7 +1307,7 @@ Subtotal ({{ group.glcode }})
 
     <tr>
 
-        <td colspan="4" class="text-end">
+        <td colspan="5" class="text-end">
                         <small>
             <b>GRAND TOTAL</b>
                                     </small>

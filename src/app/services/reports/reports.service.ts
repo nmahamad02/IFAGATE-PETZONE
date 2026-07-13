@@ -72,6 +72,10 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
 
   getGLTransactionList(fromdate: string, todate: string, glcode: string, compcode: string) {
     return this.http.get(this.url + '/report/get-gl-tran-listing/' + fromdate + '/' + todate + '/' + glcode  + '/' + compcode)
+  }  
+  
+  getInterCompanyTranListing(fromdate: string, todate: string, glcode: string) {
+    return this.http.get(this.url + '/report/get-intercompany-tran-listing/' + fromdate + '/' + todate + '/' + glcode)
   }
 
   getSupplierSOA(compcode: string,pcode: string, enddate: string) {
@@ -80,6 +84,10 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
   
   getSupplierAgeingData(compcode: string, enddate: string) {
     return this.http.get(this.url + '/report/get-supplier-ageing-data/' + compcode + '/' + enddate)
+  }
+
+  getSupplierOutstanding(compcode: string, pcode: string, enddate: string) {
+    return this.http.get(this.url + '/report/get-supplier-outstanding/' + compcode + '/' + pcode + '/' + enddate)
   }
 
   getParentSoa(parentcode: string, compcode: string) {

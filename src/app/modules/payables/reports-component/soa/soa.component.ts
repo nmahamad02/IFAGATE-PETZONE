@@ -220,63 +220,6 @@ sendErrorEmail(type: string) {
       error: err => console.error("Error sending error email", err)
     });
 }
-  loadSuppliers() {
-    this.getData = true;
-    this.accountService.listOpbal(this.currentYear.toString(),'S').subscribe((res: any) => {
-      this.getData = false;
-      console.log(res.recordset)
-      this.supplierList = res.recordset;
-    }, (err:any) => {
-      this.getData = false;
-      alert('Failed to load suppliers!');
-    });
-  }
-
-loadIntermedaries() {
-    this.getData = true;
-    /*this.accountService.listOpbal(this.currentYear.toString(),'G').subscribe((res: any) => {
-      this.getData = false;
-      console.log(res.recordset)
-      this.intermediariesList = res.recordset;
-    }, (err:any) => {
-      this.getData = false;
-      alert('Failed to load suppliers!');
-    });*/
-    this.intermediariesList = [
-  {
-    CUST_NAME: 'Petzone Market Company - Kuwait',
-    GLCODES: ['102311']
-  },
-  {
-    CUST_NAME: 'Basic General Trading - Kuwait',
-    GLCODES: ['102312', '201312']
-  },
-  {
-    CUST_NAME: 'United Shipping Co.',
-    GLCODES: ['102313', '201313']
-  },
-  {
-    CUST_NAME: 'Basic General Trading - UAE',
-    GLCODES: ['102321', '201321']
-  },
-  {
-    CUST_NAME: 'Petzone LLC - UAE',
-    GLCODES: ['102323']
-  },
-  {
-    CUST_NAME: 'Petzone KSA',
-    GLCODES: ['102324', '201324']
-  },
-  {
-    CUST_NAME: 'Petzone Qatar',
-    GLCODES: ['102325']
-  },
-  {
-    CUST_NAME: 'Petzone Bahrain',
-    GLCODES: ['102326']
-  }
-];
-}
 
 ngOnInit() {
   this.loadSalesUnits();
@@ -439,13 +382,10 @@ this.currencyChart = Object.entries(map)
     this.accountService.listOpbal(this.currentYear.toString(), 'S')
       .subscribe((res: any) => this.supplierList = res.recordset || []);
 
-    /*this.accountService.listOpbal(this.currentYear.toString(), 'G')
-      .subscribe((res: any) => this.intermediariesList = res.recordset || []);*/
-
-          this.intermediariesList = [
+        this.intermediariesList = [
   {
     CUST_NAME: 'Petzone Market Company - Kuwait',
-    GLCODES: ['102311']
+    GLCODES: ['102311', '201311']
   },
   {
     CUST_NAME: 'Basic General Trading - Kuwait',
@@ -461,7 +401,7 @@ this.currencyChart = Object.entries(map)
   },
   {
     CUST_NAME: 'Petzone LLC - UAE',
-    GLCODES: ['102323']
+    GLCODES: ['102323', '201323']
   },
   {
     CUST_NAME: 'Petzone KSA',
@@ -469,11 +409,11 @@ this.currencyChart = Object.entries(map)
   },
   {
     CUST_NAME: 'Petzone Qatar',
-    GLCODES: ['102325']
+    GLCODES: ['102325', '201325']
   },
   {
     CUST_NAME: 'Petzone Bahrain',
-    GLCODES: ['102326']
+    GLCODES: ['102326', '201326']
   }
 ];
 
@@ -841,52 +781,27 @@ async buildOutstandingFromSOA() {
     for (const s of this.supplierList) {
 
       const res: any = await firstValueFrom(
-        this.reportService.getSupplierSOA(
+        this.reportService.getSupplierOutstanding(
           this.selectedUnit.id,
           s.PCODE,
           this.endDate
         )
       );
 
-      const rows = res.recordset || [];
+      const row = res.recordset?.[0];
 
-      let agg = {
+      const outstanding = Number(row?.TRN_BAL_AMT || 0);
+
+      result.push({
         PCODE: s.PCODE,
         CUST_NAME: s.CUST_NAME,
         Nature: s.Nature,
         SupplierCategory: s.SupplierCategory,
         REMARKS: s.REMARKS,
 
-        CURRENT_OUTSTANDING: 0,
-        CURRENT: 0,
-        '1_30': 0,
-        '31_60': 0,
-        '61_90': 0,
-        '90_PLUS': 0
-      };
-
-      rows.forEach((r: any) => {
-
-        const bal = (Number(r.BALANCE)*-1) || 0;
-
-        agg.CURRENT_OUTSTANDING += bal;
-
-        if (r.DOC_TYPE === 'INVOICE') {
-          if (r.AGE_DAYS <= 0) agg.CURRENT += bal;
-          else if (r.AGE_DAYS <= 30) agg['1_30'] += bal;
-          else if (r.AGE_DAYS <= 60) agg['31_60'] += bal;
-          else if (r.AGE_DAYS <= 90) agg['61_90'] += bal;
-          else agg['90_PLUS'] += bal;
-        }
+        CURRENT_OUTSTANDING: outstanding
       });
-      result.push(agg);
     }
-    
-
-
-    /* -----------------------------------------------------------
-       ✅ GROUP BY CATEGORY
-    ----------------------------------------------------------- */
 
     const categoryMap = new Map<string, any>();
 
@@ -895,8 +810,9 @@ async buildOutstandingFromSOA() {
       const category = s.SupplierCategory || 'Uncategorized';
 
       if (!categoryMap.has(category)) {
+
         categoryMap.set(category, {
-          category: category,
+          category,
           subtotal: 0,
           suppliers: []
         });
@@ -908,23 +824,17 @@ async buildOutstandingFromSOA() {
       group.subtotal += s.CURRENT_OUTSTANDING;
     }
 
-    /* -----------------------------------------------------------
-       ✅ SORTING
-    ----------------------------------------------------------- */
-
     const finalData = Array.from(categoryMap.values());
 
-    finalData.sort((a, b) => a.category.localeCompare(b.category));
+    finalData.sort((a, b) =>
+      a.category.localeCompare(b.category)
+    );
 
     finalData.forEach(group => {
-group.suppliers.sort((a: any, b: any) =>
-  a.PCODE.localeCompare(b.PCODE)
-);
+      group.suppliers.sort((a: any, b: any) =>
+        a.PCODE.localeCompare(b.PCODE)
+      );
     });
-
-    /* -----------------------------------------------------------
-       ✅ FINAL OUTPUT
-    ----------------------------------------------------------- */
 
     this.swoutData = finalData;
 
@@ -933,11 +843,17 @@ group.suppliers.sort((a: any, b: any) =>
       0
     );
 
-  } catch (e) {
+  }
+  catch (e) {
+
     console.error(e);
     alert('Failed to load Supplier Outstanding');
-  } finally {
+
+  }
+  finally {
+
     this.getData = false;
+
   }
 }
 
@@ -1088,60 +1004,155 @@ async buildAgeingFromSOA() {
 
 exportSWOUT(data: any[], file: string) {
 
-  let exportData: any[] = [];
+  const rows: any[] = [];
+
+  /* ========================================
+     REPORT HEADER
+  ======================================== */
+
+  rows.push(['Supplier Outstanding Report']);
+  rows.push([`As On Date: ${this.formatDate(this.endDate)}`]);
+  rows.push([`Nature: ${this.selectedNature || 'All'}`]);
+  rows.push([`Category: ${this.selectedCategory || 'All'}`]);
+  rows.push([]);
+
+  /* ========================================
+     DATA
+  ======================================== */
 
   data.forEach((group: any) => {
 
-    // ✅ CATEGORY HEADER
-    exportData.push({
-      'Supplier Code': group.category,
-      'Supplier Name': '',
-      'Nature': '',
-      'Category': '',
-      'Payment Term': '',
-      'Current Outstanding': group.subtotal
-    });
+    // Category Heading
+    rows.push([
+      `${group.category}`,
+      '',
+      '',
+      '',
+      '',
+      Number(group.subtotal)
+    ]);
 
-    // ✅ SUPPLIER ROWS
+    rows.push([]);
+
+    // Column Header
+    rows.push([
+      'Supplier Code',
+      'Supplier Name',
+      'Nature',
+      'Category',
+      'Payment Term',
+      'Current Outstanding'
+    ]);
+
+    // Supplier Rows
     group.suppliers.forEach((s: any) => {
-      exportData.push({
-        'Supplier Code': s.PCODE,
-        'Supplier Name': s.CUST_NAME,
-        'Nature': s.Nature,
-        'Category': s.SupplierCategory,
-        'Payment Term': s.REMARKS,
-        'Current Outstanding': s.CURRENT_OUTSTANDING
-      });
+
+      rows.push([
+        s.PCODE,
+        s.CUST_NAME,
+        s.Nature,
+        s.SupplierCategory,
+        s.REMARKS,
+        Number(s.CURRENT_OUTSTANDING || 0)
+      ]);
+
     });
 
-    // ✅ SUBTOTAL ROW
-    exportData.push({
-      'Supplier Code': `Subtotal - ${group.category}`,
-      'Supplier Name': '',
-      'Nature': '',
-      'Category': '',
-      'Payment Term': '',
-      'Current Outstanding': group.subtotal
-    });
+    // Subtotal
+    rows.push([
+      `Subtotal (${group.category})`,
+      '',
+      '',
+      '',
+      '',
+      Number(group.subtotal)
+    ]);
 
-    // ✅ SPACER
-    exportData.push({});
+    rows.push([]);
   });
 
-  // ✅ GRAND TOTAL
-  exportData.push({
-    'Supplier Code': 'GRAND TOTAL',
-    'Current Outstanding': this.totalOutstanding
+  /* ========================================
+     GRAND TOTAL
+  ======================================== */
+
+  rows.push([
+    '',
+    '',
+    '',
+    '',
+    'GRAND TOTAL',
+    Number(this.totalOutstanding)
+  ]);
+
+  /* ========================================
+     CREATE SHEET
+  ======================================== */
+
+  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+
+  /* ========================================
+     COLUMN WIDTHS
+  ======================================== */
+
+  worksheet['!cols'] = [
+    { wch: 15 }, // Supplier Code
+    { wch: 40 }, // Supplier Name
+    { wch: 20 }, // Nature
+    { wch: 20 }, // Category
+    { wch: 20 }, // Payment Term
+    { wch: 18 }  // Outstanding
+  ];
+
+  /* ========================================
+     NUMBER FORMATTING
+  ======================================== */
+
+  const range = XLSX.utils.decode_range(
+    worksheet['!ref']!
+  );
+
+  for (let R = 0; R <= range.e.r; ++R) {
+
+    // Outstanding Column (F)
+    const cell = worksheet[
+      XLSX.utils.encode_cell({
+        r: R,
+        c: 5
+      })
+    ];
+
+    if (cell && typeof cell.v === 'number') {
+      cell.z = '#,##0.000';
+    }
+  }
+
+  /* ========================================
+     WORKBOOK
+  ======================================== */
+
+  const workbook: XLSX.WorkBook = {
+    Sheets: {
+      Statement: worksheet
+    },
+    SheetNames: ['Statement']
+  };
+
+  const buffer = XLSX.write(workbook, {
+    bookType: 'xlsx',
+    type: 'array'
   });
 
-  const ws = XLSX.utils.json_to_sheet(exportData);
-  const wb = { Sheets: { Data: ws }, SheetNames: ['Data'] };
-
-  const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob(
+    [buffer],
+    {
+      type:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }
+  );
 
   FileSaver.saveAs(
-    new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-    `${file}.xlsx`
+    blob,
+    `${file}-${this.formatDate(this.endDate)}.xlsx`
   );
 }
 
@@ -1787,6 +1798,10 @@ async setIPWTRNLIST() {
   this.grandCredit = 0;
   this.grandBalance = 0;
 
+  console.log(this.selectedSupplier);
+console.log(this.selectedSupplier.GLCODES);
+console.log(this.selectedSupplier.GLCODES.length);
+
   try {
 
     const start = this.formatDate(this.startDate);
@@ -1794,12 +1809,13 @@ async setIPWTRNLIST() {
 
     for (const gl of this.selectedSupplier.GLCODES) {
 
+  console.log('Processing GL', gl);
+
       const res: any = await firstValueFrom(
-        this.reportService.getGLTransactionList(
+        this.reportService.getInterCompanyTranListing(
           start,
           end,
-          gl,
-          this.selectedUnit.id
+          gl
         )
       );
 
@@ -1812,7 +1828,7 @@ async setIPWTRNLIST() {
         const debit = Number(row.debit || 0);
         const credit = Number(row.credit || 0);
 
-        running += (debit - credit);
+        running += (debit + credit);
 
         totalDebit += debit;
         totalCredit += credit;
@@ -1840,6 +1856,10 @@ async setIPWTRNLIST() {
       this.grandDebit += totalDebit;
       this.grandCredit += totalCredit;
       this.grandBalance += running;
+
+      
+  console.log('Finished GL', gl);
+
 
     }
 
