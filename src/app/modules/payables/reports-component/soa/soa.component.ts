@@ -1815,7 +1815,8 @@ console.log(this.selectedSupplier.GLCODES.length);
         this.reportService.getInterCompanyTranListing(
           start,
           end,
-          gl
+          gl,
+          this.selectedUnit.id,
         )
       );
 
