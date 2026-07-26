@@ -10,7 +10,7 @@ import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-financial-reports',
@@ -25,6 +25,7 @@ export class FinancialReportsComponent {
   @ViewChild('mossumLookupDialog', { static: false }) mossumLookupDialog!: TemplateRef<any>;
   @ViewChild('lwpsLookupDialog', { static: false }) lwpsLookupDialog!: TemplateRef<any>;
   @ViewChild('gltrnlistLookupDialog', { static: false }) gltrnlistLookupDialog!: TemplateRef<any>;
+  @ViewChild('costVerificationDialog', { static: false }) costVerificationDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
@@ -53,9 +54,16 @@ grandDebit = 0;
 grandCredit = 0;
 grandBalance = 0;
 
+  productDetails: any[] = [];
+  costDetails: any[] = [];
+  transactionData : any[] = [];
+  groupedTransactions: any[] = [];
 
   selectedLocation: string = 'NULL'
   selectedCustomer: string = 'NULL'
+  selectedProduct: any;
+
+  searchText = '';
   selectedGL: string = 'NULL'
 
   startDate = '2026-01-01'
@@ -78,6 +86,10 @@ finalBalance = 0;
     this.reportService.getLocation().subscribe((res: any) => {
       this.locationList = res.recordset
       console.log(this.locationList)
+    })
+    this.reportService.getProductListPostGres().subscribe((res: any) => {
+      this.productDetails = res
+      console.log(this.productDetails)
     })
     this.financeService.getAllGLCode().subscribe((res: any) => {
       this.glList = res.recordset
@@ -799,6 +811,59 @@ formatExcelDate(date: any): string {
   const year = d.getFullYear();
 
   return `${day}-${month}-${year}`; // or yyyy-mm-dd if you prefer
+}
+
+openCostVerification() {
+  this.dialog.open(this.costVerificationDialog, {
+    width: '95%',
+    maxWidth: '95vw'
+  });
+
+  this.selectedProduct = {};
+  this.startDate = '2026-01-01';
+  this.endDate = '2026-12-31';
+  this.costDetails = [];
+  this.transactionData = [];
+  this.getData = false;
+}
+
+  setProductDetails(product: any) {
+    this.selectedProduct = product
+  }
+
+  getCostList(){
+    if (!this.selectedProduct || !this.startDate || !this.endDate) {
+    alert('Please select product, start date, and end date');
+    return;
+  }
+  const productId = this.selectedProduct.material_id;
+
+  this.reportService.getCostVerificationCostDetails(productId).subscribe((res: any) => {
+    this.costDetails = res
+  }, (err) => {
+      console.error(err);
+      this.getData = false;
+      alert('Failed to load cost details');
+    })
+
+  }
+
+getCostVerification(locId: string) {
+
+  this.getData = true;
+
+  const productId = this.selectedProduct.material_id;
+  const start = this.formatDate(this.startDate);
+  const end = this.formatDate(this.endDate);
+
+  this.reportService.getCostVerificationCostTransactions(start, end, productId, locId).subscribe((res: any) => {
+    this.transactionData = res
+    this.getData = false;
+  }, (err) => {
+      console.error(err);
+      this.getData = false;
+      alert('Failed to load transaction');
+    })
 }
 
 getProductType(productId: any): string {

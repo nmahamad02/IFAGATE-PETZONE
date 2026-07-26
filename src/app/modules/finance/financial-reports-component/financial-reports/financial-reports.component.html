@@ -43,6 +43,7 @@
                                         <a class="nav-link" (click)="openGLTRLT()">GL Transaction Listing</a>
                                     </td>
                                     <td>
+                                        <a class="nav-link" (click)="openCostVerification()">Cost Verification</a>
                                     </td>
                                     <td>
                                     </td>
@@ -99,9 +100,9 @@
         <table class="table table-striped table-sm table-bordered" id="locMosTable">
             <thead class="table-dark">
                     <tr>
-                        <th>Month</th>
-                        <th colspan="2">Location</th>
-                        <th>Amount</th>
+                        <th><small>Month</small></th>
+                        <th colspan="2"><small>Location</small></th>
+                        <th><small>Amount</small></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -169,19 +170,19 @@
             <table class="table table-striped table-sm table-bordered" id="mosSumTable">
                 <thead class="table-dark">
                     <tr>
-                        <th>Location</th>
-                        <th>January</th>
-                        <th>February</th>
-                        <th>March</th>
-                        <th>April</th>
-                        <th>May</th>
-                        <th>June</th>
-                        <th>July</th>
-                        <th>August</th>
-                        <th>September</th>
-                        <th>October</th>
-                        <th>November</th>
-                        <th>December</th>
+                        <th><small>Location</small></th>
+                        <th><small>January</small></th>
+                        <th><small>February</small></th>
+                        <th><small>March</small></th>
+                        <th><small>April</small></th>
+                        <th><small>May</small></th>
+                        <th><small>June</small></th>
+                        <th><small>July</small></th>
+                        <th><small>August</small></th>
+                        <th><small>September</small></th>
+                        <th><small>October</small></th>
+                        <th><small>November</small></th>
+                        <th><small>December</small></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -258,29 +259,29 @@
     <table class="table table-bordered table-sm" id="lwpsTable">
       <thead class="table-dark">
         <tr>
-          <th>Voucher Number</th>
-          <th>Date</th>  
-          <th>Customer ID</th>
-          <th>Customer Name</th>
-          <th>Product ID</th>
-          <th>Product Name</th>
-          <th>Brand</th>
-          <th>Category</th>
-          <th>Product Type</th>
-          <th>Location</th>
-          <!--<th>Channel</th>-->
-          <th>Third Party</th>
-          <th>Supplier</th>
-          <th>Supplier Type</th>
-          <th>Quantity</th>
-          <th>Unit</th>
-          <th>Unit Price</th>
-          <th>Item Discount</th>
-          <th>Net Sales</th>
-          <th>Unit Cost</th>
-          <th>Net Cost</th>
-          <th>Gross Margin</th>
-          <th>Margin %</th>
+          <th><small>Voucher Number</small></th>
+          <th><small>Date</small></th>  
+          <th><small>Customer ID</small></th>
+          <th><small>Customer Name</small></th>
+          <th><small>Product ID</small></th>
+          <th><small>Product Name</small></th>
+          <th><small>Brand</small></th>
+          <th><small>Category</small></th>
+          <th><small>Product Type</small></th>
+          <th><small>Location</small></th>
+          <!--<th><small>Channel</small></th>-->
+          <th><small>Third Party</small></th>
+          <th><small>Supplier</small></th>
+          <th><small>Supplier Type</small></th>
+          <th><small>Quantity</small></th>
+          <th><small>Unit</small></th>
+          <th><small>Unit Price</small></th>
+          <th><small>Item Discount</small></th>
+          <th><small>Net Sales</small></th>
+          <th><small>Unit Cost</small></th>
+          <th><small>Net Cost</small></th>
+          <th><small>Gross Margin</small></th>
+          <th><small>Margin %</small></th>
         </tr>
       </thead>
       <tbody>
@@ -505,5 +506,125 @@
             </button>
         </div>-->
     </div>
+    <br>
+</ng-template>
+
+<ng-template #costVerificationDialog style="width: 100%;">
+    <h3 matDialogTitle>
+    <b>Cost Verification Report</b>
+    </h3>
+    <hr>
+
+    <div mat-dialog-content style="font-size: small;">
+        <div class="row">
+            <div class="col-3">
+                <div class="mb-3">
+                    <input type="text" [(ngModel)]="searchText" class="form-control form-control-sm" placeholder="Search products..." />
+                </div>
+                <table class="table table-hover table-sm table-bordered">
+                    <thead class="table-dark">
+                        <tr class="table-reflow">
+                            <th><small>PRODUCT NAME</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let prod of (productDetails | filterTable:searchText| slice:0:10); let i = index;">
+                            <td (click)="setProductDetails(prod)"><small>{{ prod.material_name }} ({{ prod.material_id }})</small></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-9">
+                <div class="row">
+                    <div class="col-4">
+                        <input type="text" class="form-control form-control-sm" [value]="selectedProduct?.material_id" placeholder="Product ID" disabled>
+                    </div>
+                    <div class="col-3">
+                        <input type="date" class="form-control form-control-sm" [(ngModel)]="startDate" placeholder="Start Date">
+                    </div>
+                    <div class="col-3">
+                        <input type="date" class="form-control form-control-sm" [(ngModel)]="endDate" placeholder="End Date">
+                    </div>
+                    <div class="col-2">
+                        <button class="btn btn-sm btn-primary" (click)="getCostList()">Filter</button>
+                    </div>
+                </div>
+                <br>
+                <div class="row" *ngIf="getData === true">
+                    <div class="col-4"></div>
+                    <div class="col-4">
+                        <mat-spinner></mat-spinner>
+                    </div>
+                    <div class="col-4"></div>
+                </div>
+
+                <div class="row">
+                    <!-- LEFT: COST DETAILS -->
+                    <div class="col-6">
+                        <h5>Product Cost Details</h5>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-striped table-sm table-bordered table-responsive"  style="max-height: 300px; overflow-y: auto;">
+                                <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+                                    <tr>
+                                        <th><small>Location</small></th>
+                                        <th><small>Start Date</small></th>
+                                        <th><small>Cost Type</small></th>
+                                        <th class="text-end"><small>Cost</small></th>
+                                        <th><small>Currency</small></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let r of costDetails" (click)="getCostVerification(r.LocationID)">
+                                        <td><small>{{ r.LocationID }} | {{ r.LocationName }}</small></td>
+                                        <td><small>{{ r.StartDate | date:'dd-MM-yyyy' }}</small></td>
+                                        <td><small>{{ r.AccGroupName }}</small></td>
+                                        <td class="text-end"><small>{{ r.ProductCost | number:'1.3-3' }}</small></td>
+                                        <td><small>{{ r.Currency }}</small></td>
+                                    </tr>
+                                    <tr *ngIf="costDetails.length === 0">
+                                        <td colspan="5" class="text-center">No cost data found</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+ 
+                    <!-- RIGHT: SALES TRANSACTIONS -->
+                    <div class="col-6">
+                        <h5>Sales Transactions</h5>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-striped table-sm table-bordered table-responsive"  style="max-height: 300px; overflow-y: auto;">
+                                <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+                                    <tr>
+                                        <th><small>Voucher</small></th>
+                                        <th><small>Date</small></th>
+                                        <th><small>Location</small></th>
+                                        <th class="text-end"><small>Qty</small></th>
+                                        <th class="text-end"><small>Unit Price</small></th>
+                                        <th class="text-end"><small>Product Cost</small></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let r of transactionData">
+                                        <td><small>{{ r.VoucherNo }}</small></td>
+                                        <td><small>{{ r.VoucherDate | date:'dd-MM-yyyy' }}</small></td>
+                                        <td><small>{{ r.Location }}</small></td>
+                                        <td class="text-end"><small>{{ r.Quantity | number:'1.0-0' }}</small></td>
+                                        <td class="text-end"><small>{{ r.UnitPrice | number:'1.3-3' }}</small></td>
+                                        <td class="text-end"><small>{{ r.RecordedUnitCost | number:'1.3-3' }}</small></td>
+                                    </tr>
+                                     <tr *ngIf="transactionData.length === 0">
+                                        <td colspan="6" class="text-center">No transaction data found</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br>
+    </div>
+    <hr>
     <br>
 </ng-template>

@@ -180,6 +180,18 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
     return this.http.get(this.url + '/report/get-locationwise-profit/' + startDate + '/' + endDate + '/' + location);
   }
 
+  getCostVerificationCostDetails(productId: string) {
+    return this.http.get(this.url + '/report/get-cost-verification-details/' + productId);
+  }
+
+  getCostVerificationCostTransactions(startDate: string, endDate: string, productId: string, locationId: string) {
+    return this.http.get(this.url + '/report/get-cost-verification-transactions/' + productId + '/' + startDate + '/' + endDate + '/' + locationId);
+  }
+
+  getProductListPostGres() {
+    return this.http.get(this.url + '/report/get-product-list-postgres')
+  } 
+
   getFastMovingBrand(period: string) {
     return this.http.get(this.url + '/report/get-fast-moving-brand/'  + period)
   }  
