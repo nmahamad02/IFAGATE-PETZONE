@@ -404,6 +404,89 @@ getLWPS() {
     });
 }
 
+async newGetLWPS() {
+  if (!this.startDate || !this.endDate) {
+    alert('Please select start & end date');
+    return;
+  }
+
+  this.getData = true;
+  this.lwpsGroupedData = [];
+
+  const start = this.formatDate(this.startDate);
+  const end = this.formatDate(this.endDate);
+  const location = this.selectedLocation;
+
+  try {
+    const response = await fetch(
+      `https://mmetc-erp-api.dynuddns.net/api/pg/get-locationwise-profit-stream/${start}/${end}/${location}`
+      // add any auth headers here manually — fetch bypasses HttpClient interceptors
+    );
+
+    if (!response.ok || !response.body) {
+      throw new Error(`Request failed: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const rows: any[] = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // last (possibly incomplete) line carries over
+
+      for (const line of lines) {
+        if (line.trim()) rows.push(JSON.parse(line));
+      }
+    }
+    if (buffer.trim()) rows.push(JSON.parse(buffer)); // flush trailing line
+
+    this.getData = false;
+
+    if (rows.length === 0) {
+      alert('No data for selected criteria');
+      return;
+    }
+
+    this.lwpsData = rows;
+
+    // unchanged grouping logic
+    const map: any = {};
+    this.lwpsData.forEach(r => {
+      if (!map[r.Location]) map[r.Location] = [];
+      map[r.Location].push(r);
+    });
+
+    this.lwpsGroupedData = Object.keys(map).map(loc => {
+      const rows = map[loc];
+      const totalqty = rows.reduce((sum: number, x: any) => sum + Number(x.Quantity || 0), 0);
+      const totalSales = rows.reduce((sum: number, x: any) => sum + Number(x.GrossAmount || 0), 0);
+      const totalCost = rows.reduce((sum: number, x: any) => sum + Number(x.CostOfSale || 0), 0);
+      const totalProfit = totalSales - totalCost;
+
+      return {
+        location: loc,
+        rows,
+        totalqty,
+        totalSales,
+        totalCost,
+        totalProfit,
+        margin: totalCost === 0 ? 0 : (totalProfit / totalCost) * 100
+      };
+    });
+
+  } catch (err) {
+    console.error('LWPS fetch error:', err);
+    alert('Failed to load report. Please try again.');
+    this.getData = false;
+  }
+}
+
 exportLWPS() {
   let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
   const fileName = `${locationLabel}-profit-${this.startDate}-${this.endDate}-${this.mCurDate}.xlsx`;
