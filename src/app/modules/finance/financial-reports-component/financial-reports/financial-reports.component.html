@@ -249,7 +249,7 @@
         </button>
       </div>
     </div>
-    <div class="row" *ngIf="lwpsGroupedData.length === 0 && getData === true">
+<!--     <div class="row" *ngIf="lwpsGroupedData.length === 0 && getData === true">
         <div class="col-4"></div>
         <div class="col-4">
             <mat-spinner></mat-spinner>
@@ -269,7 +269,6 @@
           <th><small>Category</small></th>
           <th><small>Product Type</small></th>
           <th><small>Location</small></th>
-          <!--<th><small>Channel</small></th>-->
           <th><small>Third Party</small></th>
           <th><small>Supplier</small></th>
           <th><small>Supplier Type</small></th>
@@ -297,7 +296,6 @@
             <td><small>{{ r.Category }}</small></td>
             <td><small>{{ getProductType(r.ProductID) }}</small></td>    
             <td><small>{{ r.Location }}</small></td>
-            <!--<td><small>{{ r.Channel }}</small></td>-->
             <td><small>{{ getThirdParty(r.GLAccountName) }}</small></td>
             <td><small>{{ r.Supplier }}</small></td>
             <td><small>{{ r.SupplierType }}</small></td>
@@ -314,7 +312,6 @@
             <td class="text-end"><small> {{ r.ProfitMarginPercent | number:'1.2-2' }}%</small></td>
           </tr>
 
-          <!-- Location subtotal -->
           <tr class="fw-bold bg-light">
             <td colspan="9" class="text-end"><small> 
               {{ group.location }} Subtotal
@@ -331,7 +328,50 @@
           </tr>
         </ng-container>
       </tbody>
-    </table>
+    </table> -->
+
+    <!-- Progress indicator while chunks are loading -->
+<div class="row" *ngIf="getData && loadingProgress">
+  <div class="col-12">
+    <div class="progress mb-2" style="height: 20px;">
+      <div class="progress-bar" role="progressbar"
+           [style.width.%]="(loadingProgress.current / loadingProgress.total) * 100">
+        {{ loadingProgress.current }} / {{ loadingProgress.total }}
+      </div>
+    </div>
+    <small class="text-muted">
+      Fetched {{ loadingProgress.rowsLoaded | number }} rows so far...
+    </small>
+  </div>
+</div>
+
+<table class="table table-bordered table-sm" id="lwpsTable" *ngIf="!getData && lwpsGroupedData.length > 0">
+  <thead class="table-dark">
+    <tr>
+      <th><small>Location</small></th>
+      <th><small>Total Quantity</small></th>
+      <th><small>Total Sales</small></th>
+      <th><small>Total Cost</small></th>
+      <th><small>Total Margin</small></th>
+      <th><small>Margin %</small></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let group of lwpsGroupedData" class="fw-bold">
+      <td><small>{{ group.location }}</small></td>
+      <td class="text-end"><small>{{ group.totalqty | number:'1.3-3' }}</small></td>
+      <td class="text-end"><small>{{ group.totalSales | number:'1.3-3' }}</small></td>
+      <td class="text-end"><small>{{ group.totalCost | number:'1.3-3' }}</small></td>
+      <td class="text-end"><small>{{ group.totalProfit | number:'1.3-3' }}</small></td>
+      <td class="text-end"><small>{{ group.margin | number:'1.2-2' }}%</small></td>
+    </tr>
+  </tbody>
+</table>
+
+<div *ngIf="!getData && lwpsGroupedData.length > 0" class="alert alert-info mt-2">
+  <small>{{ lwpsData.length | number }} total rows across {{ lwpsGroupedData.length }} locations loaded.
+  Use <b>Export to Excel</b> below for full transaction-level detail.</small>
+</div>
   </div>
 
   <hr>

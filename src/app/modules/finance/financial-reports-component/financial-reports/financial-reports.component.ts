@@ -11,6 +11,7 @@ import autoTable, { RowInput } from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import * as FileSaver from 'file-saver';
 import { firstValueFrom, forkJoin } from 'rxjs';
+import { NgZone } from '@angular/core';
 
 @Component({
   selector: 'app-financial-reports',
@@ -75,13 +76,16 @@ finalBalance = 0;
 
   getData: boolean = false;
 
+    loadingProgress: { current: number; total: number; rowsLoaded: number } | null = null;
+
+
   /* ------------------------------ SALES UNITS ------------------------------- */
 
   salesUnits: { id: string; name: string; code: string; country: string }[] = [];
   selectedUnit!: { id: string; name: string; code: string; country: string };
   selectedCountryCode = 'un';
 
-  constructor(private financeService: FinanceService, private route: ActivatedRoute, private dialog: MatDialog, private router: Router, private accountService: AccountsService, private reportService: ReportsService, private dataSharingService: DataSharingService, private sapservice: SapService) { 
+  constructor(private ngZone: NgZone, private financeService: FinanceService, private route: ActivatedRoute, private dialog: MatDialog, private router: Router, private accountService: AccountsService, private reportService: ReportsService, private dataSharingService: DataSharingService, private sapservice: SapService) { 
     console.log(this.userRight)
     this.reportService.getLocation().subscribe((res: any) => {
       this.locationList = res.recordset
@@ -403,7 +407,7 @@ getLWPS() {
       });
     });
 }
-
+/*
 async newGetLWPS() {
   if (!this.startDate || !this.endDate) {
     alert('Please select start & end date');
@@ -485,13 +489,159 @@ async newGetLWPS() {
     alert('Failed to load report. Please try again.');
     this.getData = false;
   }
+}*/
+
+private async fetchChunk(start: string, end: string, location: string, attempt = 1): Promise<any[]> {
+  const rows: any[] = [];
+  try {
+    const response = await fetch(
+      `https://mmetc-erp-api.dynuddns.net/api/pg/get-locationwise-profit-stream/${start}/${end}/${location}`
+    );
+    if (!response.ok || !response.body) {
+      throw new Error(`Request failed: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (line.trim()) rows.push(JSON.parse(line));
+      }
+    }
+    if (buffer.trim()) rows.push(JSON.parse(buffer));
+    return rows;
+
+  } catch (err) {
+    if (attempt < 3) {
+      console.warn(`Chunk ${start}–${end} failed (attempt ${attempt}), retrying...`, err);
+      await new Promise(r => setTimeout(r, 1000 * attempt)); // backoff: 1s, 2s
+      return this.fetchChunk(start, end, location, attempt + 1);
+    }
+    throw new Error(`Chunk ${start}–${end} failed after 3 attempts: ${err}`);
+  }
 }
 
-exportLWPS() {
+private buildDateChunks(startDate: string, endDate: string, chunkDays = 3): Array<[string, string]> {
+  const chunks: Array<[string, string]> = [];
+  let cursor = new Date(startDate);
+  const end = new Date(endDate);
+
+  while (cursor <= end) {
+    const chunkStart = new Date(cursor);
+    const chunkEnd = new Date(cursor);
+    chunkEnd.setDate(chunkEnd.getDate() + chunkDays - 1);
+    if (chunkEnd > end) chunkEnd.setTime(end.getTime());
+
+    chunks.push([this.toIsoDate(chunkStart), this.toIsoDate(chunkEnd)]);
+    cursor.setDate(cursor.getDate() + chunkDays);
+  }
+  return chunks;
+}
+
+private toIsoDate(d: Date): string {
+  return d.toISOString().split('T')[0]; // YYYY-MM-DD
+}
+
+  async newGetLWPS() {
+    if (!this.startDate || !this.endDate) {
+      alert('Please select start & end date');
+      return;
+    }
+
+    this.getData = true;
+    this.lwpsGroupedData = [];
+    this.loadingProgress = { current: 0, total: 0, rowsLoaded: 0 };
+
+    const start = this.formatDate(this.startDate);
+    const end = this.formatDate(this.endDate);
+    const location = this.selectedLocation;
+
+    const chunks = this.buildDateChunks(start, end, 3);
+    const allRows: any[] = [];
+
+    this.ngZone.run(() => {
+      this.loadingProgress = { current: 0, total: chunks.length, rowsLoaded: 0 };
+    });
+
+    try {
+      for (let i = 0; i < chunks.length; i++) {
+        const [chunkStart, chunkEnd] = chunks[i];
+        const rows = await this.fetchChunk(chunkStart, chunkEnd, location);
+        allRows.push(...rows);
+
+        // update progress after every chunk — this is what the template will show live
+        this.ngZone.run(() => {
+          this.loadingProgress = {
+            current: i + 1,
+            total: chunks.length,
+            rowsLoaded: allRows.length
+          };
+        });
+      }
+
+      this.ngZone.run(() => {
+        this.getData = false;
+        this.loadingProgress = null;
+
+        if (allRows.length === 0) {
+          alert('No data for selected criteria');
+          return;
+        }
+
+        this.lwpsData = allRows;
+
+        const map: any = {};
+        this.lwpsData.forEach(r => {
+          if (!map[r.Location]) map[r.Location] = [];
+          map[r.Location].push(r);
+        });
+
+        this.lwpsGroupedData = Object.keys(map).map(loc => {
+          const rows = map[loc];
+          const totalqty = rows.reduce((sum: number, x: any) => sum + Number(x.Quantity || 0), 0);
+          const totalSales = rows.reduce((sum: number, x: any) => sum + Number(x.GrossAmount || 0), 0);
+          const totalCost = rows.reduce((sum: number, x: any) => sum + Number(x.CostOfSale || 0), 0);
+          const totalProfit = totalSales - totalCost;
+          return {
+            location: loc, rows, totalqty, totalSales, totalCost, totalProfit,
+            margin: totalCost === 0 ? 0 : (totalProfit / totalCost) * 100
+          };
+        });
+      });
+
+    } catch (err) {
+      this.ngZone.run(() => {
+        console.error('LWPS fetch error:', err);
+        alert('Failed to load full report — one date range failed repeatedly. Please try again.');
+        this.getData = false;
+        this.loadingProgress = null;
+      });
+    }
+  }
+
+
+/* exportLWPS() {
   let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
   const fileName = `${locationLabel}-profit-${this.startDate}-${this.endDate}-${this.mCurDate}.xlsx`;
 
   const rows: any[] = [];
+
+  this.lwpsGroupedData.forEach(group => {
+  group.rows.forEach((r: any) => {
+    const diff = this.calcDiff(r);
+    if (!Number.isFinite(Number(r.UnitPrice)) || !Number.isFinite(diff) ||
+        !Number.isFinite(Number(r.GrossAmount)) || !Number.isFinite(Number(r.CostOfSale))) {
+      console.warn('Non-finite value found:', r);
+    }
+  });
+});
 
   // Title
   rows.push([`Location-wise Profit Statement`]);
@@ -532,59 +682,46 @@ exportLWPS() {
     // Optional: Location header row
     rows.push([`${group.location}`]);
     
-    group.rows.forEach((r: any) => {
-      rows.push([
-        r.VoucherNo,
-        this.formatExcelDate(r.VoucherDate),
-        r.CustomerID,
-        r.CustomerName,
-        r.ProductID,
-        r.ProductName,
-        this.getBrandType(r.ProductID,r.Brand),
-        r.Category,
-        this.getProductType(r.ProductID),
-        r.Location,
-        //r.Channel,
-        this.getThirdParty(r.GLAccountName),
-        r.Supplier,
-        r.SupplierType,
-        Number(r.Quantity).toFixed(0),
-        r.Unit,
-Number(r.UnitPrice),
-Number(this.calcDiff(r)),
-Number(r.GrossAmount),
-Number(r.UnitCost),
-Number(r.CostOfSale),
-Number(r.GrossProfit),
-Number(r.ProfitMarginPercent)
-      ]);
-    });
+group.rows.forEach((r: any) => {
+  rows.push([
+    r.VoucherNo,
+    this.formatExcelDate(r.VoucherDate),
+    r.CustomerID,
+    r.CustomerName,
+    r.ProductID,
+    r.ProductName,
+    this.getBrandType(r.ProductID, r.Brand),
+    r.Category,
+    this.getProductType(r.ProductID),
+    r.Location,
+    this.getThirdParty(r.GLAccountName),
+    r.Supplier,
+    r.SupplierType,
+    this.safeNum(r.Quantity).toFixed(0),
+    r.Unit,
+    this.safeNum(r.UnitPrice),
+    this.safeNum(this.calcDiff(r)),
+    this.safeNum(r.GrossAmount),
+    this.safeNum(r.UnitCost),
+    this.safeNum(r.CostOfSale),
+    this.safeNum(r.GrossProfit),
+    this.safeNum(r.ProfitMarginPercent)
+  ]);
+});
 
-    // Subtotal row
-    rows.push([
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      `${group.location} Subtotal`,
-      '',
-      '',
-      '',
-      Number(group.totalqty),
-      '',
-      '',
-      '',
-      Number(group.totalSales),
-      '',
-      Number(group.totalCost),
-      Number(group.totalProfit),
-      Number(group.margin)
-    ]);
+// Subtotal row
+rows.push([
+  '', '', '', '', '', '', '', '', '',
+  `${group.location} Subtotal`,
+  '', '', '',
+  this.safeNum(group.totalqty),
+  '', '', '',
+  this.safeNum(group.totalSales),
+  '',
+  this.safeNum(group.totalCost),
+  this.safeNum(group.totalProfit),
+  this.safeNum(group.margin)
+]);
 
     // Spacer row
     rows.push([]);
@@ -653,18 +790,110 @@ for (let R = 0; R <= range.e.r; ++R) {
     SheetNames: ['Statement']
   };
 
-  const buffer = XLSX.write(workbook, {
-    bookType: 'xlsx',
-    type: 'array'
-  });
+const buffer = XLSX.write(workbook, {
+  bookType: 'xlsx',
+  type: 'array',
+  compression: false   // <-- add this
+});
 
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   });
 
   FileSaver.saveAs(blob, fileName);
-}
+} */
 
+/*   exportLWPS() {
+  let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
+  const fileName = `${locationLabel}-profit-${this.startDate}-${this.endDate}-${this.mCurDate}.xlsx`;
+
+  const sheets: { [name: string]: any[][] } = {};
+  const sheetNames: string[] = [];
+
+  this.lwpsGroupedData.forEach(group => {
+    const rows: any[] = [];
+    rows.push([`Location-wise Profit Statement`]);
+    rows.push([`Location: ${group.location}`]);
+    rows.push([`Period: ${this.startDate} to ${this.endDate}`]);
+    rows.push([]);
+    rows.push([
+      'Voucher No', 'Date', 'Customer ID', 'Customer Name', 'Product ID', 'Product Name',
+      'Brand', 'Category', 'Product Type', 'Location', 'Third Party', 'Supplier',
+      'Supplier Type', 'Qty', 'Unit', 'Unit Price', 'Discount', 'Net Sales',
+      'Unit Cost', 'Net Cost', 'Profit', 'Margin %'
+    ]);
+
+    group.rows.forEach((r: any) => {
+      rows.push([
+        r.VoucherNo, this.formatExcelDate(r.VoucherDate), r.CustomerID, r.CustomerName,
+        r.ProductID, r.ProductName, this.getBrandType(r.ProductID, r.Brand), r.Category,
+        this.getProductType(r.ProductID), r.Location, this.getThirdParty(r.GLAccountName),
+        r.Supplier, r.SupplierType, this.safeNum(r.Quantity).toFixed(0), r.Unit,
+        this.safeNum(r.UnitPrice), this.safeNum(this.calcDiff(r)), this.safeNum(r.GrossAmount),
+        this.safeNum(r.UnitCost), this.safeNum(r.CostOfSale), this.safeNum(r.GrossProfit),
+        this.safeNum(r.ProfitMarginPercent)
+      ]);
+    });
+
+    rows.push([
+      '', '', '', '', '', '', '', '', '', `${group.location} Subtotal`,
+      '', '', '', this.safeNum(group.totalqty), '', '', '',
+      this.safeNum(group.totalSales), '', this.safeNum(group.totalCost),
+      this.safeNum(group.totalProfit), this.safeNum(group.margin)
+    ]);
+
+    const safeName = group.location.replace(/[:\\\/\?\*\[\]]/g, '').substring(0, 31);
+    sheets[safeName] = rows;
+    sheetNames.push(safeName);
+  });
+
+  const workbook: XLSX.WorkBook = { Sheets: {}, SheetNames: sheetNames };
+
+  sheetNames.forEach(name => {
+    const ws = XLSX.utils.aoa_to_sheet(sheets[name]);
+    ws['!cols'] = [
+      { wch: 15 }, { wch: 12 }, { wch: 13 }, { wch: 25 },
+      { wch: 10 }, { wch: 35 }, { wch: 20 }, { wch: 20 },
+      { wch: 11 }, { wch: 15 }, { wch: 15 }, { wch: 35 },
+      { wch: 11 }, { wch: 5 }, { wch: 5 }, { wch: 10 },
+      { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
+      { wch: 10 }, { wch: 10 }
+    ];
+    const range = XLSX.utils.decode_range(ws['!ref']!);
+    for (let R = 0; R <= range.e.r; ++R) {
+      const qtyCell = ws[XLSX.utils.encode_cell({ r: R, c: 13 })];
+      if (qtyCell) {
+        qtyCell.s = { alignment: { horizontal: 'right' } };
+        if (typeof qtyCell.v === 'number') qtyCell.z = '#,##0';
+      }
+      [15, 16, 17, 18, 19, 20, 21].forEach(col => {
+        const cell = ws[XLSX.utils.encode_cell({ r: R, c: col })];
+        if (cell) {
+          cell.s = { alignment: { horizontal: 'right' } };
+          if (typeof cell.v === 'number') cell.z = '#,##0.000';
+        }
+      });
+    }
+    workbook.Sheets[name] = ws;
+  });
+
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array', compression: false });
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  FileSaver.saveAs(blob, fileName);
+}
+ */
+
+exportLWPS() {
+  const location = this.selectedLocation;
+  const start = this.formatDate(this.startDate);
+  const end = this.formatDate(this.endDate);
+  const url = `https://mmetc-erp-api.dynuddns.net/api/pg/export-locationwise-profit-xlsx/${start}/${end}/${location}`;
+  window.open(url, '_blank');
+}
+private safeNum(val: any): number {
+  const n = Number(val);
+  return Number.isFinite(n) ? n : 0;
+}
 
   openGLTRLT() {
   this.dialog.open(this.gltrnlistLookupDialog, {
