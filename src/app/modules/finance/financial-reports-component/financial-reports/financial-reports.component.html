@@ -46,6 +46,7 @@
                                         <a class="nav-link" (click)="openCostVerification()">Cost Verification</a>
                                     </td>
                                     <td>
+                                        <a class="nav-link" (click)="openLWPC()">Location-wise Product Count</a>
                                     </td>
                                 </tr>
                             </table>
@@ -668,4 +669,59 @@
     <hr>
     <br>
 </ng-template>
+<ng-template #lwpcLookupDialog>
+    <h3 matDialogTitle><b>Location-wise Product Count</b></h3>
+    <hr>
+    <div mat-dialog-content style="font-size: small;">
+        <div class="row mb-2">
+            <div class="col-3">
+                <select [(ngModel)]="selectedLWPCYear" class="form-control form-control-sm">
+                    <option *ngFor="let y of yearList" [value]="y">{{ y }}</option>
+                </select>
+            </div>
+            <div class="col-4">
+                <select [(ngModel)]="selectedLWPCMonth" class="form-control form-control-sm">
+                    <option *ngFor="let m of monthList" [value]="m.value">{{ m.name }}</option>
+                </select>
+            </div>
+            <div class="col-3">
+                <button class="btn btn-sm btn-primary" (click)="getLWPC()">Filter</button>
+            </div>
+        </div>
 
+        <div class="row" *ngIf="lwpcData.length === 0 && getData === true">
+            <div class="col-4"></div>
+            <div class="col-4"><mat-spinner></mat-spinner></div>
+            <div class="col-4"></div>
+        </div>
+
+        <table class="table table-striped table-sm table-bordered" *ngIf="lwpcData.length > 0">
+            <thead class="table-dark">
+                <tr>
+                    <th><small>Location</small></th>
+                    <th class="text-end"><small>Quantity Ordered</small></th>
+                    <th class="text-end"><small>Delivered (Supplier)</small></th>
+                    <th class="text-end"><small>Delivered (Transfer)</small></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let row of lwpcData">
+                    <td><small>{{ row.location_name }}</small></td>
+                    <td class="text-end"><small>{{ row.qty_ordered | number:'1.0-0' }}</small></td>
+                    <td class="text-end"><small>{{ row.qty_delivered_supplier | number:'1.0-0' }}</small></td>
+                    <td class="text-end"><small>{{ row.qty_delivered_transfer | number:'1.0-0' }}</small></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <hr>
+    <div class="row container-fluid">
+        <div class="col-8"></div>
+        <div class="col-4">
+            <button mat-raised-button class="bg-warning text-black btn btn-block" (click)="exportLWPC()" style="float: right">
+                Export to Excel
+            </button>
+        </div>
+    </div>
+    <br>
+</ng-template>

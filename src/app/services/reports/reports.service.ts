@@ -286,6 +286,10 @@ private url = 'https://ifagate-petzone-api.theworkpc.com/api'
   );
 }
 
+getLocationProductCount(year: number, month: number) {
+  return this.http.get(`https://mmetc-erp-api.dynuddns.net/api/pg/get-location-product-count/${year}/${month}`);
+}
+
 
 
 }

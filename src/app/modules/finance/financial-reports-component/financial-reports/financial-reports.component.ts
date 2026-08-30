@@ -27,6 +27,7 @@ export class FinancialReportsComponent {
   @ViewChild('lwpsLookupDialog', { static: false }) lwpsLookupDialog!: TemplateRef<any>;
   @ViewChild('gltrnlistLookupDialog', { static: false }) gltrnlistLookupDialog!: TemplateRef<any>;
   @ViewChild('costVerificationDialog', { static: false }) costVerificationDialog!: TemplateRef<any>;
+  @ViewChild('lwpcLookupDialog', { static: false }) lwpcLookupDialog!: TemplateRef<any>;
 
   currentYear = new Date().getFullYear()
   mCurDate = this.formatDate(new Date())
@@ -77,6 +78,17 @@ finalBalance = 0;
   getData: boolean = false;
 
     loadingProgress: { current: number; total: number; rowsLoaded: number } | null = null;
+
+    lwpcData: any[] = [];
+    selectedLWPCYear: number = new Date().getFullYear();
+    selectedLWPCMonth: number = new Date().getMonth() + 1;
+
+    monthList = [
+  { value: 1, name: 'January' }, { value: 2, name: 'February' }, { value: 3, name: 'March' },
+  { value: 4, name: 'April' }, { value: 5, name: 'May' }, { value: 6, name: 'June' },
+  { value: 7, name: 'July' }, { value: 8, name: 'August' }, { value: 9, name: 'September' },
+  { value: 10, name: 'October' }, { value: 11, name: 'November' }, { value: 12, name: 'December' }
+];
 
 
   /* ------------------------------ SALES UNITS ------------------------------- */
@@ -1211,6 +1223,60 @@ getBrandType(productId: any, brand: string): string {
   selectCustomer(custId: string) {
     this.selectedCustomer = custId
   }
+
+openLWPC() {
+  this.dialog.open(this.lwpcLookupDialog, {
+    width: '80%',
+    maxWidth: '90vw'
+  });
+  this.lwpcData = [];
+}
+
+getLWPC() {
+  this.getData = true;
+  this.reportService.getLocationProductCount(this.selectedLWPCYear, this.selectedLWPCMonth)
+    .subscribe((res: any) => {
+      this.lwpcData = res || [];
+      this.getData = false;
+      if (this.lwpcData.length === 0) {
+        alert('No data for selected period');
+      }
+    }, () => {
+      this.getData = false;
+      alert('Failed to load report');
+    });
+}
+
+exportLWPC(): void {
+  const monthName = this.monthList.find(m => m.value === this.selectedLWPCMonth)?.name;
+  const fileName = `location-product-count-${monthName}-${this.selectedLWPCYear}.xlsx`;
+
+  const rows: any[] = [];
+  rows.push([{ v: 'Location-wise Product Count', s: { font: { bold: true, sz: 16 } } }]);
+  rows.push([`Period: ${monthName} ${this.selectedLWPCYear}`]);
+  rows.push([]);
+  rows.push([
+    { v: 'Location', s: { font: { bold: true } } },
+    { v: 'Quantity Ordered', s: { font: { bold: true } } },
+    { v: 'Delivered (Supplier)', s: { font: { bold: true } } },
+    { v: 'Delivered (Transfer)', s: { font: { bold: true } } }
+  ]);
+
+  this.lwpcData.forEach(row => {
+    rows.push([
+      row.location_name,
+      Number(row.qty_ordered),
+      Number(row.qty_delivered_supplier),
+      Number(row.qty_delivered_transfer)
+    ]);
+  });
+
+  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+  const workbook: XLSX.WorkBook = { Sheets: { Report: worksheet }, SheetNames: ['Report'] };
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  FileSaver.saveAs(blob, fileName);
+}
 
   formatDate(date: any) {
     var d = new Date(date), day = '' + d.getDate(), month = '' + (d.getMonth() + 1), year = d.getFullYear();
