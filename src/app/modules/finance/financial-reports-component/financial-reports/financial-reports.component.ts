@@ -80,6 +80,7 @@ finalBalance = 0;
     loadingProgress: { current: number; total: number; rowsLoaded: number } | null = null;
 
     lwpcData: any[] = [];
+    lwpcGroupedData: any[] = [];
     selectedLWPCYear: number = new Date().getFullYear();
     selectedLWPCMonth: number = new Date().getMonth() + 1;
 
@@ -1238,9 +1239,33 @@ getLWPC() {
     .subscribe((res: any) => {
       this.lwpcData = res || [];
       this.getData = false;
+
       if (this.lwpcData.length === 0) {
         alert('No data for selected period');
+        this.lwpcGroupedData = [];
+        return;
       }
+
+      const map: { [key: string]: any[] } = {};
+      this.lwpcData.forEach((row: any) => {
+        if (!map[row.location_name]) map[row.location_name] = [];
+        map[row.location_name].push(row);
+      });
+
+      this.lwpcGroupedData = Object.keys(map).map(loc => {
+        const rows = map[loc];
+        const totalOrdered = rows.reduce((s, r) => s + Number(r.qty_ordered || 0), 0);
+        const totalDeliveredSupplier = rows.reduce((s, r) => s + Number(r.qty_delivered_supplier || 0), 0);
+        const totalDeliveredTransfer = rows.reduce((s, r) => s + Number(r.qty_delivered_transfer || 0), 0);
+
+        return {
+          location: loc,
+          rows,
+          totalOrdered,
+          totalDeliveredSupplier,
+          totalDeliveredTransfer
+        };
+      });
     }, () => {
       this.getData = false;
       alert('Failed to load report');
@@ -1257,18 +1282,37 @@ exportLWPC(): void {
   rows.push([]);
   rows.push([
     { v: 'Location', s: { font: { bold: true } } },
-    { v: 'Quantity Ordered', s: { font: { bold: true } } },
+    { v: 'Product Code', s: { font: { bold: true } } },
+    { v: 'Product Name', s: { font: { bold: true } } },
+    { v: 'Supplier Code', s: { font: { bold: true } } },
+    { v: 'Supplier Name', s: { font: { bold: true } } },
+    { v: 'Order Qty', s: { font: { bold: true } } },
     { v: 'Delivered (Supplier)', s: { font: { bold: true } } },
     { v: 'Delivered (Transfer)', s: { font: { bold: true } } }
   ]);
 
-  this.lwpcData.forEach(row => {
+  this.lwpcGroupedData.forEach(group => {
+    group.rows.forEach((row: any) => {
+      rows.push([
+        row.location_name,
+        row.product_id,
+        row.product_name,
+        row.supplier_id,
+        row.supplier_name,
+        Number(row.qty_ordered),
+        Number(row.qty_delivered_supplier),
+        Number(row.qty_delivered_transfer)
+      ]);
+    });
+
     rows.push([
-      row.location_name,
-      Number(row.qty_ordered),
-      Number(row.qty_delivered_supplier),
-      Number(row.qty_delivered_transfer)
+      '', '', '', '',
+      `${group.location} Subtotal`,
+      Number(group.totalOrdered),
+      Number(group.totalDeliveredSupplier),
+      Number(group.totalDeliveredTransfer)
     ]);
+    rows.push([]);
   });
 
   const worksheet = XLSX.utils.aoa_to_sheet(rows);

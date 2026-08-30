@@ -669,6 +669,7 @@
     <hr>
     <br>
 </ng-template>
+
 <ng-template #lwpcLookupDialog>
     <h3 matDialogTitle><b>Location-wise Product Count</b></h3>
     <hr>
@@ -689,30 +690,48 @@
             </div>
         </div>
 
-        <div class="row" *ngIf="lwpcData.length === 0 && getData === true">
+        <div class="row" *ngIf="lwpcGroupedData.length === 0 && getData === true">
             <div class="col-4"></div>
             <div class="col-4"><mat-spinner></mat-spinner></div>
             <div class="col-4"></div>
         </div>
 
-        <table class="table table-striped table-sm table-bordered" *ngIf="lwpcData.length > 0">
-            <thead class="table-dark">
+        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+        <table class="table table-striped table-sm table-bordered" *ngIf="lwpcGroupedData.length > 0">
+            <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
                 <tr>
                     <th><small>Location</small></th>
-                    <th class="text-end"><small>Quantity Ordered</small></th>
+                    <th><small>Product Code</small></th>
+                    <th><small>Product Name</small></th>
+                    <th><small>Supplier Code</small></th>
+                    <th><small>Supplier Name</small></th>
+                    <th class="text-end"><small>Order Qty</small></th>
                     <th class="text-end"><small>Delivered (Supplier)</small></th>
                     <th class="text-end"><small>Delivered (Transfer)</small></th>
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let row of lwpcData">
-                    <td><small>{{ row.location_name }}</small></td>
-                    <td class="text-end"><small>{{ row.qty_ordered | number:'1.0-0' }}</small></td>
-                    <td class="text-end"><small>{{ row.qty_delivered_supplier | number:'1.0-0' }}</small></td>
-                    <td class="text-end"><small>{{ row.qty_delivered_transfer | number:'1.0-0' }}</small></td>
-                </tr>
+                <ng-container *ngFor="let group of lwpcGroupedData">
+                    <tr *ngFor="let row of group.rows">
+                        <td><small>{{ row.location_name }}</small></td>
+                        <td><small>{{ row.product_id }}</small></td>
+                        <td><small>{{ row.product_name }}</small></td>
+                        <td><small>{{ row.supplier_id }}</small></td>
+                        <td><small>{{ row.supplier_name }}</small></td>
+                        <td class="text-end"><small>{{ row.qty_ordered | number:'1.0-0' }}</small></td>
+                        <td class="text-end"><small>{{ row.qty_delivered_supplier | number:'1.0-0' }}</small></td>
+                        <td class="text-end"><small>{{ row.qty_delivered_transfer | number:'1.0-0' }}</small></td>
+                    </tr>
+                    <tr class="fw-bold bg-light">
+                        <td colspan="5" class="text-end"><small>{{ group.location }} Subtotal</small></td>
+                        <td class="text-end"><small>{{ group.totalOrdered | number:'1.0-0' }}</small></td>
+                        <td class="text-end"><small>{{ group.totalDeliveredSupplier | number:'1.0-0' }}</small></td>
+                        <td class="text-end"><small>{{ group.totalDeliveredTransfer | number:'1.0-0' }}</small></td>
+                    </tr>
+                </ng-container>
             </tbody>
         </table>
+        </div>
     </div>
     <hr>
     <div class="row container-fluid">
