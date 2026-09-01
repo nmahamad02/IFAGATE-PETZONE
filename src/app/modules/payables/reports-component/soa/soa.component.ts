@@ -47,8 +47,8 @@ export class SoaComponent {
 
   currentYear = new Date().getFullYear();
   mCurDate = this.formatDate(new Date());
-  startDate = '2025-01-01'
-  endDate= '2025-12-31';
+  startDate = '2026-01-01'
+  endDate= '2026-12-31';
 
 
   /* ---------------------------------- DATA ---------------------------------- */
@@ -621,37 +621,66 @@ getSPWSOA(customer: any) {
   this.resetSOA();
 }
   
-  setSPWSOA() {
-    if (!this.selectedSupplier || !this.startDate || !this.endDate) {
-      alert('Please select supplier and date range');
-      return;
-    }
-    this.getData = true;
-
-    this.reportService
-      .getSupplierSOA(this.selectedUnit.id, this.selectedSupplier.PCODE, this.endDate)
-      .subscribe({
-        next: (res: any) => {
-          this.getData = false;
-          const end = new Date(this.endDate);
-          end.setHours(23, 59, 59, 999);
-
-          /*const rows = (res.recordsets?.[0] || []).filter((r: any) => {
-            const d = new Date(r.DOC_DATE);
-            return d <= end;
-          });*/
-          let running = 0;
-          this.spwsoaData = res.recordset.map((r: any) => {
-            running -= Number(r.BALANCE || 0);
-            return {
-              ...r,
-              RUNNING_BALANCE: running
-            };
-          });
-          console.table(this.spwsoaData);
-        }
-    });
+async setSPWSOA() {
+  if (!this.startDate || !this.endDate) {
+    alert('Please select both start and end dates.');
+    return;
   }
+
+  this.getData = true;
+
+  try {
+    const start = this.formatDate(this.startDate);
+    const end = this.formatDate(this.endDate);
+
+    const res: any = await firstValueFrom(
+      this.reportService.getSupplierAPSOA(this.selectedSupplier.PCODE, this.selectedUnit.id, start, end)
+    );
+
+    const openingBalance = Number(res?.openingBalance || 0);
+    const periodRows = res?.rows || [];
+
+    let running = openingBalance;
+
+    const rows = periodRows.map((row: any) => {
+  const invAmount = Number(row.INV_AMOUNT || 0);
+  const refAmount = Number(row.REFAMOUNT || 0);
+  const docAmount = Number(row.DOC_AMOUNT || 0);
+  const paid = Number(row.PAID || 0);
+
+  running += (refAmount - invAmount);
+
+  return {
+    ...row,
+    DOC_AMOUNT: docAmount,
+    PAID: paid,
+    OPEN_AMOUNT: docAmount - paid,   // <-- new: always the remaining amount, unsigned, never hidden
+    EXCHANGERATE: Number(row.EXCHANGERATE) || 1,
+    RUNNING_BALANCE: running
+  };
+});
+
+    const openingRow = {
+      DOC_DATE: null,
+      DOC_NO: '',
+      REMARKS: 'OPENING BALANCE',
+      DOC_AMOUNT: 0,
+      PAID: 0,
+      DUEDATE: null,
+      LPO_NO: '',
+      BALANCE: 0,
+      EXCHANGERATE: 1,
+      RUNNING_BALANCE: openingBalance
+    };
+
+    this.spwsoaData = [openingRow, ...rows];
+  } catch (err) {
+    console.error(err);
+    alert('Failed to load Statement of Account');
+  } finally {
+    this.getData = false;
+  }
+}
 
   printSPWSOA() {
     if (!this.startDate || !this.endDate) {
@@ -681,10 +710,11 @@ getSPWSOA(customer: any) {
 
     autoTable(doc, {
       html: '#spwSoaTable',
-      tableWidth: 436,
+      tableWidth: 436,       
       theme: 'grid', // Changed from 'striped' to 'grid' for clean borders
       styles: {
-        fontSize: 8,
+        fontSize: 7,
+        cellPadding: 1.5,          // was default (~5); this is the main space-saver
         textColor: [0, 0, 0],
         lineColor: [0, 0, 0],
         lineWidth: 0.1,
@@ -695,7 +725,8 @@ getSPWSOA(customer: any) {
         fillColor: [255, 255, 255], // White background
         textColor: [0, 0, 0],       // Black text
         fontStyle: 'bold',
-        halign: 'left'
+        halign: 'left',
+            fontSize: 7
       },
       footStyles: {
         fillColor: [255, 255, 255],
@@ -703,11 +734,15 @@ getSPWSOA(customer: any) {
         fontStyle: 'bold',
         halign: 'right'
       },
-    /*  columnStyles: {
-        5: { halign: 'right' },
-        6: { halign: 'right' },
-        7: { halign: 'right' }
-      },*/
+    columnStyles: {
+    3: { cellWidth: 60 },   // Description — give it real room since it's the longest text
+    4: { halign: 'right' }, // Transaction Amount
+    5: { halign: 'right' }, // Allocated Amount
+    6: { halign: 'right' }, // Remaining Amount
+    9: { halign: 'right' }, // Debit
+    10: { halign: 'right' }, // Credit
+    11: { halign: 'right' }  // Balance
+  },
       margin: { 
         top: firstPage ? firstPageStartY : nextPagesStartY,
         left: 5
@@ -755,6 +790,67 @@ getSPWSOA(customer: any) {
     doc.save(`${this.selectedSupplier.PCODE}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.pdf`);
     }
   }
+
+  exportSPWSOA(): void {
+  const fileName = `${this.selectedSupplier.PCODE}-statement-of-accounts-${this.mCurDate}-period-${this.startDate}-${this.endDate}.xlsx`;
+
+  const rows: any[] = [];
+  rows.push([{ v: 'Statement of Account', s: { font: { bold: true, sz: 16 } } }]);
+  rows.push([`${this.selectedSupplier.CUST_NAME}`, '', '', '', '', '', `Account ID: ${this.selectedSupplier.PCODE}`]);
+  rows.push([`Nature: ${this.selectedSupplier.Nature}`]);
+  rows.push([`Category: ${this.selectedSupplier.SupplierCategory}`]);
+  rows.push([`Period: ${this.formatDate(this.startDate)} - ${this.formatDate(this.endDate)}`]);
+  rows.push([]);
+
+  rows.push([
+    'Transaction Date', 'Invoice No', 'Reference', 'Description',
+    'Transaction Amount', 'Allocated Amount', 'Remaining Amount',
+    'Due Date', 'Currency', 'Debit', 'Credit', 'Balance'
+  ].map(v => ({ v, s: { font: { bold: true } } })));
+
+  this.spwsoaData.forEach((row: any) => {
+    const isInvoice = row.TXN_TYPE === 'INVOICE';
+    const isReceipt = row.TXN_TYPE === 'RECEIPT';
+
+    rows.push([
+      row.DOC_DATE ? this.formatDate(row.DOC_DATE) : '',
+      isInvoice ? row.DOC_NO : '',
+      isReceipt ? row.DOC_NO : '',
+      row.REMARKS || '',
+      row.DOC_AMOUNT ? Number(row.DOC_AMOUNT) / row.EXCHANGERATE : '',
+      row.PAID ? Number(row.PAID) / row.EXCHANGERATE : '',
+      Number(row.OPEN_AMOUNT || 0) / row.EXCHANGERATE,
+      row.DUEDATE ? this.formatDate(row.DUEDATE) : '',
+      row.LPO_NO || '',
+      isReceipt ? Number(row.REFAMOUNT || 0) / row.EXCHANGERATE : '',
+      isInvoice ? Number(row.INV_AMOUNT || 0) / row.EXCHANGERATE : '',
+      Number(row.RUNNING_BALANCE || 0)
+    ]);
+  });
+
+  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+
+  worksheet['!cols'] = [
+    { wch: 12 }, { wch: 20 }, { wch: 20 }, { wch: 28 },
+    { wch: 16 }, { wch: 16 }, { wch: 16 },
+    { wch: 12 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 16 }
+  ];
+
+  const range = XLSX.utils.decode_range(worksheet['!ref']!);
+  for (let R = 0; R <= range.e.r; ++R) {
+    [4, 5, 6, 9, 10, 11].forEach(col => {
+      const cell = worksheet[XLSX.utils.encode_cell({ r: R, c: col })];
+      if (cell && typeof cell.v === 'number') {
+        cell.z = '#,##0.000';
+      }
+    });
+  }
+
+  const workbook: XLSX.WorkBook = { Sheets: { SOA: worksheet }, SheetNames: ['SOA'] };
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  FileSaver.saveAs(blob, fileName);
+}
 
 /* ---------------------------- OUTSTANDING (SOA BASED) ---------------------- */
 
@@ -868,7 +964,6 @@ async buildOutstandingFromSOA() {
   }
 
 async buildAgeingFromSOA() {
-
   if (!this.endDate) {
     alert('Please select end date');
     return;
@@ -877,122 +972,108 @@ async buildAgeingFromSOA() {
   this.getData = true;
 
   try {
-
     const result: any[] = [];
     const end = new Date(this.endDate);
+    const farBack = '2000-01-01'; // guarantees opening balance = 0, we only need row-level detail
 
     for (const s of this.supplierList) {
 
       const res: any = await firstValueFrom(
-        this.reportService.getSupplierSOA(
-          this.selectedUnit.id,
+        this.reportService.getSupplierAPSOA(
           s.PCODE,
-          this.endDate
+          this.selectedUnit.id,
+          farBack,
+          this.formatDate(this.endDate)
         )
       );
 
-      const rows = res.recordset || [];
+      const rows = res?.rows || [];
 
       let agg = {
-        PCODE: s.PCODE,
-        CUST_NAME: s.CUST_NAME,
-        Nature: s.Nature,
-        SupplierCategory: s.SupplierCategory,
+  PCODE: s.PCODE,
+  CUST_NAME: s.CUST_NAME,
+  Nature: s.Nature,
+  SupplierCategory: s.SupplierCategory,
 
-        bucket_0_30: 0,
-        bucket_31_60: 0,
-        bucket_61_90: 0,
-        bucket_91_120: 0,
-        bucket_120_plus: 0,
+  bucket_0_30: 0,
+  bucket_31_60: 0,
+  bucket_61_90: 0,
+  bucket_91_120: 0,
+  bucket_120_plus: 0,
 
-        TOTAL: 0
-      };
+  TOTAL: 0
+};
 
-      rows.forEach((r: any) => {
+rows.forEach((r: any) => {
+  if (r.TXN_TYPE !== 'INVOICE') return;
 
-        const amount = (Number(r.BALANCE)*-1) || 0;
-        const trxDate = r.DOC_DATE ? new Date(r.DOC_DATE) : null;
+  const invAmount = Number(r.INV_AMOUNT || 0);
+  const paid = Number(r.PAID || 0);
+  const openAmount = invAmount - paid;
 
-        if (!trxDate) return;
+  if (openAmount <= 0) return;
+  if (!r.DUEDATE) return;
 
-        const diffDays = Math.floor(
-          (end.getTime() - trxDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
+  const dueDate = new Date(r.DUEDATE);
+  const daysOverdue = Math.floor(
+    (end.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
-        if (diffDays <= 30) {
-          agg.bucket_0_30 += amount;
-        } else if (diffDays <= 60) {
-          agg.bucket_31_60 += amount;
-        } else if (diffDays <= 90) {
-          agg.bucket_61_90 += amount;
-        } else if (diffDays <= 120) {
-          agg.bucket_91_120 += amount;
-        } else {
-          agg.bucket_120_plus += amount;
-        }
+  if (daysOverdue <= 30) {
+    agg.bucket_0_30 += openAmount;
+  } else if (daysOverdue <= 60) {
+    agg.bucket_31_60 += openAmount;
+  } else if (daysOverdue <= 90) {
+    agg.bucket_61_90 += openAmount;
+  } else if (daysOverdue <= 120) {
+    agg.bucket_91_120 += openAmount;
+  } else {
+    agg.bucket_120_plus += openAmount;
+  }
 
-        agg.TOTAL += amount;
-      });
+  agg.TOTAL += openAmount;
+});
 
-        result.push(agg);
+
+      result.push(agg);
     }
 
-    /* ✅ GROUP BY CATEGORY */
+    /* Group by category — unchanged from your original */
 
     const categoryMap = new Map<string, any>();
 
     for (const s of result) {
-
       const category = s.SupplierCategory || 'Uncategorized';
 
       if (!categoryMap.has(category)) {
-        categoryMap.set(category, {
-          category: category,
-          subtotal: 0,
+  categoryMap.set(category, {
+    category,
+    subtotal: 0,
+    bucket_0_30: 0,
+    bucket_31_60: 0,
+    bucket_61_90: 0,
+    bucket_91_120: 0,
+    bucket_120_plus: 0,
+    suppliers: []
+  });
+}
 
-          bucket_0_30: 0,
-          bucket_31_60: 0,
-          bucket_61_90: 0,
-          bucket_91_120: 0,
-          bucket_120_plus: 0,
-
-          suppliers: []
-        });
-      }
-
-      const group = categoryMap.get(category);
-
-      group.suppliers.push(s);
-
-      group.bucket_0_30 += s.bucket_0_30;
-      group.bucket_31_60 += s.bucket_31_60;
-      group.bucket_61_90 += s.bucket_61_90;
-      group.bucket_91_120 += s.bucket_91_120;
-      group.bucket_120_plus += s.bucket_120_plus;
-
-      group.subtotal += s.TOTAL;
+const group = categoryMap.get(category);
+group.suppliers.push(s);
+group.bucket_0_30 += s.bucket_0_30;
+group.bucket_31_60 += s.bucket_31_60;
+group.bucket_61_90 += s.bucket_61_90;
+group.bucket_91_120 += s.bucket_91_120;
+group.bucket_120_plus += s.bucket_120_plus;
+group.subtotal += s.TOTAL;
     }
 
-    /* ✅ SORT */
-
     const finalData = Array.from(categoryMap.values());
-
     finalData.sort((a, b) => a.category.localeCompare(b.category));
-
-    finalData.forEach(g => {
-      g.suppliers.sort((a: any, b: any) =>
-        a.PCODE.localeCompare(b.PCODE)
-      );
-    });
-
-    /* ✅ OUTPUT */
+    finalData.forEach(g => g.suppliers.sort((a: any, b: any) => a.PCODE.localeCompare(b.PCODE)));
 
     this.swoutData = finalData;
-
-    this.totalOutstanding = finalData.reduce(
-      (sum, g) => sum + g.subtotal,
-      0
-    );
+    this.totalOutstanding = finalData.reduce((sum, g) => sum + g.subtotal, 0);
 
   } catch (err) {
     console.error(err);
@@ -1782,98 +1863,70 @@ getIPWTRNLIST(customer: any) {
 }
 
 async setIPWTRNLIST() {
-
   if (!this.startDate || !this.endDate) {
-
     alert('Please select both start and end dates.');
     return;
-
   }
 
   this.getData = true;
-
   this.ipwtrnlistGroupedData = [];
-
   this.grandDebit = 0;
   this.grandCredit = 0;
   this.grandBalance = 0;
 
-  console.log(this.selectedSupplier);
-console.log(this.selectedSupplier.GLCODES);
-console.log(this.selectedSupplier.GLCODES.length);
-
   try {
-
     const start = this.formatDate(this.startDate);
     const end = this.formatDate(this.endDate);
 
     for (const gl of this.selectedSupplier.GLCODES) {
-
-  console.log('Processing GL', gl);
-
       const res: any = await firstValueFrom(
-        this.reportService.getInterCompanyTranListing(
-          start,
-          end,
-          gl,
-          this.selectedUnit.id,
-        )
+        this.reportService.getInterCompanyTranListing(start, end, gl, this.selectedUnit.id)
       );
 
-      let running = 0;
+      const openingBalance = Number(res?.openingBalance || 0);
+      const periodRows = res?.rows || [];
+
+      let running = openingBalance;
       let totalDebit = 0;
       let totalCredit = 0;
 
-      const rows = (res || []).map((row: any) => {
-
+      const rows = periodRows.map((row: any) => {
         const debit = Number(row.debit || 0);
         const credit = Number(row.credit || 0);
-
         running += (debit + credit);
-
         totalDebit += debit;
         totalCredit += credit;
-
-        return {
-          ...row,
-          running_balance: running
-        };
-
+        return { ...row, running_balance: running };
       });
 
+      const openingRow = {
+        docdate: null,
+        docid: '',
+        journalentry: 'OPENING BALANCE',
+        journalref: '',
+        companycurrency: rows[0]?.companycurrency || '',
+        debit: 0,
+        credit: 0,
+        running_balance: openingBalance
+      };
+
       this.ipwtrnlistGroupedData.push({
-
         glcode: gl,
-
-        rows,
-
+        rows: [openingRow, ...rows],
         totalDebit,
         totalCredit,
-
         balance: running
-
       });
 
       this.grandDebit += totalDebit;
       this.grandCredit += totalCredit;
       this.grandBalance += running;
-
-      
-  console.log('Finished GL', gl);
-
-
     }
-
   } catch (err) {
-
     console.error(err);
-
   } finally {
-
     this.getData = false;
-
   }
-
 }
 
 exportIPWTRNList() {
@@ -1907,7 +1960,7 @@ exportIPWTRNList() {
 
     // GL Heading
     rows.push([
-      `${group.glcode} | ${group.glname}`
+      `${group.glcode}`
     ]);
 
     // Transactions
@@ -1918,7 +1971,7 @@ exportIPWTRNList() {
         row.journalentry,
         row.journalref,
         row.pcode,
-        row.linecurrency,
+        row.companycurrency,
         Number(row.debit || 0),
         Number(row.credit*-1 || 0),
         Number(row.running_balance || 0)
@@ -1956,7 +2009,6 @@ exportIPWTRNList() {
 
   const worksheet = XLSX.utils.aoa_to_sheet(rows);
 
-  // Column Widths
   worksheet['!cols'] = [
     { wch: 15 }, // Date
     { wch: 50 }, // Transaction No
@@ -1968,18 +2020,11 @@ exportIPWTRNList() {
     { wch: 18 }  // Balance
   ];
 
-  // Format number columns
   const range = XLSX.utils.decode_range(worksheet['!ref']!);
 
   for (let R = 0; R <= range.e.r; ++R) {
-
-    // Debit, Credit, Balance columns
     [5, 6, 7].forEach(col => {
-
-      const cell = worksheet[
-        XLSX.utils.encode_cell({ r: R, c: col })
-      ];
-
+      const cell = worksheet[XLSX.utils.encode_cell({ r: R, c: col })];
       if (cell && typeof cell.v === 'number') {
         cell.z = '#,##0.000';
       }
@@ -1987,24 +2032,12 @@ exportIPWTRNList() {
   }
 
   const workbook: XLSX.WorkBook = {
-    Sheets: {
-      Statement: worksheet
-    },
+    Sheets: { Statement: worksheet },
     SheetNames: ['Statement']
   };
 
-  const buffer = XLSX.write(workbook, {
-    bookType: 'xlsx',
-    type: 'array'
-  });
-
-  const blob = new Blob(
-    [buffer],
-    {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    }
-  );
-
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   FileSaver.saveAs(blob, fileName);
 }
 

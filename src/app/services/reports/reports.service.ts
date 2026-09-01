@@ -290,6 +290,8 @@ getLocationProductCount(year: number, month: number) {
   return this.http.get(`https://mmetc-erp-api.dynuddns.net/api/pg/get-location-product-count/${year}/${month}`);
 }
 
-
+getSupplierAPSOA(custcode: string, compcode: string, fromdate: string, todate: string) {
+  return this.http.get(this.url + '/report/coa-get-supplier-AP-soa/' + custcode + '/' + compcode + '/' + fromdate + '/' + todate);
+}
 
 }
