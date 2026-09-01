@@ -385,9 +385,7 @@ getLWPS() {
 private async fetchChunk(start: string, end: string, location: string, attempt = 1): Promise<any[]> {
   const rows: any[] = [];
   try {
-    const response = await fetch(
-      `https://mmetc-erp-api.dynuddns.net/api/pg/get-locationwise-profit-stream/${start}/${end}/${location}`
-    );
+    const response = await fetch(`https://ifagate-petzone-api.theworkpc.com/api/report/get-locationwise-profit-stream/${start}/${end}/${location}`);
     if (!response.ok || !response.body) {
       throw new Error(`Request failed: ${response.status}`);
     }
@@ -419,23 +417,23 @@ private async fetchChunk(start: string, end: string, location: string, attempt =
   }
 }
 
+
 private buildDateChunks(startDate: string, endDate: string, chunkDays = 3): Array<[string, string]> {
   const chunks: Array<[string, string]> = [];
-  let cursor = new Date(startDate);
-  const end = new Date(endDate);
+  let cursor = new Date(startDate + 'T00:00:00Z');
+  const end = new Date(endDate + 'T00:00:00Z');
 
   while (cursor <= end) {
     const chunkStart = new Date(cursor);
     const chunkEnd = new Date(cursor);
-    chunkEnd.setDate(chunkEnd.getDate() + chunkDays - 1);
+    chunkEnd.setUTCDate(chunkEnd.getUTCDate() + chunkDays - 1);
     if (chunkEnd > end) chunkEnd.setTime(end.getTime());
 
     chunks.push([this.toIsoDate(chunkStart), this.toIsoDate(chunkEnd)]);
-    cursor.setDate(cursor.getDate() + chunkDays);
+    cursor.setUTCDate(cursor.getUTCDate() + chunkDays);
   }
   return chunks;
 }
-
 private toIsoDate(d: Date): string {
   return d.toISOString().split('T')[0]; // YYYY-MM-DD
 }
@@ -522,7 +520,7 @@ exportLWPS() {
   const location = this.selectedLocation;
   const start = this.formatDate(this.startDate);
   const end = this.formatDate(this.endDate);
-  const url = `https://mmetc-erp-api.dynuddns.net/api/pg/export-locationwise-profit-xlsx/${start}/${end}/${location}`;
+  const url = `https://ifagate-petzone-api.theworkpc.com/api/report/export-locationwise-profit-xlsx/${start}/${end}/${location}`;
   window.open(url, '_blank');
 }
 private safeNum(val: any): number {
