@@ -22,8 +22,6 @@ export class FinancialReportsComponent {
 
   userRight = localStorage.getItem('userright')!
 
-  @ViewChild('locmosLookupDialog', { static: false }) locmosLookupDialog!: TemplateRef<any>;
-  @ViewChild('mossumLookupDialog', { static: false }) mossumLookupDialog!: TemplateRef<any>;
   @ViewChild('lwpsLookupDialog', { static: false }) lwpsLookupDialog!: TemplateRef<any>;
   @ViewChild('gltrnlistLookupDialog', { static: false }) gltrnlistLookupDialog!: TemplateRef<any>;
   @ViewChild('costVerificationDialog', { static: false }) costVerificationDialog!: TemplateRef<any>;
@@ -35,8 +33,6 @@ export class FinancialReportsComponent {
   yearList: number[] = [];
   selectedYear: number = new Date().getFullYear();
 
-  locmosData: any[] = []
-  locGroupedData: { location: string, rows: any[], subtotal: number }[] = [];
   mossumData: any[] = []
   lwpsData: any[] = [];
   lwpsGroupedData: any[] = [];
@@ -158,165 +154,6 @@ finalBalance = 0;
   this.selectedYear = currentYear;
     this.loadSalesUnits();
 }
-
-  openLOCMOS() {
-    let dialogRef = this.dialog.open(this.locmosLookupDialog);
-    this.locmosData = []
-    this.locGroupedData = []
-  }
-
-getLOCMOS(location: any) {
-  this.getData = true;
-  this.selectedLocation = location;
-
-  // Build year range internally
-  const startDate = `${this.selectedYear}-01-01`;
-  const endDate = `${this.selectedYear}-12-31`;
-
-  this.reportService
-    .getLocationwiseMonthlySales(location)
-    .subscribe((res: any) => {
-
-      if (!res.recordset || res.recordset.length === 0) {
-        alert('No data for selected year');
-        this.getData = false;
-        return;
-      }
-
-      // Filter to selected year WITHOUT touching SQL
-      this.locmosData = res.recordset.filter((r: any) =>
-        r.MonthYear.startsWith(this.selectedYear.toString())
-      );
-
-      this.getData = false;
-
-      // Grouping logic unchanged
-      this.locGroupedData = [];
-      this.grandTotal = 0;
-
-      const map: { [key: string]: any[] } = {};
-
-      this.locmosData.forEach(row => {
-        if (!map[row.LOCATIONNAME]) map[row.LOCATIONNAME] = [];
-        map[row.LOCATIONNAME].push(row);
-      });
-
-      Object.keys(map).forEach(loc => {
-        const rows = map[loc];
-        const subtotal = rows.reduce(
-          (s, r) => s + Number(r.Sales_KWD || 0),
-          0
-        );
-
-        this.locGroupedData.push({ location: loc, rows, subtotal });
-        this.grandTotal += subtotal;
-      });
-    });
-}
-
-exportLOCMOS(): void {
-  let locationLabel = this.selectedLocation === 'NULL' ? 'All Locations' : this.selectedLocation;
-  const fileName = `${locationLabel}-monthly-sales-${this.mCurDate}.xlsx`;
-
-  const rows: any[] = [];
-
-  // Title row
-  rows.push([{ v: 'Location-wise Monthly Sales', s: { font: { bold: true, sz: 16 } } }]);
-
-  // Empty row
-  rows.push([]);
-
-  // Header row
-  rows.push([
-    { v: 'Month', s: { font: { bold: true } } },
-    { v: 'Location ID', s: { font: { bold: true } } },
-    { v: 'Location Name', s: { font: { bold: true } } },
-    { v: 'Amount', s: { font: { bold: true } } }
-  ]);
-
-  // Data with grouping
-  this.locGroupedData.forEach(group => {
-
-    group.rows.forEach((row: any) => {
-      rows.push([
-        row.MonthYear,
-        row.SALESUNITID,
-        row.LOCATIONNAME,
-        row.Sales_KWD
-      ]);
-    });
-
-    // Subtotal row
-    rows.push([
-      '',
-      '',
-      `${group.location} Subtotal`,
-      group.subtotal
-    ]);
-  });
-
-  // Grand total
-  rows.push([
-    '',
-    '',
-    'Grand Total',
-    this.grandTotal
-  ]);
-
-  const worksheet = XLSX.utils.aoa_to_sheet(rows);
-
-  const workbook: XLSX.WorkBook = {
-    Sheets: { Report: worksheet },
-    SheetNames: ['Report']
-  };
-
-  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-
-  const blob = new Blob([buffer], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  });
-
-  FileSaver.saveAs(blob, fileName);
-}
-
-  openMOSSUM() {
-    let dialogRef = this.dialog.open(this.mossumLookupDialog);
-    this.mossumData = []
-    this.getMOSSUM()
-  }
-
-getMOSSUM() {
-  this.getData = true;
-
-  this.reportService.getMonthwiseSalesSummary()
-    .subscribe((res: any) => {
-
-      if (!res.recordset || res.recordset.length === 0) {
-        alert('No data for selected year');
-        this.getData = false;
-        return;
-      }
-
-      // Filter rows for selected year (if backend is multi‑year)
-      this.mossumData = res.recordset.filter(
-        (r: any) => Number(r.YEAR) === this.selectedYear || !r.YEAR
-      );
-
-      this.getData = false;
-    },
-    () => {
-      this.getData = false;
-      alert('Failed to load summary');
-    });
-}
-
-
-  exportMOSSUM(): void {
-    const link = document.createElement('a');
-    link.href = 'assets/reports/petzone_sales.xlsx';
-    link.click();
-  }
-
 
   openLWPS() {
   this.dialog.open(this.lwpsLookupDialog, {
@@ -534,215 +371,238 @@ private safeNum(val: any): number {
     maxWidth: '95vw'
   });    
   this.gltrnlistData = []
+    this.glGroupedData = [];   // was: this.gltrnlistData = []
+  this.grandDebit = 0;
+  this.grandCredit = 0;
+  this.grandBalance = 0;
   }
 
 async getGLTRNList() {
-
   this.getData = true;
-
   this.glGroupedData = [];
-
   this.grandDebit = 0;
   this.grandCredit = 0;
   this.grandBalance = 0;
 
+  const start = this.formatDate(this.startDate);
+  const end = this.formatDate(this.endDate);
+  const glcodes = this.selectedGLs.join(',');
+
   try {
+    const response = await fetch(
+      `https://ifagate-petzone-api.theworkpc.com/api/report/get-gl-tran-listing-stream/${start}/${end}/${glcodes}/${this.selectedUnit.id}`
+    );
+    if (!response.ok || !response.body) throw new Error(`Request failed: ${response.status}`);
 
-    const start = this.formatDate(this.startDate);
-    const end = this.formatDate(this.endDate);
+    const openingMap = JSON.parse(response.headers.get('X-Opening-Balances') || '{}');
 
-    for (const gl of this.selectedGLs) {
-      const res: any = await firstValueFrom(
-  this.reportService.getGLTransactionList(start, end, gl, this.selectedUnit.id)
-);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const rowsByGL: { [glcode: string]: any[] } = {};
 
-const openingBalance = Number(res?.openingBalance || 0);
-const periodRows = res?.rows || [];
-
-let running = openingBalance;   // <-- was 0
-let totalDebit = 0;
-let totalCredit = 0;
-
-const rows = periodRows.map((row: any) => {
-  const debit = Number(row.debit || 0);
-  const credit = Number(row.credit || 0);
-  running += (debit + credit);   // unchanged
-  totalDebit += debit;
-  totalCredit += credit;
-  return { ...row, running_balance: running };
-});
-
-const openingRow = {
-  docdate: null,
-  docid: '',
-  journalentry: 'OPENING BALANCE',
-  journalref: '',
-  companycurrency: rows[0]?.companycurrency || '',
-  debit: 0,
-  credit: 0,
-  running_balance: openingBalance
-};
-
-const glObj = this.glList.find((x: any) => x.GLCODE === gl);
-
-this.glGroupedData.push({
-  glcode: gl,
-  glname: glObj?.GLNAME,
-  rows: [openingRow, ...rows],
-  totalDebit,
-  totalCredit,
-  balance: running
-});
-
-this.grandDebit += totalDebit;
-this.grandCredit += totalCredit;
-this.grandBalance += running;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const row = JSON.parse(line);
+        if (!rowsByGL[row.glcode]) rowsByGL[row.glcode] = [];
+        rowsByGL[row.glcode].push(row);
+      }
     }
-  } catch (e) {
+    if (buffer.trim()) {
+      const row = JSON.parse(buffer);
+      if (!rowsByGL[row.glcode]) rowsByGL[row.glcode] = [];
+      rowsByGL[row.glcode].push(row);
+    }
 
-    console.error(e);
+    this.ngZone.run(() => {
+      for (const gl of this.selectedGLs) {
+        const periodRows = rowsByGL[gl] || [];
+        const openingBalance = Number(openingMap[gl] || 0);
 
-  } finally {
+        let running = openingBalance;
+        let totalDebit = 0, totalCredit = 0;
 
-    this.getData = false;
-    console.log(this.glGroupedData)
+        const rows = periodRows.map((row: any) => {
+          const debit = Number(row.debit || 0);
+          const credit = Number(row.credit || 0);
+          running += (debit + credit);
+          totalDebit += debit;
+          totalCredit += credit;
+          return { ...row, running_balance: running };
+        });
+
+        const openingRow = {
+          docdate: null, docid: '', journalentry: 'OPENING BALANCE', journalref: '',
+          companycurrency: rows[0]?.companycurrency || '', debit: 0, credit: 0,
+          running_balance: openingBalance
+        };
+
+        const glObj = this.glList.find((x: any) => x.GLCODE === gl);
+
+        this.glGroupedData.push({
+          glcode: gl, glname: glObj?.GLNAME,
+          rows: [openingRow, ...rows],
+          totalDebit, totalCredit, balance: running
+        });
+
+        this.grandDebit += totalDebit;
+        this.grandCredit += totalCredit;
+        this.grandBalance += running;
+      }
+      this.getData = false;
+    });
+
+  } catch (err) {
+    console.error('GL tran listing fetch error:', err);
+    this.ngZone.run(() => { this.getData = false; });
+    alert('Failed to load GL transaction listing.');
   }
 }
 
 exportGLTRNList() {
+  const start = this.formatDate(this.startDate);
+  const end = this.formatDate(this.endDate);
+  const glcodes = this.selectedGLs.join(',');
+  const url = `https://ifagate-petzone-api.theworkpc.com/api/report/export-gl-tran-listing-xlsx/${start}/${end}/${glcodes}/${this.selectedUnit.id}`;
+  window.open(url, '_blank');
+}
 
-  const fileName =
-    `GL-Transaction-Listing-${this.startDate}-${this.endDate}-${this.mCurDate}.xlsx`;
-
+private async fetchGLChunk(start: string, end: string, glcodes: string, compcode: string, attempt = 1): Promise<{ rows: any[], openingHeader: string | null }> {
   const rows: any[] = [];
+  try {
+    const response = await fetch(`https://ifagate-petzone-api.theworkpc.com/api/report/get-gl-tran-listing-stream/${start}/${end}/${glcodes}/${compcode}`);
+    if (!response.ok || !response.body) throw new Error(`Request failed: ${response.status}`);
 
-  // Title
-  rows.push(['GL Transaction Listing']);
-  rows.push([`Period: ${this.startDate} to ${this.endDate}`]);
-  rows.push([`Unit: ${this.selectedUnit?.id || ''}`]);
-  rows.push([]);
+    const openingHeader = response.headers.get('X-Opening-Balances');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
 
-  // Data
-  this.glGroupedData.forEach((group: any) => {
-
-    // GL Heading
-    rows.push([
-      `${group.glcode} | ${group.glname}`
-    ]);
-
-      rows.push([]);
-
-      // Header
-  rows.push([
-    'Transaction Date',
-    'Document Number',
-    'Transaction Details',
-    'Reference',
-    //'Account',
-    'Currency',
-    'Debit',
-    'Credit',
-    'Balance'
-  ]);
-    // Transactions
-    group.rows.forEach((row: any) => {
-
-      rows.push([
-        this.formatExcelDate(row.docdate),
-        row.docid,
-        row.journalentry,
-        row.journalref,
-        //row.pcode,
-        row.companycurrency,
-        Number(row.debit || 0),
-        Number(row.credit*-1 || 0),
-        Number(row.running_balance || 0)
-      ]);
-
-    });
-
-    // Subtotal
-    rows.push([
-      `Subtotal (${group.glcode} | ${group.glname})`,
-      '',
-      '',
-      '',
-      '',
-      Number(group.totalDebit),
-      Number(group.totalCredit*-1),
-      Number(group.balance)
-    ]);
-
-    // Spacer
-    rows.push([]);
-  });
-
-  // Grand Total
-  rows.push([
-    '',
-    '',
-    '',
-    '',
-    //'',
-    'GRAND TOTAL',
-    Number(this.grandDebit),
-    Number(this.grandCredit*-1),
-    Number(this.grandBalance)
-  ]);
-
-  const worksheet = XLSX.utils.aoa_to_sheet(rows);
-
-  // Column Widths
-  worksheet['!cols'] = [
-    { wch: 15 }, // Date
-    { wch: 25 }, // Transaction No
-    { wch: 50 }, // Transaction No
-    { wch: 50 }, // Reference
-   // { wch: 25 }, // BP
-    { wch: 12 }, // Currency
-    { wch: 15 }, // Debit
-    { wch: 15 }, // Credit
-    { wch: 18 }  // Balance
-  ];
-
-  // Format number columns
-  const range = XLSX.utils.decode_range(worksheet['!ref']!);
-
-  for (let R = 0; R <= range.e.r; ++R) {
-
-    // Debit, Credit, Balance columns
-    [6, 7, 8].forEach(col => {
-
-      const cell = worksheet[
-        XLSX.utils.encode_cell({ r: R, c: col })
-      ];
-
-      if (cell && typeof cell.v === 'number') {
-        cell.z = '#,##0.000';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (line.trim()) rows.push(JSON.parse(line));
       }
-    });
+    }
+    if (buffer.trim()) rows.push(JSON.parse(buffer));
+    return { rows, openingHeader };
+
+  } catch (err) {
+    if (attempt < 3) {
+      console.warn(`GL chunk ${start}–${end} failed (attempt ${attempt}), retrying...`, err);
+      await new Promise(r => setTimeout(r, 1000 * attempt));
+      return this.fetchGLChunk(start, end, glcodes, compcode, attempt + 1);
+    }
+    throw new Error(`GL chunk ${start}–${end} failed after 3 attempts: ${err}`);
+  }
+}
+
+async newGetGLTRNList() {
+  if (!this.startDate || !this.endDate || this.selectedGLs.length === 0) {
+    alert('Please select GL account(s), start & end date');
+    return;
   }
 
-  const workbook: XLSX.WorkBook = {
-    Sheets: {
-      Statement: worksheet
-    },
-    SheetNames: ['Statement']
-  };
+  this.getData = true;
+  this.glGroupedData = [];
+  this.grandDebit = 0;
+  this.grandCredit = 0;
+  this.grandBalance = 0;
 
-  const buffer = XLSX.write(workbook, {
-    bookType: 'xlsx',
-    type: 'array'
+  const start = this.formatDate(this.startDate);
+  const end = this.formatDate(this.endDate);
+  const glcodesParam = this.selectedGLs.join(',');
+  const compcode = this.selectedUnit.id;
+
+  const chunks = this.buildDateChunks(start, end, 3);
+
+  // Accumulators only — no row storage. This is the whole point:
+  // summary-only display means we never need more than these three numbers per GL.
+  const glMap: { [glcode: string]: { openingBalance: number; totalDebit: number; totalCredit: number } } = {};
+  this.selectedGLs.forEach(gl => { glMap[gl] = { openingBalance: 0, totalDebit: 0, totalCredit: 0 }; });
+
+  this.ngZone.run(() => {
+    this.loadingProgress = { current: 0, total: chunks.length, rowsLoaded: 0 };
   });
 
-  const blob = new Blob(
-    [buffer],
-    {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    }
-  );
+  let rowsLoaded = 0;
 
-  FileSaver.saveAs(blob, fileName);
+  try {
+    for (let i = 0; i < chunks.length; i++) {
+      const [chunkStart, chunkEnd] = chunks[i];
+      const { rows, openingHeader } = await this.fetchGLChunk(chunkStart, chunkEnd, glcodesParam, compcode);
+
+      // Only chunk 0's opening balance is computed against the TRUE overall
+      // start date. Every later chunk's header would be relative to its own
+      // chunk start and double-count what earlier chunks already summed —
+      // so it gets discarded on purpose.
+      if (i === 0 && openingHeader) {
+        try {
+          const parsed = JSON.parse(openingHeader);
+          Object.keys(parsed).forEach(gl => {
+            if (glMap[gl]) glMap[gl].openingBalance = Number(parsed[gl] || 0);
+          });
+        } catch (e) {
+          console.warn('Failed to parse opening balances header', e);
+        }
+      }
+
+      rows.forEach((row: any) => {
+        const gl = row.glcode;
+        if (!glMap[gl]) glMap[gl] = { openingBalance: 0, totalDebit: 0, totalCredit: 0 };
+        glMap[gl].totalDebit += this.safeNum(row.debit);
+        glMap[gl].totalCredit += this.safeNum(row.credit); // pre-signed at source — do not re-sign
+      });
+
+      rowsLoaded += rows.length;
+
+      this.ngZone.run(() => {
+        this.loadingProgress = { current: i + 1, total: chunks.length, rowsLoaded };
+      });
+    }
+
+    this.ngZone.run(() => {
+      this.getData = false;
+      this.loadingProgress = null;
+
+      this.glGroupedData = this.selectedGLs.map(gl => {
+        const glObj = this.glList.find((x: any) => x.GLCODE === gl);
+        const data = glMap[gl];
+        const balance = data.openingBalance + data.totalDebit + data.totalCredit;
+
+        return {
+          glcode: gl,
+          glname: glObj?.GLNAME,
+          openingBalance: data.openingBalance,
+          totalDebit: data.totalDebit,
+          totalCredit: Math.abs(data.totalCredit), // display positive, matches existing `| abs` pipe usage elsewhere
+          balance
+        };
+      });
+
+      this.grandDebit = this.glGroupedData.reduce((s, g) => s + g.totalDebit, 0);
+      this.grandCredit = this.glGroupedData.reduce((s, g) => s + g.totalCredit, 0);
+      this.grandBalance = this.glGroupedData.reduce((s, g) => s + g.balance, 0);
+    });
+
+  } catch (err) {
+    this.ngZone.run(() => {
+      console.error('GL transaction listing fetch error:', err);
+      alert('Failed to load report — one date range failed repeatedly. Please try again.');
+      this.getData = false;
+      this.loadingProgress = null;
+    });
+  }
 }
 
 formatExcelDate(date: any): string {
