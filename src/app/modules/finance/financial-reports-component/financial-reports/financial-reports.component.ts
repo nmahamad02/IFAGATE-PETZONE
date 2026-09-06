@@ -213,7 +213,7 @@ getLWPS() {
           totalSales,
           totalCost,
           totalProfit,
-          margin: totalCost === 0 ? 0 : (totalProfit / totalCost) * 100
+          margin: totalSales === 0 ? 0 : (totalProfit / totalSales) * 100
         };
       });
     });
@@ -337,7 +337,7 @@ private toIsoDate(d: Date): string {
           const totalProfit = totalSales - totalCost;
           return {
             location: loc, rows, totalqty, totalSales, totalCost, totalProfit,
-            margin: totalCost === 0 ? 0 : (totalProfit / totalCost) * 100
+            margin: totalSales === 0 ? 0 : (totalProfit / totalSales) * 100
           };
         });
       });
