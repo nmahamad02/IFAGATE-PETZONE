@@ -234,14 +234,14 @@
                     <div class="col-4">
                     <ng-select
     [items]="glList"
-    bindLabel="GLNAME"
-    bindValue="GLCODE"
+    bindLabel="glname"
+    bindValue="glcode"
     [multiple]="true"
     placeholder="Select GL Accounts"
     [(ngModel)]="selectedGLs">
 
     <ng-template ng-option-tmp let-item="item">
-        {{ item.GLCODE }} | {{ item.GLNAME }}
+        {{ item.glcode }} | {{ item.glname }}
     </ng-template>
 
 </ng-select>

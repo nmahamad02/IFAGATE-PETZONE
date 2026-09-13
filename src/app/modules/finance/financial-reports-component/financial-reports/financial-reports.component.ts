@@ -104,8 +104,9 @@ finalBalance = 0;
       this.productDetails = res
       console.log(this.productDetails)
     })
-    this.financeService.getAllGLCode().subscribe((res: any) => {
-      this.glList = res.recordset
+    this.financeService.getAllGLCodeSAP().subscribe((res: any) => {
+      console.log(res)
+      this.glList = res
       console.log(this.glList)
     })
   }
