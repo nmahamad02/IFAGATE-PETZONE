@@ -1087,6 +1087,9 @@ exportSWOUT(data: any[], file: string) {
 
   const rows: any[] = [];
 
+  // Helper to round to 2 decimals, matching SAP's export precision
+  const round2 = (val: any) => Math.round(Number(val || 0) * 100) / 100;
+
   /* ========================================
      REPORT HEADER
   ======================================== */
@@ -1110,7 +1113,7 @@ exportSWOUT(data: any[], file: string) {
       '',
       '',
       '',
-      Number(group.subtotal)
+      round2(group.subtotal)
     ]);
 
     rows.push([]);
@@ -1134,7 +1137,7 @@ exportSWOUT(data: any[], file: string) {
         s.Nature,
         s.SupplierCategory,
         s.REMARKS,
-        Number(s.CURRENT_OUTSTANDING || 0)
+        round2(s.CURRENT_OUTSTANDING)
       ]);
 
     });
@@ -1146,7 +1149,7 @@ exportSWOUT(data: any[], file: string) {
       '',
       '',
       '',
-      Number(group.subtotal)
+      round2(group.subtotal)
     ]);
 
     rows.push([]);
@@ -1162,7 +1165,7 @@ exportSWOUT(data: any[], file: string) {
     '',
     '',
     'GRAND TOTAL',
-    Number(this.totalOutstanding)
+    round2(this.totalOutstanding)
   ]);
 
   /* ========================================
@@ -1176,12 +1179,12 @@ exportSWOUT(data: any[], file: string) {
   ======================================== */
 
   worksheet['!cols'] = [
-    { wch: 15 }, // Supplier Code
-    { wch: 40 }, // Supplier Name
-    { wch: 20 }, // Nature
-    { wch: 20 }, // Category
-    { wch: 20 }, // Payment Term
-    { wch: 18 }  // Outstanding
+    { wch: 15 },
+    { wch: 40 },
+    { wch: 20 },
+    { wch: 20 },
+    { wch: 20 },
+    { wch: 18 }
   ];
 
   /* ========================================
@@ -1194,16 +1197,12 @@ exportSWOUT(data: any[], file: string) {
 
   for (let R = 0; R <= range.e.r; ++R) {
 
-    // Outstanding Column (F)
     const cell = worksheet[
-      XLSX.utils.encode_cell({
-        r: R,
-        c: 5
-      })
+      XLSX.utils.encode_cell({ r: R, c: 5 })
     ];
 
     if (cell && typeof cell.v === 'number') {
-      cell.z = '#,##0.000';
+      cell.z = '#,##0.00';   // was '#,##0.000'
     }
   }
 

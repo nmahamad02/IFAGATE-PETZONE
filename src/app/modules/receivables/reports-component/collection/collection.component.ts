@@ -93,8 +93,8 @@ export class CollectionComponent {
   selectedUnit!: { id: string; name: string; code: string, country: string };
   selectedCountryCode = 'un';
 
-  startDate = '2025-01-01';
-  endDate = '2025-12-31';
+  startDate = '2026-01-01';
+  endDate = '2026-12-31';
 
   ageingSummary = {
     '30_DAYS': 0,
