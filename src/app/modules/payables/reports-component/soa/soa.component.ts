@@ -1088,7 +1088,17 @@ exportSWOUT(data: any[], file: string) {
   const rows: any[] = [];
 
   // Helper to round to 2 decimals, matching SAP's export precision
-  const round2 = (val: any) => Math.round(Number(val || 0) * 100) / 100;
+  //const round2 = (val: any) => Math.round(Number(val || 0) * 100) / 100;
+  const round2 = (val: any) => {
+  const num = Number(val || 0);
+  const sign = num < 0 ? -1 : 1;
+  // Round the magnitude, in integer thousandths, to avoid both
+  // JS's toward-zero rounding on negatives and floating-point drift
+  const thousandths = Math.round(Math.abs(num) * 1000);
+  const lastDigit = thousandths % 10;
+  const hundredths = (thousandths - lastDigit) / 10 + (lastDigit >= 5 ? 1 : 0);
+  return sign * hundredths / 100;
+};
 
   /* ========================================
      REPORT HEADER
